@@ -6,7 +6,7 @@ import { z } from 'zod'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { usdToCents, centsToUsd } from '@/utils/money'
+import { usdToCents } from '@/utils/money'
 import type { Database } from '@/types/database'
 
 type TypologyRow = Database['public']['Tables']['typologies']['Row']
@@ -44,7 +44,6 @@ const typologySchema = z.object({
   name: z.string().min(1, 'Requerido'),
   bathrooms: z.number().nullable().optional(),
   area_m2: z.number().positive('Debe ser mayor a 0'),
-  price_usd_display: z.number().positive('Requerido'),
 })
 
 export type TypologyFormValues = z.infer<typeof typologySchema>
@@ -89,9 +88,6 @@ export function TypologyForm({ defaultValues, onSubmit, onCancel, isSubmitting }
       name: defaultValues?.name ?? '',
       bathrooms: defaultValues?.bathrooms ?? null,
       area_m2: defaultValues?.area_m2 ?? undefined,
-      price_usd_display: defaultValues?.price_usd != null
-        ? centsToUsd(defaultValues.price_usd)
-        : undefined,
     },
   })
 
@@ -198,35 +194,19 @@ export function TypologyForm({ defaultValues, onSubmit, onCancel, isSubmitting }
         )}
       </div>
 
-      {/* ── Área + Precio ── */}
-      <div className="grid grid-cols-2 gap-3">
-        <div className="grid gap-1.5">
-          <Label htmlFor="ty-area" className="text-xs text-gray-500">Área m² *</Label>
-          <Input
-            id="ty-area"
-            type="number"
-            min={1}
-            step={0.01}
-            {...form.register('area_m2', { setValueAs: (v) => Number(v) })}
-          />
-          {form.formState.errors.area_m2 && (
-            <p className="text-xs text-destructive">{form.formState.errors.area_m2.message}</p>
-          )}
-        </div>
-        <div className="grid gap-1.5">
-          <Label htmlFor="ty-usd" className="text-xs text-gray-500">Precio USD *</Label>
-          <Input
-            id="ty-usd"
-            type="number"
-            min={1}
-            step={1}
-            placeholder="120000"
-            {...form.register('price_usd_display', { setValueAs: (v) => Number(v) })}
-          />
-          {form.formState.errors.price_usd_display && (
-            <p className="text-xs text-destructive">{form.formState.errors.price_usd_display.message}</p>
-          )}
-        </div>
+      {/* ── Área ── */}
+      <div className="grid gap-1.5">
+        <Label htmlFor="ty-area" className="text-xs text-gray-500">Área m² *</Label>
+        <Input
+          id="ty-area"
+          type="number"
+          min={1}
+          step={0.01}
+          {...form.register('area_m2', { setValueAs: (v) => Number(v) })}
+        />
+        {form.formState.errors.area_m2 && (
+          <p className="text-xs text-destructive">{form.formState.errors.area_m2.message}</p>
+        )}
       </div>
 
       {/* ── Plano ── */}
@@ -305,7 +285,7 @@ export function typologyFormToInsert(
     unit_type: values.unit_type,
     name: values.name,
     area_m2: values.area_m2,
-    price_usd: usdToCents(values.price_usd_display),
+    price_usd: usdToCents(0),
     bathrooms: values.bathrooms ?? null,
     units_available: 0,
     floor_plan_path: floorPlanPath !== undefined ? floorPlanPath : (existingFloorPlan ?? null),
