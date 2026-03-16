@@ -8,6 +8,7 @@ import { InformesPage } from '@/pages/InformesPage'
 import { ReporteHtmlPage } from '@/pages/ReporteHtmlPage'
 import { ConfiguracionPage } from '@/pages/ConfiguracionPage'
 import { RecursosPage } from '@/pages/RecursosPage'
+import { PresupuestosPage } from '@/pages/PresupuestosPage'
 import { AuthCallbackPage } from '@/pages/AuthCallbackPage'
 import { ResetPasswordPage } from '@/pages/ResetPasswordPage'
 import { RequireAuth } from '@/components/auth/RequireAuth'
@@ -23,6 +24,7 @@ export const router = createBrowserRouter([
       { path: 'clientes', element: <ClientesPage /> },
       { path: 'simulador', element: <SimuladorPage /> },
       { path: 'informes', element: <InformesPage /> },
+      { path: 'presupuestos', element: <PresupuestosPage /> },
       { path: 'recursos',      element: <RecursosPage /> },
       { path: 'configuracion', element: <ConfiguracionPage /> },
     ],

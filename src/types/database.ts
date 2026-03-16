@@ -200,6 +200,65 @@ export interface Database {
         }
         Relationships: []
       }
+      presupuestos: {
+        Row: {
+          id: string
+          client_id: string | null
+          client_name: string | null
+          unidad_nombre: string
+          superficie_m2: number | null
+          precio_usd: number
+          cochera_nombre: string | null
+          cochera_precio_usd: number
+          floor_plan_path: string | null
+          entrega: number
+          cuotas_cantidad: number
+          cuotas_valor: number
+          saldo_contra_entrega: number
+          refuerzos_cantidad: number
+          refuerzos_valor: number
+          refuerzos_periodicidad: number
+          notas: string | null
+          created_at: string
+        }
+        Insert: {
+          client_id?: string | null
+          client_name?: string | null
+          unidad_nombre?: string
+          superficie_m2?: number | null
+          precio_usd?: number
+          cochera_nombre?: string | null
+          cochera_precio_usd?: number
+          floor_plan_path?: string | null
+          entrega?: number
+          cuotas_cantidad?: number
+          cuotas_valor?: number
+          saldo_contra_entrega?: number
+          refuerzos_cantidad?: number
+          refuerzos_valor?: number
+          refuerzos_periodicidad?: number
+          notas?: string | null
+        }
+        Update: {
+          client_id?: string | null
+          client_name?: string | null
+          unidad_nombre?: string
+          superficie_m2?: number | null
+          precio_usd?: number
+          cochera_nombre?: string | null
+          cochera_precio_usd?: number
+          floor_plan_path?: string | null
+          entrega?: number
+          cuotas_cantidad?: number
+          cuotas_valor?: number
+          saldo_contra_entrega?: number
+          refuerzos_cantidad?: number
+          refuerzos_valor?: number
+          refuerzos_periodicidad?: number
+          notas?: string | null
+        }
+        Relationships: []
+      }
       simulations: {
         Row: {
           id: string
