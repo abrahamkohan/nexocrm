@@ -6,7 +6,7 @@ import { supabase } from '@/lib/supabase'
 
 const NAV_MAIN = [
   { to: '/inicio',    label: 'Inicio',    icon: Home },
-  { to: '/',          label: 'Proyectos', icon: Building2 },
+  { to: '/proyectos', label: 'Proyectos', icon: Building2 },
   { to: '/clientes',  label: 'Clientes',  icon: Users },
   { to: '/simulador', label: 'Simulador', icon: Calculator },
   { to: '/informes',  label: 'Informes',  icon: FileText },
@@ -82,7 +82,7 @@ export function Sidebar({ onClose }: SidebarProps) {
       <nav className="flex-1 px-3 py-4 flex flex-col gap-2 overflow-y-auto">
         <div className="flex flex-col gap-2">
           {NAV_MAIN.map(({ to, label, icon }) => (
-            <NavItem key={to} to={to} label={label} icon={icon} end={to === '/'} onClick={onClose} />
+            <NavItem key={to} to={to} label={label} icon={icon} onClick={onClose} />
           ))}
         </div>
 

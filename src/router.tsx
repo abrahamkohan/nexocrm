@@ -1,4 +1,4 @@
-import { createBrowserRouter } from 'react-router'
+import { createBrowserRouter, Navigate } from 'react-router'
 import { AppShell } from '@/components/layout/AppShell'
 import { InicioPage } from '@/pages/InicioPage'
 import { ProyectosPage } from '@/pages/ProyectosPage'
@@ -17,8 +17,9 @@ export const router = createBrowserRouter([
     path: '/',
     element: <RequireAuth><AppShell /></RequireAuth>,
     children: [
-      { index: true, element: <ProyectosPage /> },
-      { path: 'inicio', element: <InicioPage /> },
+      { index: true, element: <Navigate to="/inicio" replace /> },
+      { path: 'inicio',     element: <InicioPage /> },
+      { path: 'proyectos',  element: <ProyectosPage /> },
       { path: 'clientes', element: <ClientesPage /> },
       { path: 'simulador', element: <SimuladorPage /> },
       { path: 'informes', element: <InformesPage /> },

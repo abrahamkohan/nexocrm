@@ -17,7 +17,7 @@ export function ResetPasswordPage() {
     setLoading(true)
     const { error } = await supabase.auth.updateUser({ password })
     if (error) { setError('Error al actualizar la contraseña'); setLoading(false); return }
-    navigate('/', { replace: true })
+    navigate('/inicio', { replace: true })
   }
 
   return (
