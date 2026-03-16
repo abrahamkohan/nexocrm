@@ -461,6 +461,10 @@ export function ReporteHtmlPage() {
                   { label: 'Noches ocupadas/mes', value: `${airbnb.inputs.noches_ocupadas_mes} noches` },
                   { label: 'Tarifa diaria',        value: fmt(airbnb.inputs.tarifa_diaria_promedio_usd) },
                   { label: 'Administración',       value: pct(airbnb.inputs.tarifa_administracion_percent), variant: 'muted' },
+                  { label: 'Expensas/mes',         value: fmt(airbnb.inputs.expensas_usd_mes),        variant: 'muted' },
+                  { label: 'Electricidad/mes',     value: fmt(airbnb.inputs.electricidad_usd_mes),    variant: 'muted' },
+                  { label: 'Internet/mes',         value: fmt(airbnb.inputs.internet_usd_mes),        variant: 'muted' },
+                  { label: 'Cable / TV / mes',     value: fmt(airbnb.inputs.cable_tv_usd_mes),        variant: 'muted' },
                 ]}
                 right={[
                   { label: 'Inversión total',     value: fmt(airbnb.result.inversion_total) },
