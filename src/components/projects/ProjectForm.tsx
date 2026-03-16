@@ -54,7 +54,10 @@ export function ProjectForm({ defaultValues, onSubmit, onCancel, isSubmitting }:
 
   const handleSubmit = form.handleSubmit(async (values) => {
     const brochureFile = brochureRef.current?.files?.[0] ?? null
-    await onSubmit(values, brochureFile)
+    await onSubmit({
+      ...values,
+      delivery_date: values.delivery_date || undefined,
+    }, brochureFile)
   })
 
   return (
