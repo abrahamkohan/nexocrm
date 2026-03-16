@@ -1,0 +1,26 @@
+// src/components/projects/ProjectList.tsx
+import { ProjectCard } from './ProjectCard'
+import type { Database } from '@/types/database'
+
+type ProjectRow = Database['public']['Tables']['projects']['Row']
+
+interface ProjectListProps {
+  projects: ProjectRow[]
+  onEdit: (project: ProjectRow) => void
+  onDelete: (id: string) => void
+}
+
+export function ProjectList({ projects, onEdit, onDelete }: ProjectListProps) {
+  return (
+    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      {projects.map((project) => (
+        <ProjectCard
+          key={project.id}
+          project={project}
+          onEdit={onEdit}
+          onDelete={onDelete}
+        />
+      ))}
+    </div>
+  )
+}
