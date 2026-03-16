@@ -1,7 +1,8 @@
 // src/components/layout/Sidebar.tsx
 import { NavLink } from 'react-router'
-import { Home, Building2, Users, Calculator, FileText, Settings, BookMarked } from 'lucide-react'
+import { Home, Building2, Users, Calculator, FileText, Settings, BookMarked, LogOut } from 'lucide-react'
 import { useConsultoraConfig } from '@/hooks/useConsultora'
+import { supabase } from '@/lib/supabase'
 
 const NAV_MAIN = [
   { to: '/inicio',    label: 'Inicio',    icon: Home },
@@ -78,6 +79,16 @@ export function Sidebar() {
           ))}
         </div>
       </nav>
+      {/* Logout */}
+      <div className="px-3 pb-4 border-t border-sidebar-border pt-3">
+        <button
+          onClick={() => supabase.auth.signOut()}
+          className="flex items-center gap-2.5 px-3 py-2.5 rounded-md text-sm text-sidebar-foreground hover:bg-sidebar-accent transition-colors w-full"
+        >
+          <LogOut className="h-4 w-4 flex-shrink-0" />
+          Cerrar sesión
+        </button>
+      </div>
     </aside>
   )
 }
