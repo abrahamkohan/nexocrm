@@ -41,7 +41,7 @@ function Field({ label, value, onChange, type = 'number', suffix }: {
 
 function Section({ title }: { title: string }) {
   return (
-    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider pt-3 border-t">
+    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider pt-3 border-t first:border-0 first:pt-0">
       {title}
     </p>
   )
@@ -73,11 +73,13 @@ export function SimEditDialog({ sim, onClose }: Props) {
 
   // ── Alquiler inputs ──
   const al = sim.scenario_alquiler as unknown as ScenarioData<AlquilerInputs, unknown> | null
-  const [alPrecio,   setAlPrecio]   = useState(String(al?.inputs.precio_compra_propiedad_usd  ?? 0))
-  const [alMensual,  setAlMensual]  = useState(String(al?.inputs.alquiler_mensual_usd         ?? 600))
-  const [alAdmin,    setAlAdmin]    = useState(String(al?.inputs.tarifa_administracion_percent ?? 8))
-  const [alExpensas, setAlExpensas] = useState(String(al?.inputs.expensas_usd_mes             ?? 100))
-  const [alOtros,    setAlOtros]    = useState(String(al?.inputs.otros_usd_mes                ?? 0))
+  const [alPrecio,        setAlPrecio]        = useState(String(al?.inputs.precio_compra_propiedad_usd      ?? 0))
+  const [alAmob,          setAlAmob]          = useState(String(al?.inputs.amoblamiento_preparacion_str_usd ?? 0))
+  const [alIncluirAmob,   setAlIncluirAmob]   = useState(al?.inputs.incluir_amoblamiento ?? false)
+  const [alMensual,       setAlMensual]       = useState(String(al?.inputs.alquiler_mensual_usd             ?? 600))
+  const [alAdmin,         setAlAdmin]         = useState(String(al?.inputs.tarifa_administracion_percent    ?? 8))
+  const [alExpensas,      setAlExpensas]      = useState(String(al?.inputs.expensas_usd_mes                 ?? 100))
+  const [alOtros,         setAlOtros]         = useState(String(al?.inputs.otros_usd_mes                    ?? 0))
 
   // ── Plusvalía inputs ──
   const pv = sim.scenario_plusvalia as unknown as ScenarioData<PlusvaliaInputs, unknown> | null
@@ -101,8 +103,8 @@ export function SimEditDialog({ sim, onClose }: Props) {
     }
     const newAlInputs: AlquilerInputs = {
       precio_compra_propiedad_usd:       n(alPrecio),
-      amoblamiento_preparacion_str_usd:  0,
-      incluir_amoblamiento:              false,
+      amoblamiento_preparacion_str_usd:  n(alAmob),
+      incluir_amoblamiento:              alIncluirAmob,
       alquiler_mensual_usd:              n(alMensual),
       tarifa_administracion_percent:     n(alAdmin),
       expensas_usd_mes:                  n(alExpensas),
@@ -114,46 +116,47 @@ export function SimEditDialog({ sim, onClose }: Props) {
       anios_tenencia:               n(pvAnios),
     }
 
-    const newSnap = {
-      ...snap,
-      name: proyecto,
-      ...(isCasual ? { _cliente: cliente } : {}),
-    }
+    const newSnap    = { ...snap,    name: proyecto, ...(isCasual ? { _cliente: cliente } : {}) }
     const newSnapTyp = { ...snapTyp, name: tipologia }
 
     await update.mutateAsync({
       id: sim.id,
       input: {
-        scenario_airbnb:    { inputs: newAbInputs,  result: calcAirbnb(newAbInputs)   },
-        scenario_alquiler:  { inputs: newAlInputs,  result: calcAlquiler(newAlInputs) },
+        scenario_airbnb:    { inputs: newAbInputs,  result: calcAirbnb(newAbInputs)    },
+        scenario_alquiler:  { inputs: newAlInputs,  result: calcAlquiler(newAlInputs)  },
         scenario_plusvalia: { inputs: newPvInputs,  result: calcPlusvalia(newPvInputs) },
-        snapshot_project:  newSnap  as Record<string, unknown>,
-        snapshot_typology: newSnapTyp as Record<string, unknown>,
+        snapshot_project:   newSnap    as Record<string, unknown>,
+        snapshot_typology:  newSnapTyp as Record<string, unknown>,
       },
     })
     onClose()
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 p-0 sm:p-4">
+      <div className="bg-white rounded-t-2xl sm:rounded-xl shadow-xl w-full sm:max-w-lg max-h-[92vh] flex flex-col">
+
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b sticky top-0 bg-white z-10">
+        <div className="flex items-center justify-between px-5 py-4 border-b">
           <h2 className="text-sm font-semibold text-gray-800">Editar simulación</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-lg leading-none">✕</button>
         </div>
 
-        <div className="px-5 py-4 flex flex-col gap-3">
+        {/* Body */}
+        <div className="px-5 py-4 flex flex-col gap-3 overflow-y-auto flex-1">
+
           {/* Identidad */}
           <Section title="Identificación" />
-          {isCasual && <Field label="Cliente"   value={cliente}   onChange={setCliente}   type="text" />}
-          <Field label="Proyecto"  value={proyecto}  onChange={setProyecto}  type="text" />
-          <Field label="Tipología" value={tipologia} onChange={setTipologia} type="text" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {isCasual && <Field label="Cliente"   value={cliente}   onChange={setCliente}   type="text" />}
+            <Field label="Proyecto"  value={proyecto}  onChange={setProyecto}  type="text" />
+            <Field label="Tipología" value={tipologia} onChange={setTipologia} type="text" />
+          </div>
 
           {/* Airbnb */}
           {ab && <>
             <Section title="Alquiler Temporal (Airbnb)" />
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <Field label="Precio de compra"   value={abPrecio}   onChange={setAbPrecio}   suffix="USD" />
               <Field label="Amoblamiento STR"   value={abAmob}     onChange={setAbAmob}     suffix="USD" />
               <Field label="Noches/mes"         value={abNoches}   onChange={setAbNoches}   suffix="noches" />
@@ -169,19 +172,29 @@ export function SimEditDialog({ sim, onClose }: Props) {
           {/* Alquiler */}
           {al && <>
             <Section title="Alquiler Tradicional" />
-            <div className="grid grid-cols-2 gap-3">
-              <Field label="Precio de compra"  value={alPrecio}   onChange={setAlPrecio}   suffix="USD" />
-              <Field label="Alquiler mensual"  value={alMensual}  onChange={setAlMensual}  suffix="USD" />
-              <Field label="Administración"    value={alAdmin}    onChange={setAlAdmin}    suffix="%" />
-              <Field label="Expensas/mes"      value={alExpensas} onChange={setAlExpensas} suffix="USD" />
-              <Field label="Otros/mes"         value={alOtros}    onChange={setAlOtros}    suffix="USD" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <Field label="Precio de compra"   value={alPrecio}   onChange={setAlPrecio}   suffix="USD" />
+              <Field label="Alquiler mensual"   value={alMensual}  onChange={setAlMensual}  suffix="USD" />
+              <Field label="Administración"     value={alAdmin}    onChange={setAlAdmin}    suffix="%" />
+              <Field label="Expensas/mes"       value={alExpensas} onChange={setAlExpensas} suffix="USD" />
+              <Field label="Amoblamiento"       value={alAmob}     onChange={setAlAmob}     suffix="USD" />
+              <Field label="Otros/mes"          value={alOtros}    onChange={setAlOtros}    suffix="USD" />
             </div>
+            <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={alIncluirAmob}
+                onChange={(e) => setAlIncluirAmob(e.target.checked)}
+                className="rounded"
+              />
+              Incluir amoblamiento en inversión total
+            </label>
           </>}
 
           {/* Plusvalía */}
           {pv && <>
             <Section title="Plusvalía en Obra" />
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <Field label="Precio de compra"       value={pvPrecio} onChange={setPvPrecio} suffix="USD" />
               <Field label="Precio estimado venta"  value={pvVenta}  onChange={setPvVenta}  suffix="USD" />
               <Field label="Años de tenencia"       value={pvAnios}  onChange={setPvAnios}  suffix="años" />
@@ -190,18 +203,11 @@ export function SimEditDialog({ sim, onClose }: Props) {
         </div>
 
         {/* Footer */}
-        <div className="flex gap-2 px-5 py-4 border-t sticky bottom-0 bg-white">
-          <Button
-            className="flex-1"
-            size="sm"
-            disabled={update.isPending}
-            onClick={handleSave}
-          >
+        <div className="flex gap-2 px-5 py-4 border-t">
+          <Button className="flex-1" size="sm" disabled={update.isPending} onClick={handleSave}>
             {update.isPending ? 'Guardando...' : 'Guardar cambios'}
           </Button>
-          <Button variant="outline" size="sm" onClick={onClose}>
-            Cancelar
-          </Button>
+          <Button variant="outline" size="sm" onClick={onClose}>Cancelar</Button>
         </div>
       </div>
     </div>

@@ -71,7 +71,7 @@ export function ClientesPage() {
   const isPending = createClient.isPending || updateClient.isPending
 
   return (
-    <div className="p-6 flex flex-col gap-6">
+    <div className="p-4 md:p-6 flex flex-col gap-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Clientes</h1>
         <Button size="sm" onClick={openCreate}>
