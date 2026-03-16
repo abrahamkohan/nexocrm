@@ -1,7 +1,6 @@
 // src/components/typologies/TypologyCard.tsx
 import { Pencil, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { formatMoney } from '@/utils/money'
 import { getPublicUrl } from '@/lib/storage'
 import type { Database } from '@/types/database'
 
@@ -34,15 +33,6 @@ export function TypologyCard({ typology, onEdit, onDelete }: TypologyCardProps) 
             <Trash2 className="h-3.5 w-3.5" />
           </Button>
         </div>
-      </div>
-
-      <div className="flex flex-col gap-0.5 text-sm">
-        <span className="font-semibold">{formatMoney(typology.price_usd, 'USD')}</span>
-        {typology.price_pyg != null && (
-          <span className="text-xs text-muted-foreground">
-            {formatMoney(typology.price_pyg, 'PYG')}
-          </span>
-        )}
       </div>
 
       <p className="text-xs text-muted-foreground">

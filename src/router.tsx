@@ -10,11 +10,12 @@ import { ConfiguracionPage } from '@/pages/ConfiguracionPage'
 import { RecursosPage } from '@/pages/RecursosPage'
 import { AuthCallbackPage } from '@/pages/AuthCallbackPage'
 import { ResetPasswordPage } from '@/pages/ResetPasswordPage'
+import { RequireAuth } from '@/components/auth/RequireAuth'
 
 export const router = createBrowserRouter([
   {
     path: '/',
-    element: <AppShell />,
+    element: <RequireAuth><AppShell /></RequireAuth>,
     children: [
       { index: true, element: <ProyectosPage /> },
       { path: 'inicio', element: <InicioPage /> },
@@ -25,7 +26,7 @@ export const router = createBrowserRouter([
       { path: 'configuracion', element: <ConfiguracionPage /> },
     ],
   },
-  // Full-page routes (no sidebar)
+  // Rutas públicas (sin auth)
   { path: 'informes/:id', element: <ReporteHtmlPage /> },
   { path: 'auth/callback', element: <AuthCallbackPage /> },
   { path: 'reset-password', element: <ResetPasswordPage /> },
