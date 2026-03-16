@@ -6,13 +6,14 @@ export function AuthCallbackPage() {
   const navigate = useNavigate()
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      if (data.session) {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        navigate('/reset-password', { replace: true })
+      } else if (event === 'SIGNED_IN') {
         navigate('/', { replace: true })
-      } else {
-        navigate('/login', { replace: true })
       }
     })
+    return () => subscription.unsubscribe()
   }, [navigate])
 
   return (
