@@ -1,8 +1,10 @@
 // src/pages/SimuladorPage.tsx
 import { useState } from 'react'
 import { useNavigate } from 'react-router'
-import { Save, RotateCcw } from 'lucide-react'
+import { Save, RotateCcw, Zap } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { SimSelector } from '@/components/simulator/SimSelector'
 import { ScenarioAirbnb } from '@/components/simulator/ScenarioAirbnb'
 import { ScenarioAlquiler } from '@/components/simulator/ScenarioAlquiler'
@@ -26,8 +28,10 @@ const TABS: { id: Tab; label: string }[] = [
 
 export function SimuladorPage() {
   const [activeTab, setActiveTab] = useState<Tab>('airbnb')
+  const [modoRapido, setModoRapido] = useState(false)
+  const [rapido, setRapido] = useState({ proyecto: '', tipologia: '', cliente: '', precio: '' })
   const navigate = useNavigate()
-  const { projectId, typologyId, clientId, baseValues, overrides, resetOverrides, reset } = useSimStore()
+  const { projectId, typologyId, clientId, baseValues, overrides, resetOverrides, reset, setBaseValues } = useSimStore()
   const saveSimulation = useSaveSimulation()
 
   const { data: projects = [] } = useProjects()
@@ -37,29 +41,57 @@ export function SimuladorPage() {
   const alquilerInputs = useAlquilerInputs()
   const plusvaliaInputs = usePlusvaliaInputs()
 
-  const isReady = !!(projectId && typologyId && clientId && baseValues?.price_usd)
+  const rapidoPrecio = parseFloat(rapido.precio)
+  const isReadyRapido = !!(modoRapido && rapido.proyecto && rapido.tipologia && rapido.cliente && rapidoPrecio > 0)
+  const isReady = modoRapido ? isReadyRapido : !!(projectId && typologyId && clientId && baseValues?.price_usd)
   const isFlip = activeTab === 'flip'
 
+  function handleRapidoChange(field: keyof typeof rapido, val: string) {
+    const next = { ...rapido, [field]: val }
+    setRapido(next)
+    if (field === 'precio') {
+      const p = parseFloat(val)
+      if (!isNaN(p) && p > 0) setBaseValues({ price_usd: p, cochera_price: 0, baulera_price: 0 })
+    }
+  }
+
   async function handleSave() {
-    if (!projectId || !typologyId || !clientId) return
-    const project = projects.find((p) => p.id === projectId)
-    const typology = typologies.find((t) => t.id === typologyId)
-    if (!project || !typology) return
+    let snapshotProject: Record<string, unknown>
+    let snapshotTypology: Record<string, unknown>
+    let clientIdToSave: string | undefined = undefined
+    let projectIdToSave: string | undefined = undefined
+    let typologyIdToSave: string | undefined = undefined
+
+    if (modoRapido) {
+      snapshotProject  = { name: rapido.proyecto, location: '', developer_name: '' }
+      snapshotTypology = { name: rapido.tipologia, area_m2: 0, unit_type: 'otro' }
+    } else {
+      if (!projectId || !typologyId || !clientId) return
+      const project = projects.find((p) => p.id === projectId)
+      const typology = typologies.find((t) => t.id === typologyId)
+      if (!project || !typology) return
+      snapshotProject  = project as unknown as Record<string, unknown>
+      snapshotTypology = typology as unknown as Record<string, unknown>
+      clientIdToSave   = clientId
+      projectIdToSave  = projectId
+      typologyIdToSave = typologyId
+    }
 
     const saved = await saveSimulation.mutateAsync({
-      client_id: clientId,
-      project_id: projectId,
-      typology_id: typologyId,
-      scenario_airbnb: { inputs: airbnbInputs, result: calcAirbnb(airbnbInputs) },
-      scenario_alquiler: { inputs: alquilerInputs, result: calcAlquiler(alquilerInputs) },
+      client_id: clientIdToSave,
+      project_id: projectIdToSave,
+      typology_id: typologyIdToSave,
+      scenario_airbnb:    { inputs: airbnbInputs,    result: calcAirbnb(airbnbInputs) },
+      scenario_alquiler:  { inputs: alquilerInputs,  result: calcAlquiler(alquilerInputs) },
       scenario_plusvalia: { inputs: plusvaliaInputs, result: calcPlusvalia(plusvaliaInputs) },
-      snapshot_project: project as unknown as Record<string, unknown>,
-      snapshot_typology: typology as unknown as Record<string, unknown>,
+      snapshot_project:  { ...snapshotProject,  _cliente: modoRapido ? rapido.cliente : undefined },
+      snapshot_typology: snapshotTypology,
       report_path: null,
     })
 
     window.open(`/informes/${saved.id}`, '_blank')
     reset()
+    setRapido({ proyecto: '', tipologia: '', cliente: '', precio: '' })
     navigate('/')
   }
 
@@ -86,28 +118,96 @@ export function SimuladorPage() {
       {/* Selector — hidden on flip tab */}
       {!isFlip && (
         <div className="rounded-lg border bg-card p-5 flex flex-col gap-4">
-          <p className="text-sm font-medium text-gray-700">Selección</p>
-          <SimSelector />
-          {isReady && (
-            <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
-              <span>Unidad: <strong className="text-gray-700">{formatUsd(baseValues?.price_usd ?? 0)}</strong></span>
-              {(baseValues?.cochera_price ?? 0) > 0 && (
-                <span>Cochera: <strong className="text-gray-700">+ {formatUsd(baseValues.cochera_price)}</strong></span>
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-medium text-gray-700">Selección</p>
+            <button
+              onClick={() => {
+                setModoRapido(!modoRapido)
+                setRapido({ proyecto: '', tipologia: '', cliente: '', precio: '' })
+              }}
+              className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium border transition-colors ${
+                modoRapido
+                  ? 'bg-amber-50 text-amber-700 border-amber-300 hover:bg-amber-100'
+                  : 'bg-white text-gray-500 border-gray-200 hover:border-gray-400 hover:text-gray-700'
+              }`}
+            >
+              <Zap className="h-3 w-3" />
+              {modoRapido ? 'Modo Casual activo' : 'Modo Casual'}
+            </button>
+          </div>
+
+          {modoRapido ? (
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="grid gap-1.5">
+                <Label className="text-xs text-gray-500">Proyecto</Label>
+                <Input
+                  placeholder="Ej: Torre Norte"
+                  value={rapido.proyecto}
+                  onChange={(e) => handleRapidoChange('proyecto', e.target.value)}
+                />
+              </div>
+              <div className="grid gap-1.5">
+                <Label className="text-xs text-gray-500">Tipología</Label>
+                <Input
+                  placeholder="Ej: 2 Dormitorios"
+                  value={rapido.tipologia}
+                  onChange={(e) => handleRapidoChange('tipologia', e.target.value)}
+                />
+              </div>
+              <div className="grid gap-1.5">
+                <Label className="text-xs text-gray-500">Cliente</Label>
+                <Input
+                  placeholder="Nombre del cliente"
+                  value={rapido.cliente}
+                  onChange={(e) => handleRapidoChange('cliente', e.target.value)}
+                />
+              </div>
+              <div className="grid gap-1.5">
+                <Label className="text-xs text-gray-500">Precio USD</Label>
+                <Input
+                  type="number"
+                  min={1}
+                  placeholder="Ej: 85000"
+                  value={rapido.precio}
+                  onChange={(e) => handleRapidoChange('precio', e.target.value)}
+                />
+              </div>
+              {isReadyRapido && rapidoPrecio > 0 && (
+                <p className="text-xs text-muted-foreground sm:col-span-2">
+                  Unidad: <strong className="text-gray-700">{formatUsd(rapidoPrecio)}</strong>
+                </p>
               )}
-              {(baseValues?.baulera_price ?? 0) > 0 && (
-                <span>Baulera: <strong className="text-gray-700">+ {formatUsd(baseValues.baulera_price)}</strong></span>
-              )}
-              {((baseValues?.cochera_price ?? 0) + (baseValues?.baulera_price ?? 0)) > 0 && (
-                <span className="font-medium text-gray-700">
-                  Total: <strong>{formatUsd((baseValues?.price_usd ?? 0) + (baseValues?.cochera_price ?? 0) + (baseValues?.baulera_price ?? 0))}</strong>
-                </span>
+              {!isReadyRapido && (
+                <p className="text-xs text-muted-foreground sm:col-span-2">
+                  Completá todos los campos para continuar.
+                </p>
               )}
             </div>
-          )}
-          {!isReady && (
-            <p className="text-xs text-muted-foreground">
-              Seleccioná proyecto, tipología y cliente para comenzar.
-            </p>
+          ) : (
+            <>
+              <SimSelector />
+              {isReady && (
+                <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                  <span>Unidad: <strong className="text-gray-700">{formatUsd(baseValues?.price_usd ?? 0)}</strong></span>
+                  {(baseValues?.cochera_price ?? 0) > 0 && (
+                    <span>Cochera: <strong className="text-gray-700">+ {formatUsd(baseValues?.cochera_price ?? 0)}</strong></span>
+                  )}
+                  {(baseValues?.baulera_price ?? 0) > 0 && (
+                    <span>Baulera: <strong className="text-gray-700">+ {formatUsd(baseValues?.baulera_price ?? 0)}</strong></span>
+                  )}
+                  {((baseValues?.cochera_price ?? 0) + (baseValues?.baulera_price ?? 0)) > 0 && (
+                    <span className="font-medium text-gray-700">
+                      Total: <strong>{formatUsd((baseValues?.price_usd ?? 0) + (baseValues?.cochera_price ?? 0) + (baseValues?.baulera_price ?? 0))}</strong>
+                    </span>
+                  )}
+                </div>
+              )}
+              {!isReady && (
+                <p className="text-xs text-muted-foreground">
+                  Seleccioná proyecto, tipología y cliente para comenzar.
+                </p>
+              )}
+            </>
           )}
         </div>
       )}

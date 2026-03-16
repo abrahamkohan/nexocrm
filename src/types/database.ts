@@ -215,9 +215,9 @@ export interface Database {
           created_at: string
         }
         Insert: {
-          client_id: string
-          project_id: string
-          typology_id: string
+          client_id?: string | null
+          project_id?: string | null
+          typology_id?: string | null
           scenario_airbnb?: Record<string, unknown> | null
           scenario_alquiler?: Record<string, unknown> | null
           scenario_plusvalia?: Record<string, unknown> | null
