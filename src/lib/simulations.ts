@@ -55,6 +55,17 @@ export async function deleteSimulation(id: string): Promise<void> {
   if (error) throw error
 }
 
+export async function updateSimulation(id: string, input: Database['public']['Tables']['simulations']['Update']): Promise<SimRow> {
+  const { data, error } = await supabase
+    .from('simulations')
+    .update(input)
+    .eq('id', id)
+    .select()
+    .single()
+  if (error) throw error
+  return data as unknown as SimRow
+}
+
 export async function updateSimulationReportPath(id: string, reportPath: string): Promise<SimRow> {
   const { data, error } = await supabase
     .from('simulations')

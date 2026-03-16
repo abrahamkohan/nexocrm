@@ -1,6 +1,6 @@
 // src/hooks/useSimulations.ts
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { getAllSimulations, getSimulationById, getSimulationsByClient, createSimulation, deleteSimulation, updateSimulationReportPath } from '@/lib/simulations'
+import { getAllSimulations, getSimulationById, getSimulationsByClient, createSimulation, deleteSimulation, updateSimulation, updateSimulationReportPath } from '@/lib/simulations'
 import { generateAndUploadReport } from '@/lib/pdfService'
 import type { Database } from '@/types/database'
 
@@ -40,11 +40,25 @@ export function useSaveSimulation() {
   })
 }
 
-export function useDeleteSimulation(clientId: string) {
+export function useUpdateSimulation() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, input }: { id: string; input: Database['public']['Tables']['simulations']['Update'] }) =>
+      updateSimulation(id, input),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['simulations_all'] })
+    },
+  })
+}
+
+export function useDeleteSimulation(clientId?: string) {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (id: string) => deleteSimulation(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['simulations', clientId] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['simulations_all'] })
+      if (clientId) qc.invalidateQueries({ queryKey: ['simulations', clientId] })
+    },
   })
 }
 
