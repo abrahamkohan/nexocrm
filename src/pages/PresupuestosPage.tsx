@@ -22,6 +22,8 @@ function fmt(n: number) {
   return `USD ${n.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`
 }
 
+// ─── Page ────────────────────────────────────────────────────────────────────
+
 export function PresupuestosPage() {
   const { data: list = [], isLoading } = usePresupuestos()
   const deleteP = useDeletePresupuesto()
@@ -30,16 +32,8 @@ export function PresupuestosPage() {
   const [sheetOpen, setSheetOpen] = useState(false)
   const [editing, setEditing] = useState<PRow | null>(null)
 
-  function openCreate() {
-    setEditing(null)
-    setSheetOpen(true)
-  }
-
-  function openEdit(p: PRow) {
-    setEditing(p)
-    setSheetOpen(true)
-  }
-
+  function openCreate() { setEditing(null); setSheetOpen(true) }
+  function openEdit(p: PRow) { setEditing(p); setSheetOpen(true) }
   function handleDelete(id: string) {
     if (confirm('¿Eliminar este presupuesto?')) deleteP.mutate(id)
   }
@@ -51,8 +45,7 @@ export function PresupuestosPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold text-gray-900">Presupuestos</h1>
         <Button size="sm" onClick={openCreate}>
-          <Plus className="h-3.5 w-3.5 mr-1.5" />
-          Nuevo
+          <Plus className="h-3.5 w-3.5 mr-1.5" />Nuevo
         </Button>
       </div>
 
@@ -72,7 +65,7 @@ export function PresupuestosPage() {
 
       {list.length > 0 && (
         <>
-          {/* Desktop */}
+          {/* Desktop table */}
           <div className="hidden md:block rounded-lg border overflow-hidden">
             <table className="w-full text-sm">
               <thead>
@@ -99,20 +92,10 @@ export function PresupuestosPage() {
                         <Button variant="outline" size="sm" className="text-xs" onClick={() => openEdit(p)}>
                           <Pencil className="h-3 w-3 mr-1" />Editar
                         </Button>
-                        <Button
-                          variant="outline" size="sm" className="text-xs"
-                          onClick={() => duplicateP.mutate(p.id)}
-                          disabled={duplicateP.isPending}
-                          title="Duplicar"
-                        >
+                        <Button variant="outline" size="sm" className="text-xs" onClick={() => duplicateP.mutate(p.id)} disabled={duplicateP.isPending} title="Duplicar">
                           <Copy className="h-3 w-3" />
                         </Button>
-                        <Button
-                          variant="outline" size="sm"
-                          className="text-xs text-destructive hover:text-destructive"
-                          onClick={() => handleDelete(p.id)}
-                          disabled={deleteP.isPending}
-                        >
+                        <Button variant="outline" size="sm" className="text-xs text-destructive hover:text-destructive" onClick={() => handleDelete(p.id)} disabled={deleteP.isPending}>
                           <Trash2 className="h-3 w-3" />
                         </Button>
                       </div>
@@ -139,19 +122,10 @@ export function PresupuestosPage() {
                   <Button variant="outline" size="sm" className="flex-1 text-xs" onClick={() => openEdit(p)}>
                     <Pencil className="h-3 w-3 mr-1" />Editar
                   </Button>
-                  <Button
-                    variant="outline" size="sm" className="text-xs"
-                    onClick={() => duplicateP.mutate(p.id)}
-                    disabled={duplicateP.isPending}
-                  >
+                  <Button variant="outline" size="sm" className="text-xs" onClick={() => duplicateP.mutate(p.id)} disabled={duplicateP.isPending}>
                     <Copy className="h-3 w-3" />
                   </Button>
-                  <Button
-                    variant="outline" size="sm"
-                    className="text-xs text-destructive hover:text-destructive"
-                    onClick={() => handleDelete(p.id)}
-                    disabled={deleteP.isPending}
-                  >
+                  <Button variant="outline" size="sm" className="text-xs text-destructive hover:text-destructive" onClick={() => handleDelete(p.id)} disabled={deleteP.isPending}>
                     <Trash2 className="h-3 w-3" />
                   </Button>
                 </div>
@@ -161,42 +135,21 @@ export function PresupuestosPage() {
         </>
       )}
 
-      {/* ── Mobile: full-screen app layout ── */}
+      {/* ── Mobile: full-screen ── */}
       {sheetOpen && (
-        <div
-          className="md:hidden fixed inset-0 z-50 flex flex-col"
-          style={{ background: '#f1f5f9' }}
-        >
-          {/* App header — sticky */}
-          <div
-            className="flex-shrink-0 flex items-center justify-between px-2 bg-white border-b"
-            style={{ minHeight: 52 }}
-          >
-            <button
-              onClick={() => setSheetOpen(false)}
-              className="flex items-center gap-0.5 text-gray-500 px-2 py-1.5 rounded-lg active:bg-gray-100"
-            >
+        <div className="md:hidden fixed inset-0 z-50 flex flex-col" style={{ background: '#f1f5f9' }}>
+          <div className="flex-shrink-0 flex items-center justify-between px-2 bg-white border-b" style={{ minHeight: 52 }}>
+            <button onClick={() => setSheetOpen(false)} className="flex items-center gap-0.5 text-gray-500 px-2 py-1.5 rounded-lg active:bg-gray-100">
               <ChevronLeft className="h-5 w-5" />
               <span className="text-sm">Volver</span>
             </button>
-            <h2 className="text-[15px] font-semibold text-gray-900 absolute left-1/2 -translate-x-1/2 pointer-events-none">
-              {formTitle}
-            </h2>
-            <button
-              onClick={() => setSheetOpen(false)}
-              className="p-2 rounded-lg text-gray-400 active:bg-gray-100"
-            >
+            <h2 className="text-[15px] font-semibold text-gray-900 absolute left-1/2 -translate-x-1/2 pointer-events-none">{formTitle}</h2>
+            <button onClick={() => setSheetOpen(false)} className="p-2 rounded-lg text-gray-400 active:bg-gray-100">
               <XIcon className="h-4 w-4" />
             </button>
           </div>
-
-          {/* Scrollable form */}
           <div className="flex-1 overflow-y-auto">
-            <PresupuestoForm
-              key={editing?.id ?? 'new'}
-              initial={editing}
-              onClose={() => setSheetOpen(false)}
-            />
+            <PresupuestoForm key={editing?.id ?? 'new'} initial={editing} onClose={() => setSheetOpen(false)} />
           </div>
         </div>
       )}
@@ -204,19 +157,14 @@ export function PresupuestosPage() {
       {/* ── Desktop: modal ── */}
       <div className="hidden md:block">
         <Modal open={sheetOpen} onClose={() => setSheetOpen(false)} title={formTitle} size="lg">
-          <PresupuestoForm
-            key={editing?.id ?? 'new'}
-            initial={editing}
-            onClose={() => setSheetOpen(false)}
-            isDesktop
-          />
+          <PresupuestoForm key={editing?.id ?? 'new'} initial={editing} onClose={() => setSheetOpen(false)} isDesktop />
         </Modal>
       </div>
     </div>
   )
 }
 
-// ─── Form ────────────────────────────────────────────────────────────────────
+// ─── Form (shared logic, two layout branches) ─────────────────────────────────
 
 function PresupuestoForm({
   initial,
@@ -258,12 +206,8 @@ function PresupuestoForm({
 
   const handleFloorPlan = useCallback(async (file: File) => {
     setUploading(true)
-    try {
-      const path = await uploadPresupuestoFloorPlan(file)
-      setFloorPlanPath(path)
-    } finally {
-      setUploading(false)
-    }
+    try { const path = await uploadPresupuestoFloorPlan(file); setFloorPlanPath(path) }
+    finally { setUploading(false) }
   }, [])
 
   useEffect(() => {
@@ -271,11 +215,7 @@ function PresupuestoForm({
       const items = e.clipboardData?.items
       if (!items) return
       for (const item of Array.from(items)) {
-        if (item.type.startsWith('image/')) {
-          const file = item.getAsFile()
-          if (file) handleFloorPlan(file)
-          break
-        }
+        if (item.type.startsWith('image/')) { const file = item.getAsFile(); if (file) handleFloorPlan(file); break }
       }
     }
     window.addEventListener('paste', onPaste)
@@ -301,13 +241,8 @@ function PresupuestoForm({
       notas:                  notas || null,
     }
     try {
-      if (initial) {
-        await updateP.mutateAsync({ id: initial.id, input: payload })
-        toast.success('Guardado')
-      } else {
-        await createP.mutateAsync(payload)
-        toast.success('Creado')
-      }
+      if (initial) { await updateP.mutateAsync({ id: initial.id, input: payload }); toast.success('Guardado') }
+      else { await createP.mutateAsync(payload); toast.success('Creado') }
       onClose()
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : 'Error al guardar')
@@ -316,73 +251,75 @@ function PresupuestoForm({
 
   const isPending = createP.isPending || updateP.isPending
 
-  // Desktop: flat layout inside modal (modal provides padding + scroll)
+  // ── Desktop — horizontal, dense ─────────────────────────────────────────────
   if (isDesktop) {
     return (
-      <div className="flex flex-col gap-3 pb-2">
+      <div className="flex flex-col gap-4 pb-2">
 
-        {/* Identificación */}
+        {/* ── Identificación ── */}
         <FSection title="Identificación">
           <FFieldText label="Cliente" value={clientName} onChange={setClientName} placeholder="Nombre del cliente" />
           <FFieldText label="Nombre de unidad" value={unidadNombre} onChange={setUnidadNombre} placeholder="Ej: Apto 3B" />
-          <div className="grid grid-cols-2 gap-2">
-            <FFieldNum label="Superficie" value={superficieM2} onChange={setSuperficieM2} suffix="m²" compact />
-            <FFieldNum label="Precio unidad" value={precioUsd} onChange={setPrecioUsd} suffix="USD" />
-          </div>
-        </FSection>
 
-        {/* Cochera */}
-        <div>
-          <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer select-none">
-            <input type="checkbox" checked={cocheraOn} onChange={(e) => setCocheraOn(e.target.checked)} className="rounded" />
-            Incluir cochera
-          </label>
+          {/* Superficie · Precio · ☐ Cochera */}
+          <div className="flex gap-3 items-end">
+            <FFieldNum label="Superficie" value={superficieM2} onChange={setSuperficieM2} suffix="m²" compact />
+            <div className="flex-1">
+              <FFieldNum label="Precio unidad" value={precioUsd} onChange={setPrecioUsd} suffix="USD" />
+            </div>
+            <InlineCheck label="Cochera" checked={cocheraOn} onChange={setCocheraOn} />
+          </div>
+
           {cocheraOn && (
-            <div className="grid grid-cols-2 gap-2 mt-2">
-              <FFieldText label="Nombre cochera" value={cocheraNombre} onChange={setCocheraNombre} placeholder="Cochera 12" />
+            <div className="flex gap-3">
+              <div className="flex-1">
+                <FFieldText label="Nombre cochera" value={cocheraNombre} onChange={setCocheraNombre} placeholder="Cochera 12" />
+              </div>
               <FFieldNum label="Precio cochera" value={cocheraPrecioUsd} onChange={setCocheraPrecioUsd} suffix="USD" />
             </div>
           )}
-        </div>
+        </FSection>
 
-        {/* Plano */}
+        {/* ── Plano ── */}
         <FSection title="Plano de planta">
           <FloorPlanField value={floorPlanPath} onChange={setFloorPlanPath} uploading={uploading} onFile={handleFloorPlan} />
         </FSection>
 
-        {/* Plan de pagos */}
+        {/* ── Plan de pagos ── */}
         <FSection title="Plan de pagos">
           <FFieldNum label="Entrega / anticipo" value={entrega} onChange={setEntrega} suffix="USD" />
-          <div className="grid grid-cols-2 gap-2">
-            <FFieldNum label="Cuotas (cantidad)" value={cuotasCantidad} onChange={setCuotasCantidad} compact />
-            <FFieldNum label="Valor por cuota" value={cuotasValor} onChange={setCuotasValor} suffix="USD" />
+
+          {/* Cuotas · Valor · ☐ Refuerzos · ☐ Saldo */}
+          <div className="flex gap-3 items-end">
+            <FFieldNum label="Cuotas" value={cuotasCantidad} onChange={setCuotasCantidad} compact />
+            <div className="flex-1">
+              <FFieldNum label="Valor / cuota" value={cuotasValor} onChange={setCuotasValor} suffix="USD" />
+            </div>
+            <InlineCheck label="Refuerzos" checked={refuerzosOn} onChange={setRefuerzosOn} />
+            <InlineCheck label="Saldo c/ entrega" checked={saldoOn} onChange={setSaldoOn} />
           </div>
-          <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer select-none">
-            <input type="checkbox" checked={refuerzosOn} onChange={(e) => setRefuerzosOn(e.target.checked)} className="rounded" />
-            Incluir refuerzos
-          </label>
+
           {refuerzosOn && (
-            <>
-              <div className="grid grid-cols-2 gap-2">
-                <FFieldNum label="Cant. refuerzos" value={refuerzosCantidad} onChange={setRefuerzosCantidad} compact />
-                <FFieldNum label="Valor por refuerzo" value={refuerzosValor} onChange={setRefuerzosValor} suffix="USD" />
+            <div className="flex flex-col gap-2">
+              <div className="flex gap-3">
+                <FFieldNum label="Cantidad" value={refuerzosCantidad} onChange={setRefuerzosCantidad} compact />
+                <div className="flex-1">
+                  <FFieldNum label="Valor refuerzo" value={refuerzosValor} onChange={setRefuerzosValor} suffix="USD" />
+                </div>
               </div>
               <FFieldNum label="Periodicidad" value={refuerzosPeriodicidad} onChange={setRefuerzosPeriodicidad} suffix="meses" compact />
-            </>
+            </div>
           )}
-          <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer select-none">
-            <input type="checkbox" checked={saldoOn} onChange={(e) => setSaldoOn(e.target.checked)} className="rounded" />
-            Saldo contra entrega
-          </label>
+
           {saldoOn && (
             <FFieldNum label="Monto saldo contra entrega" value={saldoContraEntrega} onChange={setSaldoContraEntrega} suffix="USD" />
           )}
         </FSection>
 
-        {/* Resumen */}
+        {/* ── Resumen ── */}
         <FinancialSummary total={totalUnidad} comprometido={comprometido} saldo={saldoPendiente} />
 
-        {/* Notas */}
+        {/* ── Notas ── */}
         <FSection title="Notas">
           <textarea
             value={notas}
@@ -393,11 +330,8 @@ function PresupuestoForm({
           />
         </FSection>
 
-        {/* Sticky buttons */}
-        <div
-          className="flex gap-2"
-          style={{ position: 'sticky', bottom: -20, background: 'white', paddingTop: 10, paddingBottom: 4, borderTop: '1px solid #e5e7eb', marginTop: 4 }}
-        >
+        {/* Botones sticky */}
+        <div className="flex gap-2" style={{ position: 'sticky', bottom: -20, background: 'white', paddingTop: 10, paddingBottom: 4, borderTop: '1px solid #e5e7eb', marginTop: 2 }}>
           <Button variant="outline" size="sm" onClick={onClose} className="flex-1">Cancelar</Button>
           <Button className="flex-1" size="sm" disabled={isPending} onClick={handleSave}>
             {isPending ? 'Guardando...' : 'Guardar'}
@@ -407,7 +341,7 @@ function PresupuestoForm({
     )
   }
 
-  // Mobile: card layout inside full-screen app container
+  // ── Mobile — cards, stack vertical ──────────────────────────────────────────
   return (
     <div className="flex flex-col gap-3 p-4 pb-8">
 
@@ -425,21 +359,14 @@ function PresupuestoForm({
       <div className="bg-white rounded-xl border overflow-hidden">
         <div className="px-4 py-3.5">
           <label className="flex items-center gap-3 cursor-pointer select-none">
-            <input
-              type="checkbox"
-              checked={cocheraOn}
-              onChange={(e) => setCocheraOn(e.target.checked)}
-              className="rounded w-4 h-4 flex-shrink-0"
-            />
+            <input type="checkbox" checked={cocheraOn} onChange={(e) => setCocheraOn(e.target.checked)} className="rounded w-4 h-4 flex-shrink-0" />
             <span className="text-sm font-medium text-gray-700">Incluir cochera</span>
           </label>
         </div>
         {cocheraOn && (
           <div className="border-t px-4 py-3 flex flex-col gap-3">
-            <div className="grid grid-cols-2 gap-3">
-              <FFieldText label="Nombre" value={cocheraNombre} onChange={setCocheraNombre} placeholder="Cochera 12" />
-              <FFieldNum label="Precio" value={cocheraPrecioUsd} onChange={setCocheraPrecioUsd} suffix="USD" />
-            </div>
+            <FFieldText label="Nombre" value={cocheraNombre} onChange={setCocheraNombre} placeholder="Cochera 12" />
+            <FFieldNum label="Precio" value={cocheraPrecioUsd} onChange={setCocheraPrecioUsd} suffix="USD" />
           </div>
         )}
       </div>
@@ -451,46 +378,28 @@ function PresupuestoForm({
 
       {/* Card: Plan de pagos */}
       <AppCard title="Plan de pagos">
-        {/* Entrega */}
         <FFieldNum label="Entrega / anticipo" value={entrega} onChange={setEntrega} suffix="USD" />
 
-        {/* Cuotas */}
-        <div className="grid grid-cols-2 gap-3">
-          <FFieldNum label="Cuotas" value={cuotasCantidad} onChange={setCuotasCantidad} compact />
-          <FFieldNum label="Valor / cuota" value={cuotasValor} onChange={setCuotasValor} suffix="USD" />
-        </div>
+        <FFieldNum label="Cuotas (cantidad)" value={cuotasCantidad} onChange={setCuotasCantidad} compact />
+        <FFieldNum label="Valor / cuota" value={cuotasValor} onChange={setCuotasValor} suffix="USD" />
 
-        {/* Refuerzos toggle */}
         <div className="pt-1 border-t">
           <label className="flex items-center gap-3 py-1 cursor-pointer select-none">
-            <input
-              type="checkbox"
-              checked={refuerzosOn}
-              onChange={(e) => setRefuerzosOn(e.target.checked)}
-              className="rounded w-4 h-4 flex-shrink-0"
-            />
+            <input type="checkbox" checked={refuerzosOn} onChange={(e) => setRefuerzosOn(e.target.checked)} className="rounded w-4 h-4 flex-shrink-0" />
             <span className="text-sm text-gray-700">Incluir refuerzos</span>
           </label>
         </div>
         {refuerzosOn && (
-          <div className="flex flex-col gap-3">
-            <div className="grid grid-cols-2 gap-3">
-              <FFieldNum label="Cantidad" value={refuerzosCantidad} onChange={setRefuerzosCantidad} compact />
-              <FFieldNum label="Valor / refuerzo" value={refuerzosValor} onChange={setRefuerzosValor} suffix="USD" />
-            </div>
+          <>
+            <FFieldNum label="Cantidad refuerzos" value={refuerzosCantidad} onChange={setRefuerzosCantidad} compact />
+            <FFieldNum label="Valor / refuerzo" value={refuerzosValor} onChange={setRefuerzosValor} suffix="USD" />
             <FFieldNum label="Periodicidad" value={refuerzosPeriodicidad} onChange={setRefuerzosPeriodicidad} suffix="meses" compact />
-          </div>
+          </>
         )}
 
-        {/* Saldo toggle */}
         <div className="pt-1 border-t">
           <label className="flex items-center gap-3 py-1 cursor-pointer select-none">
-            <input
-              type="checkbox"
-              checked={saldoOn}
-              onChange={(e) => setSaldoOn(e.target.checked)}
-              className="rounded w-4 h-4 flex-shrink-0"
-            />
+            <input type="checkbox" checked={saldoOn} onChange={(e) => setSaldoOn(e.target.checked)} className="rounded w-4 h-4 flex-shrink-0" />
             <span className="text-sm text-gray-700">Saldo contra entrega</span>
           </label>
         </div>
@@ -520,10 +429,7 @@ function PresupuestoForm({
             <span className="text-sm font-semibold text-gray-800">Saldo pendiente</span>
             <span
               className="tabular-nums font-bold"
-              style={{
-                fontSize: 20,
-                color: saldoPendiente < 0 ? '#dc2626' : saldoPendiente === 0 ? '#16a34a' : '#111827',
-              }}
+              style={{ fontSize: 20, color: saldoPendiente < 0 ? '#dc2626' : saldoPendiente === 0 ? '#16a34a' : '#111827' }}
             >
               {fmt(saldoPendiente)}
             </span>
@@ -543,10 +449,7 @@ function PresupuestoForm({
       </AppCard>
 
       {/* Botones sticky */}
-      <div
-        className="flex gap-2"
-        style={{ position: 'sticky', bottom: 0, background: '#f1f5f9', paddingTop: 8, paddingBottom: 8, marginTop: 4 }}
-      >
+      <div className="flex gap-2" style={{ position: 'sticky', bottom: 0, background: '#f1f5f9', paddingTop: 8, paddingBottom: 8, marginTop: 4 }}>
         <Button variant="outline" onClick={onClose} className="flex-1 h-11 text-sm font-medium">Cancelar</Button>
         <Button className="flex-1 h-11 text-sm font-medium" disabled={isPending} onClick={handleSave}>
           {isPending ? 'Guardando...' : 'Guardar'}
@@ -556,9 +459,9 @@ function PresupuestoForm({
   )
 }
 
-// ─── Sub-components ───────────────────────────────────────────────────────────
+// ─── Shared sub-components ────────────────────────────────────────────────────
 
-/** Card section for mobile app layout */
+/** Card section para mobile */
 function AppCard({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="bg-white rounded-xl border overflow-hidden">
@@ -572,7 +475,7 @@ function AppCard({ title, children }: { title: string; children: React.ReactNode
   )
 }
 
-/** Section title for desktop modal layout */
+/** Section con título para desktop */
 function FSection({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-2">
@@ -584,19 +487,35 @@ function FSection({ title, children }: { title: string; children: React.ReactNod
   )
 }
 
+/** Checkbox inline alineado con inputs (desktop) */
+function InlineCheck({ label, checked, onChange }: {
+  label: string; checked: boolean; onChange: (v: boolean) => void
+}) {
+  return (
+    <label
+      className="flex items-center gap-1.5 cursor-pointer select-none whitespace-nowrap text-sm text-gray-600 flex-shrink-0"
+      style={{ alignSelf: 'flex-end', height: 36 }}
+    >
+      <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} className="rounded" />
+      {label}
+    </label>
+  )
+}
+
+/** Resumen financiero (desktop) */
 function FinancialSummary({ total, comprometido, saldo }: { total: number; comprometido: number; saldo: number }) {
   return (
     <div className="rounded-xl border overflow-hidden text-sm">
       <div className="flex justify-between items-center px-4 py-2 bg-gray-50">
         <span className="text-gray-500">Total unidad</span>
-        <span className="tabular-nums text-gray-700">{fmt(total)}</span>
+        <span className="tabular-nums text-gray-700 font-medium">{fmt(total)}</span>
       </div>
       <div className="flex justify-between items-center px-4 py-2 bg-gray-50 border-t">
         <span className="text-gray-500">Comprometido</span>
-        <span className="tabular-nums text-gray-700">{fmt(comprometido)}</span>
+        <span className="tabular-nums text-gray-700 font-medium">{fmt(comprometido)}</span>
       </div>
       <div className={`flex justify-between items-center px-4 py-3 border-t ${saldo < 0 ? 'bg-red-50' : 'bg-white'}`}>
-        <span className="font-semibold text-gray-800" style={{ fontSize: 14 }}>Saldo pendiente</span>
+        <span className="font-semibold text-gray-800">Saldo pendiente</span>
         <span
           className="tabular-nums font-bold"
           style={{ fontSize: 18, color: saldo < 0 ? '#dc2626' : saldo === 0 ? '#16a34a' : '#111827' }}
@@ -623,33 +542,24 @@ function FFieldNum({ label, value, onChange, suffix, compact }: {
   label: string; value: string; onChange: (v: string) => void; suffix?: string; compact?: boolean
 }) {
   const [isFocused, setIsFocused] = useState(false)
-  const [display, setDisplay] = useState(() => fmtInput(value))
+  const [display, setDisplay] = useState(() => fmtNum(value))
 
   useEffect(() => {
-    if (!isFocused) setDisplay(fmtInput(value))
+    if (!isFocused) setDisplay(fmtNum(value))
   }, [value, isFocused])
 
-  function fmtInput(raw: string) {
+  function fmtNum(raw: string) {
     const n = parseFloat(raw)
     if (!raw || isNaN(n)) return raw
     return n.toLocaleString('es-PY', { maximumFractionDigits: 2 })
   }
 
-  function handleFocus() {
-    setIsFocused(true)
-    setDisplay(value)
-  }
-
-  function handleBlur() {
-    setIsFocused(false)
-    setDisplay(fmtInput(value))
-  }
-
+  function handleFocus() { setIsFocused(true); setDisplay(value) }
+  function handleBlur() { setIsFocused(false); setDisplay(fmtNum(value)) }
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     const raw = e.target.value
     setDisplay(raw)
-    const numeric = raw.replace(/\./g, '').replace(',', '.')
-    onChange(numeric)
+    onChange(raw.replace(/\./g, '').replace(',', '.'))
   }
 
   return (
@@ -675,12 +585,8 @@ function FFieldNum({ label, value, onChange, suffix, compact }: {
   )
 }
 
-
 function FloorPlanField({ value, onChange, uploading, onFile }: {
-  value: string | null
-  onChange: (path: string | null) => void
-  uploading: boolean
-  onFile: (file: File) => void
+  value: string | null; onChange: (path: string | null) => void; uploading: boolean; onFile: (file: File) => void
 }) {
   const inputRef = useRef<HTMLInputElement>(null)
   const previewUrl = value ? getPublicUrl(value) : null
@@ -690,11 +596,7 @@ function FloorPlanField({ value, onChange, uploading, onFile }: {
       {previewUrl ? (
         <div className="relative">
           <img src={previewUrl} alt="Plano" className="w-full rounded-lg border max-h-52 object-contain bg-gray-50" />
-          <button
-            type="button"
-            onClick={() => onChange(null)}
-            className="absolute top-1.5 right-1.5 bg-white/90 rounded-full p-0.5 hover:bg-white border shadow-sm"
-          >
+          <button type="button" onClick={() => onChange(null)} className="absolute top-1.5 right-1.5 bg-white/90 rounded-full p-0.5 hover:bg-white border shadow-sm">
             <XIcon className="h-3.5 w-3.5 text-gray-600" />
           </button>
         </div>
@@ -704,26 +606,11 @@ function FloorPlanField({ value, onChange, uploading, onFile }: {
           style={{ padding: '10px 14px', display: 'flex', alignItems: 'center', gap: 10 }}
           onClick={() => inputRef.current?.click()}
         >
-          {uploading
-            ? <Loader2 className="h-4 w-4 text-gray-300 flex-shrink-0 animate-spin" />
-            : <UploadCloud className="h-4 w-4 text-gray-300 flex-shrink-0" />
-          }
-          <p className="text-xs text-gray-400">
-            {uploading ? 'Subiendo...' : 'Subir plano · clic o Ctrl+V'}
-          </p>
+          {uploading ? <Loader2 className="h-4 w-4 text-gray-300 flex-shrink-0 animate-spin" /> : <UploadCloud className="h-4 w-4 text-gray-300 flex-shrink-0" />}
+          <p className="text-xs text-gray-400">{uploading ? 'Subiendo...' : 'Subir plano · clic o Ctrl+V'}</p>
         </div>
       )}
-      <input
-        ref={inputRef}
-        type="file"
-        accept="image/*,.pdf"
-        className="hidden"
-        onChange={(e) => {
-          const file = e.target.files?.[0]
-          if (file) onFile(file)
-          e.target.value = ''
-        }}
-      />
+      <input ref={inputRef} type="file" accept="image/*,.pdf" className="hidden" onChange={(e) => { const file = e.target.files?.[0]; if (file) onFile(file); e.target.value = '' }} />
     </div>
   )
 }
