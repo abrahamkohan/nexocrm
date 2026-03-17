@@ -1,31 +1,13 @@
 // src/pages/InicioPage.tsx
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router'
 import {
   DndContext, closestCenter, PointerSensor, useSensor, useSensors, type DragEndEvent,
 } from '@dnd-kit/core'
 import {
-  SortableContext, arrayMove, verticalListSortingStrategy, rectSortingStrategy, useSortable,
+  SortableContext, arrayMove, rectSortingStrategy, useSortable,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-
-// ─── Custom sensor: outer context only drags from [data-drag-handle] elements ─
-
-class HandleOnlyPointerSensor extends PointerSensor {
-  static activators = [
-    {
-      eventName: 'onPointerDown' as const,
-      handler: ({ nativeEvent }: React.PointerEvent): boolean => {
-        let el = nativeEvent.target as HTMLElement | null
-        while (el) {
-          if (el.dataset?.dragHandle) return true
-          el = el.parentElement
-        }
-        return false
-      },
-    },
-  ]
-}
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
 } from 'recharts'
@@ -33,33 +15,12 @@ import { BarChart as BarChartIcon } from 'lucide-react'
 import { Card, Heading, Text, Badge, Flex, Grid, Box, Button as RxButton, Tabs } from '@radix-ui/themes'
 import {
   Users, Building2, Calculator, FileText, Plus, ExternalLink,
-  GripVertical, Settings2, LayoutDashboard,
+  Settings2, LayoutDashboard,
   TrendingUp, TrendingDown, Minus, Activity, Home,
   Globe, Newspaper, Database, Wrench,
 } from 'lucide-react'
 import { useDashboardStats, useExchangeRates, useWeather } from '@/hooks/useDashboardStats'
 import { useConsultoraConfig } from '@/hooks/useConsultora'
-
-// ─── Widget config ────────────────────────────────────────────────────────────
-
-type WidgetId = 'resumen' | 'radar' | 'mercado' | 'grafico' | 'actividad' | 'proyectos' | 'recursos'
-
-const DEFAULT_ORDER: WidgetId[] = ['resumen', 'mercado', 'radar', 'grafico', 'actividad', 'proyectos', 'recursos']
-const LS_KEY = 'dashboard_widget_order_v6'
-
-function loadOrder(): WidgetId[] {
-  try {
-    const saved = localStorage.getItem(LS_KEY)
-    if (saved) {
-      const parsed = JSON.parse(saved) as string[]
-      const valid = parsed.filter((id) => DEFAULT_ORDER.includes(id as WidgetId)) as WidgetId[]
-      const missing = DEFAULT_ORDER.filter((id) => !valid.includes(id))
-      return [...valid, ...missing]
-    }
-  } catch { /* ignore */ }
-  return DEFAULT_ORDER
-}
-function saveOrder(order: WidgetId[]) { localStorage.setItem(LS_KEY, JSON.stringify(order)) }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -96,31 +57,6 @@ const STATUS_BADGE: Record<string, { color: 'violet' | 'blue' | 'green'; label: 
   entregado:       { color: 'green',  label: 'Entregado' },
 }
 
-// ─── SortableWidget ───────────────────────────────────────────────────────────
-
-function SortableWidget({ id, editMode, children }: { id: string; editMode: boolean; children: React.ReactNode }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id })
-  return (
-    <div
-      ref={setNodeRef}
-      style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.45 : 1, position: 'relative', zIndex: isDragging ? 50 : undefined }}
-    >
-      {editMode && (
-        <div
-          {...attributes} {...listeners}
-          data-drag-handle="true"
-          style={{ position: 'absolute', top: 10, right: 10, zIndex: 10, padding: '5px 6px', borderRadius: 8, background: 'var(--card)', border: '1px solid var(--border)', boxShadow: '0 1px 3px rgba(0,0,0,0.08)', cursor: 'grab', color: 'var(--muted-foreground)' }}
-        >
-          <GripVertical size={14} />
-        </div>
-      )}
-      {children}
-    </div>
-  )
-}
-
-// ─── Section title ─────────────────────────────────────────────────────────────
-
 function SectionTitle({ children }: { children: string }) {
   return (
     <Text size="1" weight="bold" color="gray"
@@ -131,28 +67,26 @@ function SectionTitle({ children }: { children: string }) {
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
-// NIVEL 1 — Métricas del negocio
+// KPIs — 4 métricas grandes (full width, 4 cols)
 // ══════════════════════════════════════════════════════════════════════════════
 
 function ResumenWidget({ stats, isLoading }: { stats: ReturnType<typeof useDashboardStats>['data']; isLoading: boolean }) {
   const metrics = [
-    { label: 'Clientes',          value: stats?.counts.clients ?? 0,         icon: Users },
-    { label: 'Proyectos activos', value: stats?.counts.projects_active ?? 0, icon: Activity },
-    { label: 'Unidades dispon.',  value: stats?.counts.units_available ?? 0, icon: Home },
-    { label: 'Simulaciones',      value: stats?.counts.simulations ?? 0,     icon: Calculator },
+    { label: 'Clientes',          value: stats?.counts.clients ?? 0,         icon: Users,      accent: '#6366f1' },
+    { label: 'Proyectos activos', value: stats?.counts.projects_active ?? 0, icon: Activity,   accent: '#0ea5e9' },
+    { label: 'Unidades dispon.',  value: stats?.counts.units_available ?? 0, icon: Home,       accent: '#10b981' },
+    { label: 'Simulaciones',      value: stats?.counts.simulations ?? 0,     icon: Calculator, accent: '#f59e0b' },
   ]
   return (
     <Box>
       <SectionTitle>Estado del negocio</SectionTitle>
-      <Grid columns={{ initial: '2', lg: '4' }} gap="3">
-        {metrics.map(({ label, value, icon: Icon }) => (
-          <Card key={label} size="3" style={{ boxShadow: '0 1px 6px rgba(0,0,0,0.05)' }}>
+      <Grid columns={{ initial: '2', sm: '4' }} gap="3">
+        {metrics.map(({ label, value, icon: Icon, accent }) => (
+          <Card key={label} size="3" style={{ boxShadow: '0 1px 6px rgba(0,0,0,0.05)', borderTop: `3px solid ${accent}` }}>
             <Flex direction="column" gap="3">
-              <Flex justify="between" align="start">
-                <Box style={{ background: 'oklch(0.78 0.15 92.7 / 0.09)', borderRadius: 8, padding: 9 }}>
-                  <Icon size={18} style={{ color: 'var(--muted-foreground)' }} />
-                </Box>
-              </Flex>
+              <Box style={{ background: `${accent}14`, borderRadius: 8, padding: 9, alignSelf: 'flex-start' }}>
+                <Icon size={18} style={{ color: accent }} />
+              </Box>
               <Box>
                 <Heading size="9" weight="bold" style={{ fontVariantNumeric: 'tabular-nums', lineHeight: 1 }}>
                   {isLoading ? '—' : value.toLocaleString('es-PY')}
@@ -168,7 +102,7 @@ function ResumenWidget({ stats, isLoading }: { stats: ReturnType<typeof useDashb
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
-// NIVEL 2 — Radar de oportunidades (protagonista)
+// Radar — bloque grande (ocupa 2/3 del ancho en desktop)
 // ══════════════════════════════════════════════════════════════════════════════
 
 function RadarWidget({
@@ -180,16 +114,16 @@ function RadarWidget({
 }) {
   const navigate = useNavigate()
   return (
-    <Box>
+    <Box style={{ height: '100%' }}>
       <Flex align="center" justify="between" mb="2">
         <SectionTitle>Radar de oportunidades</SectionTitle>
         {rentabilidadRef && (
           <Text size="1" color="gray" style={{ marginBottom: 10 }}>
-            Rentabilidad ref. mercado: <strong>{rentabilidadRef}% Airbnb</strong>
+            Ref. mercado: <strong>{rentabilidadRef}% Airbnb</strong>
           </Text>
         )}
       </Flex>
-      <Card size="1" style={{ overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.08)' }}>
+      <Card size="1" style={{ overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.08)', height: 'calc(100% - 32px)' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
           <thead>
             <tr style={{ background: 'var(--muted)', borderBottom: '1px solid var(--border)' }}>
@@ -216,7 +150,6 @@ function RadarWidget({
             ) : (
               (stats?.radar ?? []).map((p, i) => {
                 const sb = STATUS_BADGE[p.status]
-                // Estimated monthly rental yield based on market ref
                 const monthlyEst = rentabilidadRef && p.avg_price_m2
                   ? `~USD ${Math.round(p.avg_price_m2 * (rentabilidadRef / 100) / 12 * 50)}/mes`
                   : null
@@ -261,10 +194,10 @@ function RadarWidget({
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
-// NIVEL 3 — Mercado (barra compacta)
+// Mercado — sidebar (1/3 del ancho), cards apiladas verticalmente
 // ══════════════════════════════════════════════════════════════════════════════
 
-function MercadoBarWidget() {
+function MercadoWidget() {
   const { data: rates, isLoading } = useExchangeRates()
   const { data: weather } = useWeather()
 
@@ -296,34 +229,30 @@ function MercadoBarWidget() {
   ]
 
   return (
-    <Box>
+    <Box style={{ height: '100%' }}>
       <SectionTitle>Indicadores de mercado</SectionTitle>
-      <Grid columns={{ initial: '2', lg: '4' }} gap="3">
+      <Flex direction="column" gap="2" style={{ height: 'calc(100% - 32px)' }}>
         {items.map(({ label, value, detail, pct }) => (
-          <Card key={label} size="2" style={{ boxShadow: '0 1px 6px rgba(0,0,0,0.05)', padding: '12px 16px' }}>
-            <Flex direction="column" gap="2">
-              <Flex justify="between" align="center">
-                <Text size="1" color="gray" weight="medium" style={{ textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                  {label}
-                </Text>
-                {pct !== null && <PctArrow pct={pct} />}
-              </Flex>
-              <Box>
-                <Heading size="5" weight="bold" style={{ fontVariantNumeric: 'tabular-nums', lineHeight: 1, opacity: isLoading ? 0.3 : 1 }}>
-                  {value}
-                </Heading>
-                <Text as="p" size="1" color="gray" mt="1">{detail}</Text>
-              </Box>
+          <Card key={label} size="2" style={{ boxShadow: '0 1px 6px rgba(0,0,0,0.05)', padding: '12px 16px', flex: 1 }}>
+            <Flex justify="between" align="start" mb="1">
+              <Text size="1" color="gray" weight="medium" style={{ textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                {label}
+              </Text>
+              {pct !== null && <PctArrow pct={pct} />}
             </Flex>
+            <Heading size="4" weight="bold" style={{ fontVariantNumeric: 'tabular-nums', lineHeight: 1, opacity: isLoading ? 0.3 : 1 }}>
+              {value}
+            </Heading>
+            <Text as="p" size="1" color="gray" mt="1">{detail}</Text>
           </Card>
         ))}
-      </Grid>
+      </Flex>
     </Box>
   )
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
-// Gráfico — Simulaciones por mes
+// Gráfico — bloque medio (1/2 del ancho en desktop)
 // ══════════════════════════════════════════════════════════════════════════════
 
 function GraficoWidget({ stats, isLoading }: { stats: ReturnType<typeof useDashboardStats>['data']; isLoading: boolean }) {
@@ -367,7 +296,7 @@ function GraficoWidget({ stats, isLoading }: { stats: ReturnType<typeof useDashb
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
-// NIVEL 4 — Actividad reciente
+// Actividad — bloque compacto (1/4 del ancho en desktop)
 // ══════════════════════════════════════════════════════════════════════════════
 
 function ActividadWidget({ stats, isLoading }: { stats: ReturnType<typeof useDashboardStats>['data']; isLoading: boolean }) {
@@ -392,11 +321,10 @@ function ActividadWidget({ stats, isLoading }: { stats: ReturnType<typeof useDas
                 >
                   <Flex align="center" justify="between">
                     <Flex align="center" gap="3" style={{ minWidth: 0 }}>
-                      {/* Timeline dot */}
                       <Box style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--muted-foreground)', opacity: 0.4, flexShrink: 0 }} />
                       <Box style={{ minWidth: 0 }}>
                         <Text size="2" weight="medium" style={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          Informe generado — {(project?.name as string) ?? '—'}
+                          {(project?.name as string) ?? '—'}
                         </Text>
                         <Text size="1" color="gray">{clientName}</Text>
                       </Box>
@@ -412,7 +340,7 @@ function ActividadWidget({ stats, isLoading }: { stats: ReturnType<typeof useDas
             <Box style={{ borderTop: '1px solid var(--border)' }}>
               <Box onClick={() => navigate('/informes')} style={{ cursor: 'pointer', padding: '9px 16px' }} className="hover:bg-muted/50">
                 <Flex align="center" justify="center" gap="1">
-                  <Text size="1" color="indigo">Ver todos los informes</Text>
+                  <Text size="1" color="indigo">Ver todos</Text>
                   <ExternalLink size={11} style={{ color: 'var(--muted-foreground)' }} />
                 </Flex>
               </Box>
@@ -425,7 +353,7 @@ function ActividadWidget({ stats, isLoading }: { stats: ReturnType<typeof useDas
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
-// Proyectos recientes
+// Proyectos recientes — bloque compacto (1/4 del ancho en desktop)
 // ══════════════════════════════════════════════════════════════════════════════
 
 function ProyectosWidget({ stats, isLoading }: { stats: ReturnType<typeof useDashboardStats>['data']; isLoading: boolean }) {
@@ -463,9 +391,9 @@ function ProyectosWidget({ stats, isLoading }: { stats: ReturnType<typeof useDas
               )
             })}
             <Box style={{ borderTop: '1px solid var(--border)' }}>
-              <Box onClick={() => navigate('/')} style={{ cursor: 'pointer', padding: '9px 16px' }} className="hover:bg-muted/50">
+              <Box onClick={() => navigate('/proyectos')} style={{ cursor: 'pointer', padding: '9px 16px' }} className="hover:bg-muted/50">
                 <Flex align="center" justify="center" gap="1">
-                  <Text size="1" color="indigo">Ver todos los proyectos</Text>
+                  <Text size="1" color="indigo">Ver todos</Text>
                   <ExternalLink size={11} style={{ color: 'var(--muted-foreground)' }} />
                 </Flex>
               </Box>
@@ -478,9 +406,7 @@ function ProyectosWidget({ stats, isLoading }: { stats: ReturnType<typeof useDas
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
-
-// ══════════════════════════════════════════════════════════════════════════════
-// NIVEL 6 — Links útiles
+// Links útiles — con DnD interno por categoría
 // ══════════════════════════════════════════════════════════════════════════════
 
 type LinkItem = { label: string; sub: string; url: string }
@@ -500,20 +426,18 @@ const DEFAULT_NOTICIAS: LinkItem[] = [
   { label: 'Cronista',     sub: 'cronista.com',   url: 'https://www.cronista.com'            },
 ]
 const DEFAULT_DATOS_OFICIALES: LinkItem[] = [
-  { label: 'BCP',               sub: 'Banco Central PY',   url: 'https://www.bcp.gov.py'            },
-  { label: 'Catastro Nacional', sub: 'catastro.gov.py',     url: 'https://www.catastro.gov.py'       },
-  { label: 'Registro Público',       sub: 'Poder Judicial PY',   url: 'https://www.pj.gov.py/contenido/154-direccion-general-de-los-registros-publicos/1063' },
-  { label: 'Municipalidad de ASU',   sub: 'asuncion.gov.py',     url: 'https://www.asuncion.gov.py'      },
-  { label: 'INE',                    sub: 'Estadística nacional', url: 'https://www.ine.gov.py'           },
+  { label: 'BCP',               sub: 'Banco Central PY',    url: 'https://www.bcp.gov.py'      },
+  { label: 'Catastro Nacional', sub: 'catastro.gov.py',      url: 'https://www.catastro.gov.py' },
+  { label: 'Registro Público',  sub: 'Poder Judicial PY',    url: 'https://www.pj.gov.py/contenido/154-direccion-general-de-los-registros-publicos/1063' },
+  { label: 'Municipalidad ASU', sub: 'asuncion.gov.py',      url: 'https://www.asuncion.gov.py' },
+  { label: 'INE',               sub: 'Estadística nacional', url: 'https://www.ine.gov.py'      },
 ]
 const DEFAULT_HERRAMIENTAS: LinkItem[] = [
-  { label: 'Airbnb Host',       sub: 'Panel anfitrión',  url: 'https://www.airbnb.com/hosting' },
-  { label: 'Booking Extranet',  sub: 'Gestión Booking',  url: 'https://admin.booking.com'      },
-  { label: 'Dólar Hoy',         sub: 'Cotización ARS',   url: 'https://dolarhoy.com'           },
-  { label: 'Google Maps',       sub: 'Análisis de zonas', url: 'https://maps.google.com'       },
+  { label: 'Airbnb Host',      sub: 'Panel anfitrión',   url: 'https://www.airbnb.com/hosting' },
+  { label: 'Booking Extranet', sub: 'Gestión Booking',   url: 'https://admin.booking.com'      },
+  { label: 'Dólar Hoy',        sub: 'Cotización ARS',    url: 'https://dolarhoy.com'           },
+  { label: 'Google Maps',      sub: 'Análisis de zonas', url: 'https://maps.google.com'        },
 ]
-
-// ─── Card base ────────────────────────────────────────────────────────────────
 
 function LinkCardContent({ link, icon: Icon }: { link: LinkItem; icon: React.ElementType }) {
   return (
@@ -530,24 +454,11 @@ function LinkCardContent({ link, icon: Icon }: { link: LinkItem; icon: React.Ele
   )
 }
 
-// ─── Sortable card (editMode) ─────────────────────────────────────────────────
-
 function SortableLinkCard({ id, link, icon }: { id: string; link: LinkItem; icon: React.ElementType }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id })
-
   return (
-    <div
-      ref={setNodeRef}
-      {...attributes}
-      {...listeners}
-      style={{
-        transform: CSS.Transform.toString(transform),
-        transition,
-        opacity: isDragging ? 0.4 : 1,
-        cursor: 'grab',
-        userSelect: 'none',
-        touchAction: 'none',
-      }}
+    <div ref={setNodeRef} {...attributes} {...listeners}
+      style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1, cursor: 'grab', userSelect: 'none', touchAction: 'none' }}
     >
       <Card size="2" style={{ boxShadow: isDragging ? '0 8px 24px rgba(0,0,0,0.18)' : '0 1px 4px rgba(0,0,0,0.07)', pointerEvents: 'none' }}>
         <LinkCardContent link={link} icon={icon} />
@@ -555,8 +466,6 @@ function SortableLinkCard({ id, link, icon }: { id: string; link: LinkItem; icon
     </div>
   )
 }
-
-// ─── Grid normal / draggable ──────────────────────────────────────────────────
 
 function SmallLinkGrid({ items, editMode, storageKey, categoryIcon }: { items: LinkItem[]; editMode?: boolean; storageKey?: string; categoryIcon: React.ElementType }) {
   const [ordered, setOrdered] = useState<LinkItem[]>(() => {
@@ -574,7 +483,6 @@ function SmallLinkGrid({ items, editMode, storageKey, categoryIcon }: { items: L
     return items
   })
 
-  // sync when items change (e.g. after config refetch)
   useEffect(() => {
     setOrdered((prev) => {
       const prevUrls = prev.map((p) => p.url)
@@ -594,9 +502,7 @@ function SmallLinkGrid({ items, editMode, storageKey, categoryIcon }: { items: L
         const oldIdx = ids.indexOf(active.id as string)
         const newIdx = ids.indexOf(over.id as string)
         const next = arrayMove(prev, oldIdx, newIdx)
-        if (storageKey) {
-          localStorage.setItem(`lnk_${storageKey}`, JSON.stringify(next.map((i) => i.url)))
-        }
+        if (storageKey) localStorage.setItem(`lnk_${storageKey}`, JSON.stringify(next.map((i) => i.url)))
         return next
       })
     }
@@ -629,22 +535,17 @@ function SmallLinkGrid({ items, editMode, storageKey, categoryIcon }: { items: L
   )
 }
 
-function resolveLinks(
-  raw: ConfigurableItem[] | undefined,
-  fallback: LinkItem[],
-): LinkItem[] {
-  if (Array.isArray(raw) && raw.length > 0) {
-    return raw.filter((item) => item.enabled !== false)
-  }
+function resolveLinks(raw: ConfigurableItem[] | undefined, fallback: LinkItem[]): LinkItem[] {
+  if (Array.isArray(raw) && raw.length > 0) return raw.filter((item) => item.enabled !== false)
   return fallback
 }
 
 function RecursosWidget({ config, editMode }: { config: ReturnType<typeof useConsultoraConfig>['data']; editMode: boolean }) {
   const md = config?.market_data as Record<string, unknown> | null
-  const portales      = resolveLinks(md?.portales        as ConfigurableItem[] | undefined, DEFAULT_PORTALES)
-  const noticias      = resolveLinks(md?.noticias         as ConfigurableItem[] | undefined, DEFAULT_NOTICIAS)
-  const datosOfi      = resolveLinks(md?.datos_oficiales  as ConfigurableItem[] | undefined, DEFAULT_DATOS_OFICIALES)
-  const herramientas  = resolveLinks(md?.herramientas     as ConfigurableItem[] | undefined, DEFAULT_HERRAMIENTAS)
+  const portales     = resolveLinks(md?.portales       as ConfigurableItem[] | undefined, DEFAULT_PORTALES)
+  const noticias     = resolveLinks(md?.noticias        as ConfigurableItem[] | undefined, DEFAULT_NOTICIAS)
+  const datosOfi     = resolveLinks(md?.datos_oficiales as ConfigurableItem[] | undefined, DEFAULT_DATOS_OFICIALES)
+  const herramientas = resolveLinks(md?.herramientas    as ConfigurableItem[] | undefined, DEFAULT_HERRAMIENTAS)
 
   return (
     <Box>
@@ -674,19 +575,19 @@ function RecursosWidget({ config, editMode }: { config: ReturnType<typeof useCon
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
-// NIVEL 5 — Accesos rápidos (toolbar fija)
+// Quick actions
 // ══════════════════════════════════════════════════════════════════════════════
 
 function QuickActionsBar() {
   const navigate = useNavigate()
   const actions = [
-    { label: 'Nuevo proyecto', icon: Plus,       path: '/' },
-    { label: 'Nuevo cliente',  icon: Users,      path: '/clientes' },
+    { label: 'Nuevo proyecto', icon: Plus,       path: '/proyectos' },
+    { label: 'Nuevo cliente',  icon: Users,      path: '/clientes'  },
     { label: 'Simulador',      icon: Calculator, path: '/simulador' },
-    { label: 'Informes',       icon: FileText,   path: '/informes' },
+    { label: 'Informes',       icon: FileText,   path: '/informes'  },
   ]
   return (
-    <Card size="2" style={{ boxShadow: 'none', marginBottom: 8, border: '1px solid var(--border)' }}>
+    <Card size="2" style={{ boxShadow: 'none', border: '1px solid var(--border)' }}>
       <Flex gap="2" wrap="wrap">
         {actions.map(({ label, icon: Icon, path }) => (
           <Box key={label} onClick={() => navigate(path)} style={{ cursor: 'pointer', flex: 1, minWidth: 120 }}>
@@ -702,49 +603,23 @@ function QuickActionsBar() {
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
-// PAGE
+// PAGE — grid asimétrico
 // ══════════════════════════════════════════════════════════════════════════════
 
 export function InicioPage() {
-  const [order, setOrder] = useState<WidgetId[]>(loadOrder)
   const [editMode, setEditMode] = useState(false)
 
   const { data: stats, isLoading } = useDashboardStats()
   const { data: config } = useConsultoraConfig()
 
-
-  const sensors = useSensors(useSensor(HandleOnlyPointerSensor, { activationConstraint: { distance: 5 } }))
-  const handleDragEnd = useCallback((event: DragEndEvent) => {
-    const { active, over } = event
-    if (over && active.id !== over.id) {
-      setOrder((prev) => {
-        const next = arrayMove(prev, prev.indexOf(active.id as WidgetId), prev.indexOf(over.id as WidgetId))
-        saveOrder(next)
-        return next
-      })
-    }
-  }, [])
-
   const now = new Date()
   const hour = now.getHours()
   const greeting = hour < 12 ? 'Buenos días' : hour < 19 ? 'Buenas tardes' : 'Buenas noches'
 
-  function renderWidget(id: WidgetId) {
-    switch (id) {
-      case 'resumen':        return <ResumenWidget stats={stats} isLoading={isLoading} />
-      case 'radar':          return <RadarWidget stats={stats} isLoading={isLoading} rentabilidadRef={null} />
-      case 'mercado':        return <MercadoBarWidget />
-      case 'grafico':        return <GraficoWidget stats={stats} isLoading={isLoading} />
-      case 'actividad':      return <ActividadWidget stats={stats} isLoading={isLoading} />
-      case 'proyectos':      return <ProyectosWidget stats={stats} isLoading={isLoading} />
-      case 'recursos':       return <RecursosWidget config={config} editMode={editMode} />
-    }
-  }
-
   return (
-    <Box p="6" style={{ maxWidth: 1280, margin: '0 auto' }}>
+    <Box p={{ initial: '4', md: '6' }} style={{ maxWidth: 1280, margin: '0 auto' }}>
 
-      {/* Header */}
+      {/* ── Header ── */}
       <Flex align="start" justify="between" mb="4">
         <Box>
           <Text size="1" color="gray">
@@ -767,33 +642,62 @@ export function InicioPage() {
         </RxButton>
       </Flex>
 
-      {/* Quick actions — siempre visible, no draggable */}
-      <QuickActionsBar />
+      {/* ── Quick actions ── */}
+      <Box mb="5">
+        <QuickActionsBar />
+      </Box>
 
-      {editMode && (
-        <Card mb="4" style={{ background: 'var(--muted)', border: '1px solid var(--border)', boxShadow: 'none' }}>
-          <Flex align="center" gap="2">
-            <GripVertical size={15} style={{ color: 'var(--muted-foreground)' }} />
-            <Text size="2" style={{ color: 'var(--foreground)' }}>
-              Modo edición — arrastrá los bloques desde el ícono para reorganizar.
-            </Text>
-          </Flex>
-        </Card>
-      )}
+      {/* ── Main dashboard grid ── */}
+      <Flex direction="column" gap="5">
 
-      {/* Draggable widgets */}
-      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-        <SortableContext items={order} strategy={verticalListSortingStrategy}>
-          <Flex direction="column" gap="5">
-            {order.map((id) => (
-              <SortableWidget key={id} id={id} editMode={editMode}>
-                {renderWidget(id)}
-              </SortableWidget>
-            ))}
-          </Flex>
-        </SortableContext>
-      </DndContext>
+        {/* Fila 1: KPIs — full width */}
+        <ResumenWidget stats={stats} isLoading={isLoading} />
 
+        {/* Fila 2: Radar (grande) + Mercado (sidebar) */}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'minmax(0, 2fr) minmax(0, 1fr)',
+          gap: 20,
+          alignItems: 'start',
+        }} className="dashboard-row-2">
+          <RadarWidget stats={stats} isLoading={isLoading} rentabilidadRef={null} />
+          <MercadoWidget />
+        </div>
+
+        {/* Fila 3: Gráfico (1/2) + Actividad (1/4) + Proyectos (1/4) */}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr)',
+          gap: 20,
+          alignItems: 'start',
+        }} className="dashboard-row-3">
+          <GraficoWidget stats={stats} isLoading={isLoading} />
+          <ActividadWidget stats={stats} isLoading={isLoading} />
+          <ProyectosWidget stats={stats} isLoading={isLoading} />
+        </div>
+
+        {/* Fila 4: Recursos — full width */}
+        <RecursosWidget config={config} editMode={editMode} />
+
+      </Flex>
+
+      {/* Responsive: colapsar a 1 columna en móvil */}
+      <style>{`
+        @media (max-width: 768px) {
+          .dashboard-row-2,
+          .dashboard-row-3 {
+            grid-template-columns: 1fr !important;
+          }
+        }
+        @media (min-width: 769px) and (max-width: 1024px) {
+          .dashboard-row-3 {
+            grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+          }
+          .dashboard-row-3 > *:first-child {
+            grid-column: 1 / -1;
+          }
+        }
+      `}</style>
     </Box>
   )
 }
