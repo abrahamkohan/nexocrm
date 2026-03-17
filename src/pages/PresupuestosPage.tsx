@@ -246,14 +246,18 @@ function PresupuestoForm({ initial, onClose }: { initial: PRow | null; onClose: 
       saldo_contra_entrega:  n(saldoContraEntrega),
       notas:                 notas || null,
     }
-    if (initial) {
-      await updateP.mutateAsync({ id: initial.id, input: payload })
-      toast.success('Guardado')
-    } else {
-      await createP.mutateAsync(payload)
-      toast.success('Creado')
+    try {
+      if (initial) {
+        await updateP.mutateAsync({ id: initial.id, input: payload })
+        toast.success('Guardado')
+      } else {
+        await createP.mutateAsync(payload)
+        toast.success('Creado')
+      }
+      onClose()
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Error al guardar')
     }
-    onClose()
   }
 
   const isPending = createP.isPending || updateP.isPending

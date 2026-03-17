@@ -53,22 +53,26 @@ export function ClientesPage() {
   }
 
   async function handleSubmit(values: ClientFormValues) {
-    const payload = {
-      full_name: values.full_name,
-      email: values.email || null,
-      phone: values.phone || null,
-      nationality: values.nationality || null,
-      notes: values.notes || null,
+    try {
+      const payload = {
+        full_name: values.full_name,
+        email: values.email || null,
+        phone: values.phone || null,
+        nationality: values.nationality || null,
+        notes: values.notes || null,
+      }
+      if (editing) {
+        await updateClient.mutateAsync({ id: editing.id, input: payload })
+        toast.success('Guardado')
+      } else {
+        await createClient.mutateAsync(payload)
+        toast.success('Cliente creado')
+      }
+      setSheetOpen(false)
+      setEditing(null)
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Error al guardar')
     }
-    if (editing) {
-      await updateClient.mutateAsync({ id: editing.id, input: payload })
-      toast.success('Guardado')
-    } else {
-      await createClient.mutateAsync(payload)
-      toast.success('Cliente creado')
-    }
-    setSheetOpen(false)
-    setEditing(null)
   }
 
   const isPending = createClient.isPending || updateClient.isPending

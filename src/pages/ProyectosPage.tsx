@@ -41,42 +41,43 @@ export function ProyectosPage() {
   }
 
   async function handleSubmit(values: ProjectFormValues, brochureFile: File | null) {
-    let brochurePath: string | null = editing?.brochure_path ?? null
+    try {
+      let brochurePath: string | null = editing?.brochure_path ?? null
 
-    const payload = {
-      name:            values.name,
-      location:        values.location        ?? null,
-      status:          values.status,
-      delivery_date:   values.delivery_date   ?? null,
-      developer_name:  values.developer_name  ?? null,
-      amenities:       values.amenities,
-      usd_to_pyg_rate: values.usd_to_pyg_rate ?? null,
-      links:           values.links           ?? [],
-    }
-
-    if (editing) {
-      // Upload brochure if new file selected
-      if (brochureFile) {
-        brochurePath = await uploadProjectBrochure(editing.id, brochureFile)
+      const payload = {
+        name:            values.name,
+        location:        values.location        ?? null,
+        status:          values.status,
+        delivery_date:   values.delivery_date   ?? null,
+        developer_name:  values.developer_name  ?? null,
+        amenities:       values.amenities,
+        usd_to_pyg_rate: values.usd_to_pyg_rate ?? null,
+        links:           values.links           ?? [],
       }
-      await updateProject.mutateAsync({
-        id: editing.id,
-        input: { ...payload, brochure_path: brochurePath },
-      })
-    } else {
-      const created = await createProject.mutateAsync(payload)
-      if (brochureFile) {
-        brochurePath = await uploadProjectBrochure(created.id, brochureFile)
+
+      if (editing) {
+        if (brochureFile) {
+          brochurePath = await uploadProjectBrochure(editing.id, brochureFile)
+        }
         await updateProject.mutateAsync({
-          id: created.id,
-          input: { brochure_path: brochurePath },
+          id: editing.id,
+          input: { ...payload, brochure_path: brochurePath },
         })
+      } else {
+        const created = await createProject.mutateAsync(payload)
+        if (brochureFile) {
+          brochurePath = await uploadProjectBrochure(created.id, brochureFile)
+          await updateProject.mutateAsync({ id: created.id, input: { brochure_path: brochurePath } })
+        }
       }
-    }
 
-    toast.success(editing ? 'Guardado' : 'Proyecto creado')
-    setSheetOpen(false)
-    setEditing(null)
+      toast.success(editing ? 'Guardado' : 'Proyecto creado')
+      setSheetOpen(false)
+      setEditing(null)
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Error al guardar'
+      toast.error(msg)
+    }
   }
 
   const isPending = createProject.isPending || updateProject.isPending
