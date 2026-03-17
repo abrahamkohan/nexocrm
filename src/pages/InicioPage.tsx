@@ -165,23 +165,22 @@ function KpisWidget({ stats, isLoading }: { stats: ReturnType<typeof useDashboar
     { label: 'Simulaciones',      value: stats?.counts.simulations ?? 0,     icon: Calculator, accent: '#f59e0b' },
   ]
   return (
-    <Grid columns="2" gap="2" style={{ height: '100%' }}>
+    // Single container divided by 1px gaps — no individual card boxes
+    <div style={{ height: '100%', display: 'grid', gridTemplateColumns: '1fr 1fr', gridTemplateRows: '1fr 1fr', gap: 1, background: 'var(--border)', borderRadius: 12, overflow: 'hidden' }}>
       {metrics.map(({ label, value, icon: Icon, accent }) => (
-        <Card key={label} size="1" style={{ borderTop: `3px solid ${accent}`, borderRadius: 12, padding: '10px 14px', boxSizing: 'border-box', boxShadow: '0 1px 4px rgba(0,0,0,0.05)' }}>
-          <Flex align="center" gap="3">
-            <Box style={{ background: `${accent}16`, borderRadius: 8, padding: 7, flexShrink: 0 }}>
-              <Icon size={15} style={{ color: accent }} />
-            </Box>
-            <Box>
-              <Heading size="7" weight="bold" style={{ fontVariantNumeric: 'tabular-nums', lineHeight: 1 }}>
-                {isLoading ? '—' : value.toLocaleString('es-PY')}
-              </Heading>
-              <Text as="p" size="1" color="gray" style={{ marginTop: 2 }}>{label}</Text>
-            </Box>
-          </Flex>
-        </Card>
+        <div key={label} style={{ background: 'var(--card)', padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
+          <Box style={{ color: accent, flexShrink: 0 }}>
+            <Icon size={15} />
+          </Box>
+          <Box>
+            <div style={{ fontSize: 26, fontWeight: 700, lineHeight: 1, fontVariantNumeric: 'tabular-nums', color: 'var(--foreground)' }}>
+              {isLoading ? '—' : value.toLocaleString('es-PY')}
+            </div>
+            <div style={{ fontSize: 11, color: 'var(--muted-foreground)', marginTop: 2 }}>{label}</div>
+          </Box>
+        </div>
       ))}
-    </Grid>
+    </div>
   )
 }
 
@@ -223,14 +222,14 @@ function RadarWidget({ stats, isLoading, compact }: {
     )
   }
 
-  // Desktop: table
+  // Desktop: tabla limpia sin sombra ni divisores de fila
   return (
-    <Card size="1" style={{ overflow: 'auto', boxShadow: '0 2px 12px rgba(0,0,0,0.08)', height: '100%', boxSizing: 'border-box' }}>
-      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
+    <div style={{ height: '100%', overflow: 'auto', borderRadius: 12, border: '1px solid var(--border)', background: 'var(--card)' }}>
+      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
         <thead>
-          <tr style={{ background: 'var(--muted)', borderBottom: '1px solid var(--border)' }}>
-            {['Proyecto', 'Estado', 'Precio m²', 'Rentab. est.', 'Unidades'].map((label, i) => (
-              <th key={label} style={{ padding: '8px 12px', textAlign: i === 0 || i === 1 ? 'left' : 'right', fontWeight: 700, fontSize: 11, color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+          <tr style={{ borderBottom: '1px solid var(--border)' }}>
+            {['Proyecto', 'Estado', 'USD / m²', 'Unidades'].map((label, i) => (
+              <th key={label} style={{ padding: '8px 14px', textAlign: i > 1 ? 'right' : 'left', fontWeight: 600, fontSize: 10, color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>
                 {label}
               </th>
             ))}
@@ -238,34 +237,31 @@ function RadarWidget({ stats, isLoading, compact }: {
         </thead>
         <tbody>
           {isLoading ? (
-            <tr><td colSpan={5} style={{ textAlign: 'center', padding: 32, color: 'var(--muted-foreground)', fontSize: 13 }}>Cargando...</td></tr>
+            <tr><td colSpan={4} style={{ textAlign: 'center', padding: 32, color: 'var(--muted-foreground)', fontSize: 13 }}>Cargando...</td></tr>
           ) : rows.length === 0 ? (
-            <tr><td colSpan={5} style={{ textAlign: 'center', padding: 32, color: 'var(--muted-foreground)', fontSize: 13 }}>
-              Sin proyectos aún.
-            </td></tr>
+            <tr><td colSpan={4} style={{ textAlign: 'center', padding: 32, color: 'var(--muted-foreground)', fontSize: 13 }}>Sin proyectos aún.</td></tr>
           ) : rows.map((p, i) => {
             const sb = STATUS_BADGE[p.status]
             return (
               <tr key={p.id} onClick={() => navigate('/')}
-                style={{ borderTop: i === 0 ? 'none' : '1px solid var(--border)', cursor: 'pointer' }}
-                className="hover:bg-muted/50"
+                style={{ background: i % 2 === 1 ? 'var(--muted)' : 'transparent', cursor: 'pointer' }}
+                className="hover:opacity-75"
               >
-                <td style={{ padding: '8px 12px' }}><Text size="2" weight="bold">{p.name}</Text></td>
-                <td style={{ padding: '8px 12px' }}>
-                  {sb ? <Badge color={sb.color} variant="soft" radius="full">{sb.label}</Badge>
-                      : <Badge color="gray" variant="soft" radius="full">{p.status}</Badge>}
+                <td style={{ padding: '9px 14px', fontWeight: 600, fontSize: 13, whiteSpace: 'nowrap' }}>{p.name}</td>
+                <td style={{ padding: '9px 14px' }}>
+                  {sb ? <Badge color={sb.color} variant="soft" radius="full" size="1">{sb.label}</Badge>
+                      : <Badge color="gray" variant="soft" radius="full" size="1">{p.status}</Badge>}
                 </td>
-                <td style={{ padding: '8px 12px', textAlign: 'right' }}>
-                  {p.avg_price_m2 ? <Text size="2" weight="bold">USD {p.avg_price_m2.toLocaleString('es-PY')}</Text> : <Text size="2" color="gray">—</Text>}
+                <td style={{ padding: '9px 14px', textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontSize: 13, fontWeight: p.avg_price_m2 ? 600 : 400, color: p.avg_price_m2 ? 'var(--foreground)' : 'var(--muted-foreground)' }}>
+                  {p.avg_price_m2 ? p.avg_price_m2.toLocaleString('es-PY') : '—'}
                 </td>
-                <td style={{ padding: '8px 12px', textAlign: 'right' }}><Text size="2" color="gray">—</Text></td>
-                <td style={{ padding: '8px 12px', textAlign: 'right' }}><Text size="2" color="gray">{p.unit_count}</Text></td>
+                <td style={{ padding: '9px 14px', textAlign: 'right', color: 'var(--muted-foreground)', fontSize: 13 }}>{p.unit_count}</td>
               </tr>
             )
           })}
         </tbody>
       </table>
-    </Card>
+    </div>
   )
 }
 
@@ -298,20 +294,19 @@ function MercadoWidget({ compact }: { compact?: boolean }) {
     )
   }
 
-  // Desktop: 2×2 grid
+  // Desktop: lista compacta en un solo contenedor
   return (
-    <Grid columns="2" gap="2" style={{ height: '100%' }}>
-      {items.map(({ label, value, detail, pct }) => (
-        <Card key={label} size="1" style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.05)', padding: '10px 12px', borderRadius: 12 }}>
-          <Flex justify="between" align="center" mb="1">
-            <Text size="1" color="gray" weight="medium" style={{ textTransform: 'uppercase', letterSpacing: '0.05em', fontSize: 10 }}>{label}</Text>
+    <div style={{ height: '100%', background: 'var(--card)', borderRadius: 12, border: '1px solid var(--border)', overflow: 'auto' }}>
+      {items.map(({ label, value, pct }, i) => (
+        <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 16px', borderTop: i === 0 ? 'none' : '1px solid var(--border)' }}>
+          <Text size="1" color="gray" style={{ letterSpacing: '0.02em' }}>{label}</Text>
+          <Flex align="center" gap="2">
             {pct !== null && <PctArrow pct={pct} />}
+            <div style={{ fontSize: 15, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: 'var(--foreground)', opacity: isLoading ? 0.3 : 1 }}>{value}</div>
           </Flex>
-          <Heading size="4" weight="bold" style={{ fontVariantNumeric: 'tabular-nums', lineHeight: 1, opacity: isLoading ? 0.3 : 1 }}>{value}</Heading>
-          <Text as="p" size="1" color="gray" mt="1" style={{ fontSize: 11 }}>{detail}</Text>
-        </Card>
+        </div>
       ))}
-    </Grid>
+    </div>
   )
 }
 
@@ -319,7 +314,7 @@ function GraficoWidget({ stats, isLoading }: { stats: ReturnType<typeof useDashb
   const data = stats?.simsByMonth ?? []
   const maxVal = Math.max(...data.map((d) => d.total), 1)
   return (
-    <Card size="1" style={{ boxShadow: '0 1px 6px rgba(0,0,0,0.06)', height: '100%', boxSizing: 'border-box', borderRadius: 14, padding: '8px 4px' }}>
+    <div style={{ height: '100%', borderRadius: 12, border: '1px solid var(--border)', background: 'var(--card)', padding: '12px 4px 8px' }}>
       {isLoading ? (
         <Flex align="center" justify="center" style={{ height: '100%' }}><Text size="1" color="gray">Cargando...</Text></Flex>
       ) : data.every((d) => d.total === 0) ? (
@@ -329,69 +324,61 @@ function GraficoWidget({ stats, isLoading }: { stats: ReturnType<typeof useDashb
         </Flex>
       ) : (
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={data} barSize={26} margin={{ top: 4, right: 0, left: -20, bottom: 0 }}>
+          <BarChart data={data} barSize={28} margin={{ top: 4, right: 8, left: -16, bottom: 0 }}>
             <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#94a3b8' }} />
             <YAxis allowDecimals={false} axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#94a3b8' }} />
             <Tooltip cursor={{ fill: 'transparent' }} contentStyle={{ borderRadius: 8, border: '1px solid var(--border)', fontSize: 13, background: 'var(--card)', color: 'var(--foreground)' }} formatter={(v) => [`${v ?? 0} simulaciones`, '']} />
-            <Bar dataKey="total" radius={[6, 6, 0, 0]}>
+            <Bar dataKey="total" radius={[5, 5, 0, 0]}>
               {data.map((entry, i) => (
-                <Cell key={i} fill={entry.total === maxVal ? 'var(--foreground)' : 'var(--muted-foreground)'} style={{ opacity: entry.total === maxVal ? 1 : 0.3 }} />
+                <Cell key={i} fill={entry.total === maxVal ? 'var(--foreground)' : 'var(--muted-foreground)'} style={{ opacity: entry.total === maxVal ? 1 : 0.25 }} />
               ))}
             </Bar>
           </BarChart>
         </ResponsiveContainer>
       )}
-    </Card>
+    </div>
   )
 }
 
 function ActividadWidget({ stats, isLoading }: { stats: ReturnType<typeof useDashboardStats>['data']; isLoading: boolean }) {
   const navigate = useNavigate()
   return (
-    <Card size="1" style={{ overflow: 'auto', boxShadow: '0 1px 6px rgba(0,0,0,0.06)', height: '100%', boxSizing: 'border-box', borderRadius: 14 }}>
+    <div style={{ overflow: 'auto', height: '100%', borderRadius: 12, border: '1px solid var(--border)', background: 'var(--card)' }}>
       {isLoading ? (
         <Flex align="center" justify="center" py="5"><Text size="1" color="gray">Cargando...</Text></Flex>
       ) : (stats?.recent.simulations ?? []).length === 0 ? (
         <Flex align="center" justify="center" py="5"><Text size="1" color="gray">Sin actividad aún</Text></Flex>
       ) : (
         <>
-          {(stats?.recent.simulations ?? []).map((sim, i) => {
+          {(stats?.recent.simulations ?? []).map((sim) => {
             const project = sim.snapshot_project as Record<string, unknown>
             const clientName = (sim.clients as { full_name: string } | null)?.full_name ?? '—'
             return (
-              <Box key={sim.id} onClick={() => window.open(`/informes/${sim.id}`, '_blank')}
-                style={{ borderTop: i === 0 ? 'none' : '1px solid var(--border)', cursor: 'pointer', padding: '8px 12px' }}
-                className="hover:bg-muted/50"
+              <div key={sim.id} onClick={() => window.open(`/informes/${sim.id}`, '_blank')}
+                style={{ cursor: 'pointer', padding: '9px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}
+                className="hover:bg-muted/40"
               >
-                <Flex align="center" justify="between">
-                  <Flex align="center" gap="3" style={{ minWidth: 0 }}>
-                    <Box style={{ width: 8, height: 8, borderRadius: '50%', background: '#6366f1', opacity: 0.5, flexShrink: 0 }} />
-                    <Box style={{ minWidth: 0 }}>
-                      <Text size="2" weight="medium" style={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {(project?.name as string) ?? '—'}
-                      </Text>
-                      <Text size="1" color="gray">{clientName}</Text>
-                    </Box>
-                  </Flex>
-                  <Flex align="center" gap="1.5" style={{ flexShrink: 0, marginLeft: 10 }}>
-                    <Text size="1" color="gray">{timeAgo(sim.created_at)}</Text>
-                    <ExternalLink size={11} style={{ color: 'var(--muted-foreground)', opacity: 0.5 }} />
-                  </Flex>
-                </Flex>
-              </Box>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontSize: 13, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--foreground)' }}>
+                    {(project?.name as string) ?? '—'}
+                  </div>
+                  <div style={{ fontSize: 11, color: 'var(--muted-foreground)', marginTop: 1 }}>{clientName}</div>
+                </div>
+                <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <span style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>{timeAgo(sim.created_at)}</span>
+                  <ExternalLink size={10} style={{ color: 'var(--muted-foreground)', opacity: 0.4 }} />
+                </div>
+              </div>
             )
           })}
-          <Box style={{ borderTop: '1px solid var(--border)' }}>
-            <Box onClick={() => navigate('/informes')} style={{ cursor: 'pointer', padding: '10px 16px' }} className="hover:bg-muted/50">
-              <Flex align="center" justify="center" gap="1">
-                <Text size="1" color="indigo">Ver todos</Text>
-                <ExternalLink size={11} style={{ color: 'var(--muted-foreground)' }} />
-              </Flex>
-            </Box>
-          </Box>
+          <div style={{ borderTop: '1px solid var(--border)', padding: '8px 14px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}
+            onClick={() => navigate('/informes')} className="hover:bg-muted/40">
+            <Text size="1" color="indigo">Ver todos</Text>
+            <ExternalLink size={10} style={{ color: 'var(--muted-foreground)' }} />
+          </div>
         </>
       )}
-    </Card>
+    </div>
   )
 }
 
