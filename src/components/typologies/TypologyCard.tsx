@@ -1,5 +1,6 @@
 // src/components/typologies/TypologyCard.tsx
-import { Pencil, Trash2 } from 'lucide-react'
+import { useState } from 'react'
+import { Pencil, Trash2, ImageOff, ZoomIn } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { getPublicUrl } from '@/lib/storage'
 import type { Database } from '@/types/database'
@@ -13,41 +14,78 @@ interface TypologyCardProps {
 }
 
 export function TypologyCard({ typology, onEdit, onDelete }: TypologyCardProps) {
+  const [imgError, setImgError] = useState(false)
+  const [lightbox, setLightbox] = useState(false)
+  const url = typology.floor_plan_path ? getPublicUrl(typology.floor_plan_path) : null
+
   return (
-    <div className="border rounded-lg p-4 flex flex-col gap-2">
-      <div className="flex items-start justify-between gap-2">
-        <div>
-          <p className="font-medium text-sm">{typology.name}</p>
-          <p className="text-xs text-muted-foreground">{typology.area_m2} m²</p>
-        </div>
-        <div className="flex gap-1 flex-shrink-0">
-          <Button variant="ghost" size="sm" onClick={() => onEdit(typology)}>
-            <Pencil className="h-3.5 w-3.5" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-destructive hover:text-destructive"
-            onClick={() => onDelete(typology)}
+    <>
+      <div className="border rounded-lg overflow-hidden flex flex-col">
+
+        {/* Thumbnail */}
+        {url && !imgError ? (
+          <div
+            className="relative group cursor-zoom-in bg-gray-50"
+            style={{ height: 140 }}
+            onClick={() => setLightbox(true)}
           >
-            <Trash2 className="h-3.5 w-3.5" />
-          </Button>
+            <img
+              src={url}
+              alt={`Plano ${typology.name}`}
+              onError={() => setImgError(true)}
+              className="w-full h-full object-contain"
+            />
+            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
+              <ZoomIn className="h-5 w-5 text-white opacity-0 group-hover:opacity-100 drop-shadow transition-opacity" />
+            </div>
+          </div>
+        ) : url && imgError ? (
+          <div className="flex items-center justify-center bg-gray-50 border-b" style={{ height: 80 }}>
+            <ImageOff className="h-5 w-5 text-gray-300" />
+          </div>
+        ) : null}
+
+        {/* Info */}
+        <div className="p-3 flex flex-col gap-1.5">
+          <div className="flex items-start justify-between gap-2">
+            <div>
+              <p className="font-medium text-sm">{typology.name}</p>
+              <p className="text-xs text-muted-foreground">{typology.area_m2} m²</p>
+            </div>
+            <div className="flex gap-1 flex-shrink-0">
+              <Button variant="ghost" size="sm" onClick={() => onEdit(typology)}>
+                <Pencil className="h-3.5 w-3.5" />
+              </Button>
+              <Button
+                variant="ghost" size="sm"
+                className="text-destructive hover:text-destructive"
+                onClick={() => onDelete(typology)}
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            {typology.units_available} unidad{typology.units_available !== 1 ? 'es' : ''} disponible{typology.units_available !== 1 ? 's' : ''}
+          </p>
         </div>
       </div>
 
-      <p className="text-xs text-muted-foreground">
-        {typology.units_available} unidad{typology.units_available !== 1 ? 'es' : ''} disponible{typology.units_available !== 1 ? 's' : ''}
-      </p>
-
-      {typology.floor_plan_path && (
-        <a href={getPublicUrl(typology.floor_plan_path)} target="_blank" rel="noreferrer">
+      {/* Lightbox */}
+      {lightbox && url && (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center p-4"
+          style={{ background: 'rgba(0,0,0,0.85)' }}
+          onClick={() => setLightbox(false)}
+        >
           <img
-            src={getPublicUrl(typology.floor_plan_path)}
-            alt="Plano"
-            className="w-full rounded-md object-contain max-h-32 border bg-muted/30"
+            src={url}
+            alt={`Plano ${typology.name}`}
+            className="max-w-full max-h-full rounded-lg object-contain"
+            style={{ maxHeight: '90vh' }}
           />
-        </a>
+        </div>
       )}
-    </div>
+    </>
   )
 }
