@@ -1,17 +1,13 @@
-import { useState, useCallback, useEffect, useRef } from 'react'
-import { MapContainer, TileLayer, Marker, useMap, useMapEvents } from 'react-leaflet'
-import L from 'leaflet'
-import 'leaflet/dist/leaflet.css'
+import { useState, useCallback, useRef } from 'react'
+import { Map, Marker } from 'react-map-gl/maplibre'
+import type { MapRef, MapMouseEvent, MarkerDragEvent } from 'react-map-gl/maplibre'
+import 'maplibre-gl/dist/maplibre-gl.css'
 import { Search, Loader2, MapPin } from 'lucide-react'
 
-// Fix Leaflet icons in Vite
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-delete (L.Icon.Default.prototype as any)._getIconUrl
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-})
+const MAP_STYLE = 'https://tiles.openfreemap.org/styles/liberty'
+
+// Nominatim search biased to Paraguay — prioriza Asunción y Luque
+const VIEWBOX = '-58.1,-24.8,-57.1,-25.7' // bbox cubre Gran Asunción + Luque
 
 interface NominatimResult {
   place_id: number
@@ -20,10 +16,12 @@ interface NominatimResult {
   lon: string
   address: {
     suburb?: string
+    neighbourhood?: string
     city?: string
     town?: string
     village?: string
     state?: string
+    country?: string
   }
 }
 
@@ -39,45 +37,55 @@ interface Props {
   onChange: (value: LocationValue) => void
 }
 
-// Flies to a coordinate when it changes
-function MapFlyTo({ lat, lng }: { lat: number; lng: number }) {
-  const map = useMap()
-  const prev = useRef<string>('')
-  useEffect(() => {
-    const key = `${lat},${lng}`
-    if (key !== prev.current) {
-      prev.current = key
-      map.flyTo([lat, lng], 15, { duration: 0.8 })
-    }
-  }, [lat, lng, map])
-  return null
+async function nominatimSearch(query: string): Promise<NominatimResult[]> {
+  const params = new URLSearchParams({
+    q: query,
+    format: 'json',
+    limit: '6',
+    countrycodes: 'py',
+    viewbox: VIEWBOX,
+    bounded: '0',           // muestra resultados fuera del bbox pero los rankea abajo
+    'accept-language': 'es',
+  })
+  const res = await fetch(`https://nominatim.openstreetmap.org/search?${params}`, {
+    headers: { 'User-Agent': 'sistema-inmobiliario/1.0' },
+  })
+  return res.json()
 }
 
-// Handles map click to place marker
-function MapClickHandler({ onClick }: { onClick: (lat: number, lng: number) => void }) {
-  useMapEvents({ click: e => onClick(e.latlng.lat, e.latlng.lng) })
-  return null
+function extractZona(r: NominatimResult): string {
+  return (
+    r.address.suburb ??
+    r.address.neighbourhood ??
+    r.address.city ??
+    r.address.town ??
+    r.address.village ??
+    r.address.state ??
+    ''
+  )
 }
 
-const ASUNCION: [number, number] = [-25.2867, -57.6478]
+function extractDireccion(r: NominatimResult): string {
+  // Take first 3 parts of display_name for a clean short address
+  return r.display_name.split(',').slice(0, 3).join(',').trim()
+}
+
+const DEFAULT_CENTER = { longitude: -57.5759, latitude: -25.2671, zoom: 11 }
+// Centrado entre Asunción (-57.6478, -25.2867) y Luque (-57.4867, -25.2671)
 
 export function LocationPicker({ value, onChange }: Props) {
+  const mapRef = useRef<MapRef>(null)
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<NominatimResult[]>([])
   const [isSearching, setIsSearching] = useState(false)
   const [showResults, setShowResults] = useState(false)
-  const [flyTarget, setFlyTarget] = useState<{ lat: number; lng: number } | null>(null)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const inputRef = useRef<HTMLInputElement>(null)
 
   const search = useCallback(async (q: string) => {
     if (q.trim().length < 3) { setResults([]); return }
     setIsSearching(true)
     try {
-      const res = await fetch(
-        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=5`
-      )
-      const data: NominatimResult[] = await res.json()
+      const data = await nominatimSearch(q)
       setResults(data)
       setShowResults(data.length > 0)
     } catch { /* ignore */ }
@@ -87,26 +95,32 @@ export function LocationPicker({ value, onChange }: Props) {
   function handleQueryChange(v: string) {
     setQuery(v)
     if (debounceRef.current) clearTimeout(debounceRef.current)
-    debounceRef.current = setTimeout(() => search(v), 500)
+    debounceRef.current = setTimeout(() => search(v), 450)
   }
 
   function selectResult(r: NominatimResult) {
     const lat = parseFloat(r.lat)
     const lng = parseFloat(r.lon)
-    const zona = r.address.suburb ?? r.address.city ?? r.address.town ?? r.address.village ?? r.address.state ?? ''
-    const direccion = r.display_name.split(',').slice(0, 3).join(',').trim()
-    onChange({ lat, lng, zona, direccion })
-    setFlyTarget({ lat, lng })
-    setQuery(direccion)
+    const loc: LocationValue = {
+      lat,
+      lng,
+      zona: extractZona(r),
+      direccion: extractDireccion(r),
+    }
+    onChange(loc)
+    mapRef.current?.flyTo({ center: [lng, lat], zoom: 16, duration: 800 })
+    setQuery(loc.direccion)
     setShowResults(false)
     setResults([])
   }
 
-  function handleMapClick(lat: number, lng: number) {
+  function handleMapClick(e: MapMouseEvent) {
+    const { lat, lng } = e.lngLat
     onChange({ lat, lng, zona: value?.zona ?? '', direccion: value?.direccion ?? '' })
   }
 
-  function handleMarkerDrag(lat: number, lng: number) {
+  function handleMarkerDrag(e: MarkerDragEvent) {
+    const { lat, lng } = e.lngLat
     onChange({ lat, lng, zona: value?.zona ?? '', direccion: value?.direccion ?? '' })
   }
 
@@ -120,12 +134,11 @@ export function LocationPicker({ value, onChange }: Props) {
             : <Search className="w-4 h-4 text-gray-400 flex-shrink-0" />
           }
           <input
-            ref={inputRef}
             value={query}
             onChange={e => handleQueryChange(e.target.value)}
             onFocus={() => results.length > 0 && setShowResults(true)}
             onBlur={() => setTimeout(() => setShowResults(false), 150)}
-            placeholder="Buscar dirección, barrio o ciudad..."
+            placeholder="Buscar en Asunción, Luque, San Lorenzo..."
             className="flex-1 text-sm bg-transparent focus:outline-none"
           />
         </div>
@@ -138,7 +151,12 @@ export function LocationPicker({ value, onChange }: Props) {
                 className="w-full flex items-start gap-2 px-3 py-2.5 hover:bg-gray-50 text-left border-b last:border-0"
               >
                 <MapPin className="w-3.5 h-3.5 text-gray-400 mt-0.5 flex-shrink-0" />
-                <span className="text-sm text-gray-700 line-clamp-2">{r.display_name}</span>
+                <div className="min-w-0">
+                  <p className="text-sm text-gray-700 truncate">{r.display_name.split(',').slice(0, 3).join(',')}</p>
+                  {r.address.city && (
+                    <p className="text-xs text-gray-400">{r.address.city}</p>
+                  )}
+                </div>
               </button>
             ))}
           </div>
@@ -146,37 +164,41 @@ export function LocationPicker({ value, onChange }: Props) {
       </div>
 
       {/* Map */}
-      <div className="rounded-xl overflow-hidden border border-gray-100" style={{ height: 280 }}>
-        <MapContainer
-          center={value ? [value.lat, value.lng] : ASUNCION}
-          zoom={value ? 15 : 12}
-          style={{ height: '100%', width: '100%' }}
-          scrollWheelZoom={false}
+      <div className="rounded-xl overflow-hidden border border-gray-100" style={{ height: 300 }}>
+        <Map
+          ref={mapRef}
+          initialViewState={
+            value
+              ? { longitude: value.lng, latitude: value.lat, zoom: 15 }
+              : DEFAULT_CENTER
+          }
+          style={{ width: '100%', height: '100%' }}
+          mapStyle={MAP_STYLE}
+          scrollZoom={false}
+          onClick={handleMapClick}
+          cursor={value ? 'default' : 'crosshair'}
+          attributionControl={false}
         >
-          <TileLayer
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-          />
-          <MapClickHandler onClick={handleMapClick} />
-          {flyTarget && <MapFlyTo lat={flyTarget.lat} lng={flyTarget.lng} />}
           {value && (
             <Marker
-              position={[value.lat, value.lng]}
+              longitude={value.lng}
+              latitude={value.lat}
+              anchor="bottom"
               draggable
-              eventHandlers={{
-                dragend(e) {
-                  const pos = (e.target as L.Marker).getLatLng()
-                  handleMarkerDrag(pos.lat, pos.lng)
-                }
-              }}
-            />
+              onDragEnd={handleMarkerDrag}
+            >
+              <MapPin
+                className="w-8 h-8 text-gray-900"
+                style={{ filter: 'drop-shadow(0 2px 6px rgb(0 0 0 / 0.3))' }}
+              />
+            </Marker>
           )}
-        </MapContainer>
+        </Map>
       </div>
 
       <p className="text-xs text-gray-400 text-center">
         {value
-          ? 'Arrastrá el pin para ajustar la ubicación exacta'
+          ? 'Arrastrá el pin para ajustar la posición exacta'
           : 'Buscá una dirección o tocá el mapa para colocar el pin'}
       </p>
     </div>
