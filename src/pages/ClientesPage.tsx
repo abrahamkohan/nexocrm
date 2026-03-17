@@ -4,6 +4,7 @@ import { Plus, Search } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Modal } from '@/components/ui/modal'
+import { MobileFormScreen } from '@/components/ui/MobileFormScreen'
 import { toast } from 'sonner'
 import { ClientCard } from '@/components/clients/ClientCard'
 import { ClientForm, type ClientFormValues } from '@/components/clients/ClientForm'
@@ -129,15 +130,34 @@ export function ClientesPage() {
         </div>
       )}
 
-      <Modal open={sheetOpen} onClose={() => setSheetOpen(false)} title={editing ? 'Editar cliente' : 'Nuevo cliente'}>
+      {/* Mobile: full-screen */}
+      <MobileFormScreen
+        open={sheetOpen}
+        onClose={() => setSheetOpen(false)}
+        title={editing ? 'Editar cliente' : 'Nuevo cliente'}
+      >
         <ClientForm
           key={editing?.id ?? 'new'}
           defaultValues={editing ?? undefined}
           onSubmit={handleSubmit}
           onCancel={() => setSheetOpen(false)}
           isSubmitting={isPending}
+          stickyButtons
         />
-      </Modal>
+      </MobileFormScreen>
+
+      {/* Desktop: modal */}
+      <div className="hidden md:block">
+        <Modal open={sheetOpen} onClose={() => setSheetOpen(false)} title={editing ? 'Editar cliente' : 'Nuevo cliente'}>
+          <ClientForm
+            key={editing?.id ?? 'new'}
+            defaultValues={editing ?? undefined}
+            onSubmit={handleSubmit}
+            onCancel={() => setSheetOpen(false)}
+            isSubmitting={isPending}
+          />
+        </Modal>
+      </div>
     </div>
   )
 }

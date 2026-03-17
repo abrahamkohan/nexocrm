@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Modal } from '@/components/ui/modal'
+import { MobileFormScreen } from '@/components/ui/MobileFormScreen'
 import { toast } from 'sonner'
 import { ProjectList } from '@/components/projects/ProjectList'
 import { ProjectForm, type ProjectFormValues } from '@/components/projects/ProjectForm'
@@ -111,15 +112,34 @@ export function ProyectosPage() {
         />
       )}
 
-      <Modal open={sheetOpen} onClose={() => setSheetOpen(false)} title={editing ? 'Editar proyecto' : 'Nuevo proyecto'}>
+      {/* Mobile: full-screen */}
+      <MobileFormScreen
+        open={sheetOpen}
+        onClose={() => setSheetOpen(false)}
+        title={editing ? 'Editar proyecto' : 'Nuevo proyecto'}
+      >
         <ProjectForm
           key={editing?.id ?? 'new'}
           defaultValues={editing ?? undefined}
           onSubmit={handleSubmit}
           onCancel={() => setSheetOpen(false)}
           isSubmitting={isPending}
+          stickyButtons
         />
-      </Modal>
+      </MobileFormScreen>
+
+      {/* Desktop: modal */}
+      <div className="hidden md:block">
+        <Modal open={sheetOpen} onClose={() => setSheetOpen(false)} title={editing ? 'Editar proyecto' : 'Nuevo proyecto'}>
+          <ProjectForm
+            key={editing?.id ?? 'new'}
+            defaultValues={editing ?? undefined}
+            onSubmit={handleSubmit}
+            onCancel={() => setSheetOpen(false)}
+            isSubmitting={isPending}
+          />
+        </Modal>
+      </div>
     </div>
   )
 }

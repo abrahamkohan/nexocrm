@@ -48,9 +48,10 @@ interface ProjectFormProps {
   onSubmit: (values: ProjectFormValues, brochureFile: File | null) => Promise<void>
   onCancel: () => void
   isSubmitting?: boolean
+  stickyButtons?: boolean
 }
 
-export function ProjectForm({ defaultValues, onSubmit, onCancel, isSubmitting }: ProjectFormProps) {
+export function ProjectForm({ defaultValues, onSubmit, onCancel, isSubmitting, stickyButtons }: ProjectFormProps) {
   const brochureRef = useRef<HTMLInputElement>(null)
   const [links, setLinks] = useState<ProjectLink[]>(
     (defaultValues?.links as ProjectLink[] | undefined) ?? []
@@ -229,14 +230,28 @@ export function ProjectForm({ defaultValues, onSubmit, onCancel, isSubmitting }:
         )}
       </div>
 
-      <div className="flex gap-2 pt-2">
-        <Button type="submit" disabled={isSubmitting} className="flex-1">
-          {isSubmitting ? 'Guardando...' : 'Guardar'}
-        </Button>
-        <Button type="button" variant="outline" onClick={onCancel} disabled={isSubmitting}>
-          Cancelar
-        </Button>
-      </div>
+      {stickyButtons ? (
+        <div
+          className="flex gap-2"
+          style={{ position: 'sticky', bottom: 0, background: '#f1f5f9', paddingTop: 8, paddingBottom: 16, borderTop: '1px solid #e5e7eb', marginTop: 8 }}
+        >
+          <Button type="button" variant="outline" onClick={onCancel} disabled={isSubmitting} className="flex-1 h-11">
+            Cancelar
+          </Button>
+          <Button type="submit" disabled={isSubmitting} className="flex-1 h-11">
+            {isSubmitting ? 'Guardando...' : 'Guardar'}
+          </Button>
+        </div>
+      ) : (
+        <div className="flex gap-2 pt-2">
+          <Button type="submit" disabled={isSubmitting} className="flex-1">
+            {isSubmitting ? 'Guardando...' : 'Guardar'}
+          </Button>
+          <Button type="button" variant="outline" onClick={onCancel} disabled={isSubmitting}>
+            Cancelar
+          </Button>
+        </div>
+      )}
     </form>
   )
 }
