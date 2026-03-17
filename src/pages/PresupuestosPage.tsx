@@ -158,7 +158,7 @@ export function PresupuestosPage() {
         </>
       )}
 
-      <Modal open={sheetOpen} onClose={() => setSheetOpen(false)} title={editing ? 'Editar presupuesto' : 'Nuevo presupuesto'}>
+      <Modal open={sheetOpen} onClose={() => setSheetOpen(false)} title={editing ? 'Editar presupuesto' : 'Nuevo presupuesto'} size="lg">
         <PresupuestoForm
           key={editing?.id ?? 'new'}
           initial={editing}
@@ -187,6 +187,7 @@ function PresupuestoForm({ initial, onClose }: { initial: PRow | null; onClose: 
   const [entrega,               setEntrega]               = useState(String(initial?.entrega ?? ''))
   const [cuotasCantidad,        setCuotasCantidad]        = useState(String(initial?.cuotas_cantidad ?? ''))
   const [cuotasValor,           setCuotasValor]           = useState(String(initial?.cuotas_valor ?? ''))
+  const [refuerzosOn,           setRefuerzosOn]           = useState((initial?.refuerzos_cantidad ?? 0) > 0)
   const [refuerzosCantidad,     setRefuerzosCantidad]     = useState(String(initial?.refuerzos_cantidad ?? ''))
   const [refuerzosValor,        setRefuerzosValor]        = useState(String(initial?.refuerzos_valor ?? ''))
   const [refuerzosPeriodicidad, setRefuerzosPeriodicidad] = useState(String(initial?.refuerzos_periodicidad ?? 6))
@@ -197,7 +198,7 @@ function PresupuestoForm({ initial, onClose }: { initial: PRow | null; onClose: 
 
   // Live calculations
   const totalUnidad   = n(precioUsd) + (cocheraOn ? n(cocheraPrecioUsd) : 0)
-  const comprometido  = n(entrega) + n(cuotasCantidad) * n(cuotasValor) + n(refuerzosCantidad) * n(refuerzosValor) + n(saldoContraEntrega)
+  const comprometido  = n(entrega) + n(cuotasCantidad) * n(cuotasValor) + (refuerzosOn ? n(refuerzosCantidad) * n(refuerzosValor) : 0) + n(saldoContraEntrega)
   const saldoPendiente = totalUnidad - comprometido
 
   const handleFloorPlan = useCallback(async (file: File) => {
@@ -238,9 +239,9 @@ function PresupuestoForm({ initial, onClose }: { initial: PRow | null; onClose: 
       entrega:               n(entrega),
       cuotas_cantidad:       Math.round(n(cuotasCantidad)),
       cuotas_valor:          n(cuotasValor),
-      refuerzos_cantidad:    Math.round(n(refuerzosCantidad)),
-      refuerzos_valor:       n(refuerzosValor),
-      refuerzos_periodicidad: Math.round(n(refuerzosPeriodicidad)),
+      refuerzos_cantidad:    refuerzosOn ? Math.round(n(refuerzosCantidad)) : 0,
+      refuerzos_valor:       refuerzosOn ? n(refuerzosValor) : 0,
+      refuerzos_periodicidad: refuerzosOn ? Math.round(n(refuerzosPeriodicidad)) : 6,
       saldo_contra_entrega:  n(saldoContraEntrega),
       notas:                 notas || null,
     }
@@ -296,11 +297,21 @@ function PresupuestoForm({ initial, onClose }: { initial: PRow | null; onClose: 
         </div>
         <FFieldNum label="Cuotas (cantidad)" value={cuotasCantidad} onChange={setCuotasCantidad} />
         <FFieldNum label="Valor por cuota" value={cuotasValor} onChange={setCuotasValor} suffix="USD" />
-        <FFieldNum label="Refuerzos (cantidad)" value={refuerzosCantidad} onChange={setRefuerzosCantidad} />
-        <FFieldNum label="Valor por refuerzo" value={refuerzosValor} onChange={setRefuerzosValor} suffix="USD" />
         <div className="col-span-2">
-          <FFieldNum label="Periodicidad refuerzos" value={refuerzosPeriodicidad} onChange={setRefuerzosPeriodicidad} suffix="meses" />
+          <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer select-none">
+            <input type="checkbox" checked={refuerzosOn} onChange={(e) => setRefuerzosOn(e.target.checked)} className="rounded" />
+            Incluir refuerzos
+          </label>
         </div>
+        {refuerzosOn && (
+          <>
+            <FFieldNum label="Refuerzos (cantidad)" value={refuerzosCantidad} onChange={setRefuerzosCantidad} />
+            <FFieldNum label="Valor por refuerzo" value={refuerzosValor} onChange={setRefuerzosValor} suffix="USD" />
+            <div className="col-span-2">
+              <FFieldNum label="Periodicidad" value={refuerzosPeriodicidad} onChange={setRefuerzosPeriodicidad} suffix="meses" />
+            </div>
+          </>
+        )}
         <div className="col-span-2">
           <FFieldNum label="Saldo contra entrega" value={saldoContraEntrega} onChange={setSaldoContraEntrega} suffix="USD" />
         </div>
