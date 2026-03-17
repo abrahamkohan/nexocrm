@@ -414,14 +414,6 @@ function FFieldNum({ label, value, onChange, suffix }: {
   )
 }
 
-function SummaryRow({ label, value, bold }: { label: string; value: string; bold?: boolean }) {
-  return (
-    <div className="flex justify-between">
-      <span className="text-gray-500">{label}</span>
-      <span className={bold ? 'font-semibold text-gray-900' : 'text-gray-700'}>{value}</span>
-    </div>
-  )
-}
 
 function FloorPlanField({ value, onChange, uploading, onFile }: {
   value: string | null
