@@ -150,27 +150,18 @@ export function PropiedadDetallePage() {
             <ArrowLeft className="w-4 h-4" />
             Propiedades
           </button>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={togglePublicado}
-              className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border transition-colors ${
-                property.publicado_en_web
-                  ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
-                  : 'border-gray-200 text-gray-500 hover:bg-gray-50'
-              }`}
-            >
-              {property.publicado_en_web
-                ? <><Globe className="w-3.5 h-3.5" /> Publicado</>
-                : <><GlobeLock className="w-3.5 h-3.5" /> No publicado</>}
-            </button>
-            <button
-              disabled
-              title="Próximamente"
-              className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border border-gray-200 text-gray-400 cursor-not-allowed"
-            >
-              <Edit className="w-3.5 h-3.5" /> Editar
-            </button>
-          </div>
+          <button onClick={togglePublicado} className="flex items-center gap-2.5 group">
+            <span className="text-xs font-medium text-gray-500 group-hover:text-gray-700 transition-colors">
+              {property.publicado_en_web ? 'Publicado' : 'No publicado'}
+            </span>
+            <div className={`relative w-10 h-6 rounded-full transition-colors duration-200 ${
+              property.publicado_en_web ? 'bg-emerald-500' : 'bg-gray-200'
+            }`}>
+              <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform duration-200 ${
+                property.publicado_en_web ? 'translate-x-5' : 'translate-x-1'
+              }`} />
+            </div>
+          </button>
         </div>
 
         {/* ── 1. Header card ── */}
