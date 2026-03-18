@@ -455,7 +455,7 @@ export function PropiedadNuevaPage() {
             </div>
 
             {/* Input exacto */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2" style={{ maxWidth: 280 }}>
               <span className="text-sm font-medium text-gray-500 w-5 flex-shrink-0">{s.moneda === 'USD' ? '$' : '₲'}</span>
               <TextInput
                 type="number"
@@ -466,7 +466,7 @@ export function PropiedadNuevaPage() {
               />
             </div>
             {s.precio && parseFloat(s.precio) > 0 && (
-              <p className="text-xs text-gray-400 mt-1.5 text-right">
+              <p className="text-xs text-gray-400 mt-1.5" style={{ maxWidth: 280, textAlign: 'right' }}>
                 {s.moneda === 'USD' ? '$' : '₲'}{' '}
                 {parseFloat(s.precio).toLocaleString(s.moneda === 'USD' ? 'en-US' : 'es-PY')}
               </p>
@@ -540,9 +540,9 @@ export function PropiedadNuevaPage() {
             BLOQUE 3 — CARACTERÍSTICAS (compacto)
         ══════════════════════════════════════════ */}
         <Block title="Características">
-          <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-3">
             {showDormBanos && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <Label>Dormitorios</Label>
                   <div className="flex gap-1.5">
@@ -562,32 +562,34 @@ export function PropiedadNuevaPage() {
               </div>
             )}
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="flex flex-wrap gap-4">
               <div>
                 <Label>Superficie total</Label>
                 <div className="flex items-center gap-2">
-                  <TextInput
+                  <input
                     type="number"
                     value={s.superficie_m2}
                     onChange={e => update({ superficie_m2: e.target.value })}
-                    placeholder="Ej: 66"
-                    className="text-right"
+                    placeholder="66"
+                    style={{ width: 120 }}
+                    className="px-3 py-2 border border-gray-200 rounded-xl text-sm text-right focus:outline-none focus:ring-2 focus:ring-gray-900/20 focus:border-gray-400"
                   />
-                  <span className="text-sm text-gray-500 flex-shrink-0">m²</span>
+                  <span className="text-sm text-gray-500">m²</span>
                 </div>
               </div>
               {showTerreno && (
                 <div>
                   <Label>Terreno</Label>
                   <div className="flex items-center gap-2">
-                    <TextInput
+                    <input
                       type="number"
                       value={s.terreno_m2}
                       onChange={e => update({ terreno_m2: e.target.value })}
-                      placeholder="Ej: 200"
-                      className="text-right"
+                      placeholder="200"
+                      style={{ width: 120 }}
+                      className="px-3 py-2 border border-gray-200 rounded-xl text-sm text-right focus:outline-none focus:ring-2 focus:ring-gray-900/20 focus:border-gray-400"
                     />
-                    <span className="text-sm text-gray-500 flex-shrink-0">m²</span>
+                    <span className="text-sm text-gray-500">m²</span>
                   </div>
                 </div>
               )}
@@ -605,13 +607,13 @@ export function PropiedadNuevaPage() {
               onDragOver={e => { e.preventDefault(); setIsDragging(true) }}
               onDragLeave={() => setIsDragging(false)}
               onDrop={e => { e.preventDefault(); setIsDragging(false); addFiles(e.dataTransfer.files) }}
-              className={`border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer transition-colors ${
+              className={`border-2 border-dashed rounded-2xl px-6 py-5 text-center cursor-pointer transition-colors ${
                 isDragging ? 'border-gray-400 bg-gray-50' : 'border-gray-200 hover:border-gray-400'
               }`}
             >
-              <Camera className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+              <Camera className="w-6 h-6 text-gray-300 mx-auto mb-1.5" />
               <p className="text-sm text-gray-500">Tocá para agregar fotos</p>
-              <p className="text-xs text-gray-400 mt-1">o arrastrá y soltá · JPG, PNG · máx. 20 fotos</p>
+              <p className="text-xs text-gray-400 mt-0.5">JPG, PNG · máx. 20</p>
               <input
                 ref={inputRef}
                 type="file"
