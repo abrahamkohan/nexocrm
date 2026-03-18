@@ -154,7 +154,7 @@ function NumChip({ n, active, onClick }: { n: number | string; active: boolean; 
     <button
       type="button"
       onClick={onClick}
-      className={`w-12 h-9 rounded-xl text-sm font-medium border transition-all ${
+      className={`w-10 h-9 rounded-xl text-sm font-medium border transition-all ${
         active ? 'bg-gray-900 text-white border-gray-900' : 'border-gray-200 text-gray-600 hover:border-gray-400'
       }`}
     >
@@ -511,7 +511,7 @@ export function PropiedadNuevaPage() {
             {showDormBanos && (
               <div>
                 <Label>Dormitorios</Label>
-                <div className="flex gap-1.5 flex-wrap">
+                <div className="flex gap-1.5">
                   {[{ v: 0, l: 'Mono' }, { v: 1, l: '1' }, { v: 2, l: '2' }, { v: 3, l: '3' }, { v: 4, l: '4+' }].map(({ v, l }) => (
                     <NumChip key={v} n={l} active={s.dormitorios === v} onClick={() => update({ dormitorios: v })} />
                   ))}
