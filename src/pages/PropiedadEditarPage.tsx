@@ -53,9 +53,6 @@ function parseGoogleMapsInput(input: string): { lat: number; lng: number } | nul
   return null
 }
 
-function isShortMapsUrl(input: string): boolean {
-  return /maps\.app\.goo\.gl|goo\.gl\/maps/i.test(input.trim())
-}
 
 function extractAmenities(desc: string): { intro: string; amenityIds: string[] } {
   const lines = desc.split('\n')
