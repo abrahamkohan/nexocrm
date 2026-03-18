@@ -1,18 +1,20 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router'
-import { ArrowLeft, X, Home, Key, Building2, Map, Store, Camera } from 'lucide-react'
+import { X, Camera, Home, Key, Building2, Map, Store, Link as LinkIcon, Check } from 'lucide-react'
 import { toast } from 'sonner'
 import { supabase } from '@/lib/supabase'
 import { createProperty } from '@/lib/properties'
-import { LocationPicker } from '@/components/properties/LocationPicker'
-import type { LocationValue } from '@/components/properties/LocationPicker'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-interface WizardState {
+interface FormState {
   operacion: 'venta' | 'alquiler' | null
   tipo: 'departamento' | 'casa' | 'terreno' | 'comercial' | null
-  location: LocationValue | null
+  mapsLink: string
+  lat: number | null
+  lng: number | null
+  zona: string
+  direccion: string
   dormitorios: number | null
   banos: number | null
   superficie_m2: string
@@ -25,33 +27,21 @@ interface WizardState {
   descripcion: string
 }
 
-const INITIAL_STATE: WizardState = {
-  operacion: null,
-  tipo: null,
-  location: null,
-  dormitorios: null,
-  banos: null,
-  superficie_m2: '',
-  terreno_m2: '',
-  amenities: [],
-  fotos: [],
-  precio: '',
-  moneda: 'USD',
-  titulo: '',
-  descripcion: '',
+const INITIAL: FormState = {
+  operacion: null, tipo: null,
+  mapsLink: '', lat: null, lng: null, zona: '', direccion: '',
+  dormitorios: null, banos: null, superficie_m2: '', terreno_m2: '',
+  amenities: [], fotos: [],
+  precio: '', moneda: 'USD',
+  titulo: '', descripcion: '',
 }
+
+// ─── Constants ────────────────────────────────────────────────────────────────
 
 const TIPO_LABEL: Record<string, string> = {
-  departamento: 'Departamento',
-  casa: 'Casa',
-  terreno: 'Terreno',
-  comercial: 'Local comercial',
+  departamento: 'Departamento', casa: 'Casa', terreno: 'Terreno', comercial: 'Local comercial',
 }
-
-const OP_LABEL: Record<string, string> = {
-  venta: 'en Venta',
-  alquiler: 'en Alquiler',
-}
+const OP_LABEL: Record<string, string> = { venta: 'en Venta', alquiler: 'en Alquiler' }
 
 const AMENITIES_GRUPOS = [
   {
@@ -82,29 +72,55 @@ const AMENITIES_GRUPOS = [
 ]
 
 const ALL_AMENITIES = AMENITIES_GRUPOS.flatMap(g => g.items)
-
 const PRESETS_USD = [30000, 50000, 80000, 100000, 150000, 200000, 300000]
 const PRESETS_PYG = [50_000_000, 100_000_000, 200_000_000, 500_000_000, 1_000_000_000]
 
-const TOTAL_STEPS = 8
-
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function generateTitle(s: WizardState): string {
+function formatPreset(value: number, moneda: 'USD' | 'PYG'): string {
+  if (moneda === 'USD') return value >= 1_000_000 ? `$${value / 1_000_000}M` : `$${value / 1000}k`
+  return value >= 1_000_000_000 ? `₲${value / 1_000_000_000}B` : `₲${value / 1_000_000}M`
+}
+
+function parseMapsUrl(url: string): { embedSrc: string; lat: number | null; lng: number | null } | null {
+  const u = url.trim()
+  if (!u) return null
+  const isGMaps = u.includes('google.com/maps') || u.includes('goo.gl/maps') || u.includes('maps.app.goo.gl')
+  if (!isGMaps) return null
+
+  // @lat,lng pattern
+  const at = u.match(/@(-?\d+\.?\d+),(-?\d+\.?\d+)/)
+  if (at) {
+    const lat = parseFloat(at[1]), lng = parseFloat(at[2])
+    return { embedSrc: `https://maps.google.com/maps?q=${lat},${lng}&z=16&output=embed`, lat, lng }
+  }
+  // q=lat,lng pattern
+  const q = u.match(/[?&]q=(-?\d+\.?\d+),(-?\d+\.?\d+)/)
+  if (q) {
+    const lat = parseFloat(q[1]), lng = parseFloat(q[2])
+    return { embedSrc: `https://maps.google.com/maps?q=${lat},${lng}&z=16&output=embed`, lat, lng }
+  }
+  // Fallback: short URL or place without @coords — can't get coords but can embed
+  if (!u.includes('goo.gl') && !u.includes('maps.app.goo.gl')) {
+    const src = u.includes('output=embed') ? u : u + (u.includes('?') ? '&' : '?') + 'output=embed'
+    return { embedSrc: src, lat: null, lng: null }
+  }
+  return null // short URL, not resolvable
+}
+
+function generateTitle(s: FormState): string {
   const tipo = TIPO_LABEL[s.tipo!] ?? ''
   const op = OP_LABEL[s.operacion!] ?? ''
   const dormStr = s.dormitorios ? ` de ${s.dormitorios} dormitorio${s.dormitorios !== 1 ? 's' : ''}` : ''
-  const zonaStr = s.location?.zona ? ` en ${s.location.zona}` : ''
+  const zonaStr = s.zona ? ` en ${s.zona}` : ''
   return `${tipo}${dormStr}${zonaStr} ${op}`.trim()
 }
 
-function generateDescription(s: WizardState): string {
+function generateDescription(s: FormState): string {
   const tipo = TIPO_LABEL[s.tipo!] ?? ''
-  const zona = s.location?.zona ?? ''
   const op = { venta: 'venta', alquiler: 'alquiler' }[s.operacion!] ?? ''
   const lines: string[] = []
-  lines.push(`${tipo}${zona ? ` en ${zona}` : ''} disponible para ${op}.`)
-  if (s.dormitorios || s.banos || s.superficie_m2) lines.push('')
+  lines.push(`${tipo}${s.zona ? ` en ${s.zona}` : ''} disponible para ${op}.`)
   if (s.dormitorios != null) lines.push(`• ${s.dormitorios === 0 ? 'Monoambiente' : `${s.dormitorios} dormitorio${s.dormitorios !== 1 ? 's' : ''}`}`)
   if (s.banos) lines.push(`• ${s.banos} baño${s.banos !== 1 ? 's' : ''}`)
   if (s.superficie_m2) lines.push(`• ${s.superficie_m2} m² de superficie`)
@@ -120,473 +136,55 @@ function generateDescription(s: WizardState): string {
   return lines.join('\n')
 }
 
-function formatPreset(value: number, moneda: 'USD' | 'PYG'): string {
-  if (moneda === 'USD') {
-    return value >= 1_000_000 ? `$${value / 1_000_000}M` : `$${value / 1000}k`
-  }
-  return value >= 1_000_000_000 ? `₲${value / 1_000_000_000}B` : `₲${value / 1_000_000}M`
-}
+// ─── UI atoms ─────────────────────────────────────────────────────────────────
 
-// ─── Sub-components ───────────────────────────────────────────────────────────
-
-type Updater = (patch: Partial<WizardState>) => void
-
-function ChipGroup({ label, options, value, onChange }: {
-  label: string
-  options: { value: number; label: string }[]
-  value: number | null
-  onChange: (v: number) => void
-}) {
+function Block({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div>
-      <p className="text-sm font-medium text-gray-700 mb-2">{label}</p>
-      <div className="flex flex-wrap gap-2">
-        {options.map(opt => (
-          <button
-            key={opt.value}
-            onClick={() => onChange(opt.value)}
-            className={`px-4 py-2 rounded-xl text-sm font-medium border transition-colors ${
-              value === opt.value
-                ? 'bg-gray-900 text-white border-gray-900'
-                : 'border-gray-200 text-gray-700 hover:border-gray-300'
-            }`}
-          >
-            {opt.label}
-          </button>
-        ))}
-      </div>
+    <div className="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm">
+      <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-5">{title}</h2>
+      {children}
     </div>
   )
 }
 
-// Step 1 — Operación
-function Step1({ state, update, onNext }: { state: WizardState; update: Updater; onNext: () => void }) {
-  function select(op: 'venta' | 'alquiler') {
-    update({ operacion: op })
-    setTimeout(onNext, 180)
-  }
+function Chip({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
   return (
-    <div className="flex flex-col gap-6">
-      <div>
-        <h2 className="text-xl font-semibold text-gray-900">¿Qué querés hacer?</h2>
-        <p className="text-sm text-gray-500 mt-1">Seleccioná el tipo de operación</p>
-      </div>
-      <div className="grid grid-cols-2 gap-3">
-        {([
-          { value: 'venta' as const, label: 'Venta', icon: Home, desc: 'Publicar para vender' },
-          { value: 'alquiler' as const, label: 'Alquiler', icon: Key, desc: 'Publicar para alquilar' },
-        ]).map(({ value, label, icon: Icon, desc }) => (
-          <button
-            key={value}
-            onClick={() => select(value)}
-            className={`flex flex-col items-center gap-3 p-6 rounded-2xl border-2 transition-all ${
-              state.operacion === value
-                ? 'border-gray-900 bg-gray-900 text-white'
-                : 'border-gray-200 hover:border-gray-300 text-gray-700'
-            }`}
-          >
-            <Icon className="w-8 h-8" />
-            <div className="text-center">
-              <p className="font-semibold">{label}</p>
-              <p className={`text-xs mt-0.5 ${state.operacion === value ? 'text-gray-300' : 'text-gray-400'}`}>{desc}</p>
-            </div>
-          </button>
-        ))}
-      </div>
-    </div>
+    <button
+      type="button"
+      onClick={onClick}
+      className={`px-4 py-2 rounded-xl text-sm font-medium border transition-all ${
+        active ? 'bg-gray-900 text-white border-gray-900' : 'border-gray-200 text-gray-600 hover:border-gray-400'
+      }`}
+    >
+      {label}
+    </button>
   )
 }
 
-// Step 2 — Tipo
-function Step2({ state, update, onNext }: { state: WizardState; update: Updater; onNext: () => void }) {
-  function select(tipo: WizardState['tipo']) {
-    update({ tipo })
-    setTimeout(onNext, 180)
-  }
+function NumChip({ n, active, onClick }: { n: number | string; active: boolean; onClick: () => void }) {
   return (
-    <div className="flex flex-col gap-6">
-      <div>
-        <h2 className="text-xl font-semibold text-gray-900">Tipo de propiedad</h2>
-        <p className="text-sm text-gray-500 mt-1">¿Qué tipo de propiedad es?</p>
-      </div>
-      <div className="grid grid-cols-2 gap-3">
-        {([
-          { value: 'departamento' as const, label: 'Departamento', icon: Building2 },
-          { value: 'casa' as const, label: 'Casa', icon: Home },
-          { value: 'terreno' as const, label: 'Terreno', icon: Map },
-          { value: 'comercial' as const, label: 'Comercial', icon: Store },
-        ]).map(({ value, label, icon: Icon }) => (
-          <button
-            key={value}
-            onClick={() => select(value)}
-            className={`flex flex-col items-center gap-3 p-6 rounded-2xl border-2 transition-all ${
-              state.tipo === value
-                ? 'border-gray-900 bg-gray-900 text-white'
-                : 'border-gray-200 hover:border-gray-300 text-gray-700'
-            }`}
-          >
-            <Icon className="w-8 h-8" />
-            <p className="font-semibold">{label}</p>
-          </button>
-        ))}
-      </div>
-    </div>
+    <button
+      type="button"
+      onClick={onClick}
+      className={`w-12 h-10 rounded-xl text-sm font-medium border transition-all ${
+        active ? 'bg-gray-900 text-white border-gray-900' : 'border-gray-200 text-gray-600 hover:border-gray-400'
+      }`}
+    >
+      {n}
+    </button>
   )
 }
 
-// Step 3 — Ubicación
-function Step3({ state, update }: { state: WizardState; update: Updater }) {
-  return (
-    <div className="flex flex-col gap-4">
-      <div>
-        <h2 className="text-xl font-semibold text-gray-900">Ubicación</h2>
-        <p className="text-sm text-gray-500 mt-1">Buscá la dirección o tocá el mapa para colocar el pin</p>
-      </div>
-      <LocationPicker
-        value={state.location}
-        onChange={loc => update({ location: loc })}
-      />
-    </div>
-  )
+function Label({ children }: { children: React.ReactNode }) {
+  return <p className="text-sm font-medium text-gray-700 mb-2">{children}</p>
 }
 
-// Step 4 — Características
-function Step4({ state, update }: { state: WizardState; update: Updater }) {
-  const showDormBanos = state.tipo !== 'terreno'
-  const showTerreno = state.tipo === 'casa' || state.tipo === 'terreno'
-
+function TextInput(props: React.InputHTMLAttributes<HTMLInputElement>) {
   return (
-    <div className="flex flex-col gap-6">
-      <div>
-        <h2 className="text-xl font-semibold text-gray-900">Características</h2>
-        <p className="text-sm text-gray-500 mt-1">Datos principales de la propiedad</p>
-      </div>
-      {showDormBanos && (
-        <>
-          <ChipGroup
-            label="Dormitorios"
-            options={[
-              { value: 0, label: 'Mono' },
-              { value: 1, label: '1' },
-              { value: 2, label: '2' },
-              { value: 3, label: '3' },
-              { value: 4, label: '4+' },
-            ]}
-            value={state.dormitorios}
-            onChange={v => update({ dormitorios: v })}
-          />
-          <ChipGroup
-            label="Baños"
-            options={[
-              { value: 1, label: '1' },
-              { value: 2, label: '2' },
-              { value: 3, label: '3+' },
-            ]}
-            value={state.banos}
-            onChange={v => update({ banos: v })}
-          />
-        </>
-      )}
-      <div>
-        <p className="text-sm font-medium text-gray-700 mb-2">Superficie total</p>
-        <div className="flex items-center gap-2">
-          <input
-            type="number"
-            value={state.superficie_m2}
-            onChange={e => update({ superficie_m2: e.target.value })}
-            placeholder="Ej: 66"
-            className="w-32 px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-gray-300 text-right"
-          />
-          <span className="text-sm text-gray-500">m²</span>
-        </div>
-      </div>
-      {showTerreno && (
-        <div>
-          <p className="text-sm font-medium text-gray-700 mb-2">Superficie de terreno</p>
-          <div className="flex items-center gap-2">
-            <input
-              type="number"
-              value={state.terreno_m2}
-              onChange={e => update({ terreno_m2: e.target.value })}
-              placeholder="Ej: 200"
-              className="w-32 px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-gray-300 text-right"
-            />
-            <span className="text-sm text-gray-500">m²</span>
-          </div>
-        </div>
-      )}
-    </div>
-  )
-}
-
-// Step 5 — Amenities
-function Step5({ state, update }: { state: WizardState; update: Updater }) {
-  function toggle(id: string) {
-    const next = state.amenities.includes(id)
-      ? state.amenities.filter(a => a !== id)
-      : [...state.amenities, id]
-    update({ amenities: next })
-  }
-  return (
-    <div className="flex flex-col gap-5">
-      <div>
-        <h2 className="text-xl font-semibold text-gray-900">Amenities</h2>
-        <p className="text-sm text-gray-500 mt-1">Seleccioná las comodidades disponibles</p>
-      </div>
-      {AMENITIES_GRUPOS.map(({ grupo, items }) => (
-        <div key={grupo}>
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">{grupo}</p>
-          <div className="flex flex-wrap gap-2">
-            {items.map(({ id, label }) => (
-              <button
-                key={id}
-                onClick={() => toggle(id)}
-                className={`px-3 py-1.5 rounded-lg text-sm border transition-colors ${
-                  state.amenities.includes(id)
-                    ? 'bg-gray-900 text-white border-gray-900'
-                    : 'border-gray-200 text-gray-600 hover:border-gray-300'
-                }`}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-        </div>
-      ))}
-    </div>
-  )
-}
-
-// Step 6 — Fotos
-function Step6({ state, update }: { state: WizardState; update: Updater }) {
-  const inputRef = useRef<HTMLInputElement>(null)
-  const [isDragging, setIsDragging] = useState(false)
-  const previewUrls = useRef<Record<string, string>>({})
-
-  function fileKey(file: File) { return `${file.name}-${file.size}-${file.lastModified}` }
-
-  function getPreviewUrl(file: File): string {
-    const key = fileKey(file)
-    if (!previewUrls.current[key]) {
-      previewUrls.current[key] = URL.createObjectURL(file)
-    }
-    return previewUrls.current[key]
-  }
-
-  function addFiles(files: FileList | File[]) {
-    const valid = Array.from(files).filter(f => f.type.startsWith('image/'))
-    update({ fotos: [...state.fotos, ...valid].slice(0, 10) })
-  }
-
-  function removeFile(i: number) {
-    const file = state.fotos[i]
-    const key = fileKey(file)
-    const url = previewUrls.current[key]
-    if (url) URL.revokeObjectURL(url)
-    delete previewUrls.current[key]
-    update({ fotos: state.fotos.filter((_, idx) => idx !== i) })
-  }
-
-  return (
-    <div className="flex flex-col gap-4">
-      <div>
-        <h2 className="text-xl font-semibold text-gray-900">Fotos</h2>
-        <p className="text-sm text-gray-500 mt-1">Agregá hasta 10 fotos. La primera será la portada.</p>
-      </div>
-      <div
-        onClick={() => inputRef.current?.click()}
-        onDragOver={e => { e.preventDefault(); setIsDragging(true) }}
-        onDragLeave={() => setIsDragging(false)}
-        onDrop={e => { e.preventDefault(); setIsDragging(false); addFiles(e.dataTransfer.files) }}
-        className={`border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer transition-colors ${
-          isDragging ? 'border-gray-400 bg-gray-50' : 'border-gray-200 hover:border-gray-300'
-        }`}
-      >
-        <Camera className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-        <p className="text-sm text-gray-500">Tocá para agregar fotos</p>
-        <p className="text-xs text-gray-400 mt-1">o arrastrá y soltá aquí · JPG, PNG</p>
-        <input
-          ref={inputRef}
-          type="file"
-          accept="image/*"
-          multiple
-          className="hidden"
-          onChange={e => e.target.files && addFiles(e.target.files)}
-        />
-      </div>
-      {state.fotos.length > 0 && (
-        <>
-          <div className="grid grid-cols-3 gap-2">
-            {state.fotos.map((file, i) => (
-              <div key={i} className="relative aspect-square rounded-xl overflow-hidden group">
-                <img
-                  src={getPreviewUrl(file)}
-                  alt=""
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors" />
-                {i === 0 && (
-                  <span className="absolute bottom-1 left-1 text-xs bg-black/60 text-white px-1.5 py-0.5 rounded">
-                    Portada
-                  </span>
-                )}
-                <button
-                  onClick={e => { e.stopPropagation(); removeFile(i) }}
-                  className="absolute top-1 right-1 p-1 rounded-full bg-black/60 text-white opacity-0 group-hover:opacity-100 transition-opacity"
-                >
-                  <X className="w-3 h-3" />
-                </button>
-              </div>
-            ))}
-          </div>
-          <p className="text-xs text-gray-400 text-center">{state.fotos.length}/10 fotos</p>
-        </>
-      )}
-    </div>
-  )
-}
-
-// Step 7 — Precio
-function Step7({ state, update }: { state: WizardState; update: Updater }) {
-  const presets = state.moneda === 'USD' ? PRESETS_USD : PRESETS_PYG
-
-  return (
-    <div className="flex flex-col gap-6">
-      <div>
-        <h2 className="text-xl font-semibold text-gray-900">Precio</h2>
-        <p className="text-sm text-gray-500 mt-1">¿Cuánto vale la propiedad?</p>
-      </div>
-      <div>
-        <p className="text-sm font-medium text-gray-700 mb-2">Moneda</p>
-        <div className="flex gap-2">
-          {(['USD', 'PYG'] as const).map(m => (
-            <button
-              key={m}
-              onClick={() => update({ moneda: m, precio: '' })}
-              className={`px-5 py-2 rounded-xl text-sm font-medium border transition-colors ${
-                state.moneda === m
-                  ? 'bg-gray-900 text-white border-gray-900'
-                  : 'border-gray-200 text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              {m === 'USD' ? '$ USD' : '₲ PYG'}
-            </button>
-          ))}
-        </div>
-      </div>
-      <div>
-        <p className="text-sm font-medium text-gray-700 mb-2">Precios frecuentes</p>
-        <div className="flex flex-wrap gap-2">
-          {presets.map(v => (
-            <button
-              key={v}
-              onClick={() => update({ precio: String(v) })}
-              className={`px-4 py-2 rounded-xl text-sm font-medium border transition-colors ${
-                state.precio === String(v)
-                  ? 'bg-gray-900 text-white border-gray-900'
-                  : 'border-gray-200 text-gray-600 hover:border-gray-300'
-              }`}
-            >
-              {formatPreset(v, state.moneda)}
-            </button>
-          ))}
-        </div>
-      </div>
-      <div>
-        <p className="text-sm font-medium text-gray-700 mb-2">O ingresá el precio exacto</p>
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-gray-500 w-5">{state.moneda === 'USD' ? '$' : '₲'}</span>
-          <input
-            type="number"
-            value={state.precio}
-            onChange={e => update({ precio: e.target.value })}
-            placeholder={state.moneda === 'USD' ? '120000' : '250000000'}
-            className="flex-1 px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-gray-300 text-right"
-          />
-        </div>
-        {state.precio && parseFloat(state.precio) > 0 && (
-          <p className="text-xs text-gray-400 mt-1.5 text-right">
-            {state.moneda === 'USD' ? '$' : '₲'}{' '}
-            {parseFloat(state.precio).toLocaleString(state.moneda === 'USD' ? 'en-US' : 'es-PY')}
-          </p>
-        )}
-      </div>
-    </div>
-  )
-}
-
-// Step 8 — Título, descripción y publicar
-function Step8({ state, update, isSaving, onPublish }: {
-  state: WizardState
-  update: Updater
-  isSaving: boolean
-  onPublish: (draft: boolean) => void
-}) {
-  useEffect(() => {
-    if (!state.titulo) update({ titulo: generateTitle(state) })
-    if (!state.descripcion) update({ descripcion: generateDescription(state) })
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-
-  return (
-    <div className="flex flex-col gap-5">
-      <div>
-        <h2 className="text-xl font-semibold text-gray-900">Título y descripción</h2>
-        <p className="text-sm text-gray-500 mt-1">Generamos un texto base. Podés editarlo.</p>
-      </div>
-      <div>
-        <p className="text-sm font-medium text-gray-700 mb-1.5">Título</p>
-        <input
-          value={state.titulo}
-          onChange={e => update({ titulo: e.target.value })}
-          className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-gray-300"
-        />
-      </div>
-      <div>
-        <p className="text-sm font-medium text-gray-700 mb-1.5">Descripción</p>
-        <textarea
-          value={state.descripcion}
-          onChange={e => update({ descripcion: e.target.value })}
-          rows={7}
-          className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-gray-300 resize-none"
-        />
-      </div>
-      {/* Preview */}
-      <div className="border border-gray-100 rounded-xl p-4 bg-gray-50">
-        <p className="text-xs text-gray-400 uppercase tracking-wide mb-2">Vista previa</p>
-        <p className="font-medium text-gray-900 text-sm">{state.titulo || '—'}</p>
-        <p className="text-xs text-gray-500 mt-1">
-          {[
-            state.tipo && TIPO_LABEL[state.tipo],
-            state.operacion && OP_LABEL[state.operacion],
-            state.location?.zona,
-          ].filter(Boolean).join(' · ')}
-        </p>
-        {state.precio && (
-          <p className="text-sm font-semibold text-gray-800 mt-2">
-            {state.moneda === 'USD' ? '$' : '₲'}{' '}
-            {parseFloat(state.precio).toLocaleString(state.moneda === 'USD' ? 'en-US' : 'es-PY')}
-          </p>
-        )}
-      </div>
-      {/* Publish buttons */}
-      <div className="flex flex-col gap-2 pt-1 pb-4">
-        <button
-          onClick={() => onPublish(false)}
-          disabled={isSaving}
-          className="w-full py-3 rounded-xl bg-gray-900 text-white font-medium text-sm hover:bg-gray-700 transition-colors disabled:opacity-50"
-        >
-          {isSaving ? 'Guardando...' : 'Publicar propiedad'}
-        </button>
-        <button
-          onClick={() => onPublish(true)}
-          disabled={isSaving}
-          className="w-full py-3 rounded-xl border border-gray-200 text-gray-600 text-sm hover:bg-gray-50 transition-colors disabled:opacity-50"
-        >
-          Guardar como borrador
-        </button>
-      </div>
-    </div>
+    <input
+      {...props}
+      className={`w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gray-900/20 focus:border-gray-400 ${props.className ?? ''}`}
+    />
   )
 }
 
@@ -594,48 +192,96 @@ function Step8({ state, update, isSaving, onPublish }: {
 
 export function PropiedadNuevaPage() {
   const navigate = useNavigate()
-  const [step, setStep] = useState(1)
-  const [state, setState] = useState<WizardState>(INITIAL_STATE)
+  const [s, setS] = useState<FormState>(INITIAL)
   const [isSaving, setIsSaving] = useState(false)
+  const inputRef = useRef<HTMLInputElement>(null)
+  const [isDragging, setIsDragging] = useState(false)
+  const previewUrls = useRef<Record<string, string>>({})
 
-  function next() { setStep(s => Math.min(s + 1, TOTAL_STEPS)) }
-  function back() { setStep(s => Math.max(s - 1, 1)) }
-  function update(patch: Partial<WizardState>) { setState(s => ({ ...s, ...patch })) }
+  function update(patch: Partial<FormState>) { setS(prev => ({ ...prev, ...patch })) }
 
-  async function handlePublish(draft: boolean) {
+  // Auto-fill title/description when key fields change
+  useEffect(() => {
+    if (s.operacion && s.tipo) {
+      if (!s.titulo) update({ titulo: generateTitle(s) })
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [s.operacion, s.tipo, s.dormitorios, s.zona])
+
+  // ── Google Maps parser ──────────────────────────────────────────────────────
+  const mapsData = parseMapsUrl(s.mapsLink)
+  const isShortUrl = s.mapsLink.trim() && (s.mapsLink.includes('goo.gl') || s.mapsLink.includes('maps.app.goo.gl'))
+
+  function handleMapsLink(link: string) {
+    const parsed = parseMapsUrl(link)
+    update({
+      mapsLink: link,
+      lat: parsed?.lat ?? null,
+      lng: parsed?.lng ?? null,
+    })
+  }
+
+  // ── Photos ──────────────────────────────────────────────────────────────────
+  function fileKey(file: File) { return `${file.name}-${file.size}-${file.lastModified}` }
+
+  function getPreviewUrl(file: File): string {
+    const key = fileKey(file)
+    if (!previewUrls.current[key]) previewUrls.current[key] = URL.createObjectURL(file)
+    return previewUrls.current[key]
+  }
+
+  function addFiles(files: FileList | File[]) {
+    const valid = Array.from(files).filter(f => f.type.startsWith('image/'))
+    update({ fotos: [...s.fotos, ...valid].slice(0, 20) })
+  }
+
+  function removeFile(i: number) {
+    const file = s.fotos[i]
+    const key = fileKey(file)
+    const url = previewUrls.current[key]
+    if (url) URL.revokeObjectURL(url)
+    delete previewUrls.current[key]
+    update({ fotos: s.fotos.filter((_, idx) => idx !== i) })
+  }
+
+  // ── Save ────────────────────────────────────────────────────────────────────
+  async function handleSave(draft: boolean) {
+    if (!s.operacion || !s.tipo) {
+      toast.error('Completá operación y tipo de propiedad')
+      return
+    }
     setIsSaving(true)
     try {
-      // 1. Create property record
+      const titulo = s.titulo || generateTitle(s)
+      const descripcion = s.descripcion || generateDescription(s)
+
       const property = await createProperty({
-        operacion: state.operacion!,
-        tipo: state.tipo!,
-        titulo: state.titulo || null,
-        descripcion: state.descripcion || null,
-        latitud: state.location?.lat ?? null,
-        longitud: state.location?.lng ?? null,
-        zona: state.location?.zona || null,
-        direccion: state.location?.direccion || null,
-        dormitorios: state.dormitorios,
-        banos: state.banos,
-        superficie_m2: state.superficie_m2 ? parseFloat(state.superficie_m2) : null,
-        terreno_m2: state.terreno_m2 ? parseFloat(state.terreno_m2) : null,
-        amenities: state.amenities,
-        precio: state.precio ? parseFloat(state.precio) : null,
-        moneda: state.moneda,
+        operacion: s.operacion,
+        tipo: s.tipo,
+        titulo: titulo || null,
+        descripcion: descripcion || null,
+        latitud: s.lat,
+        longitud: s.lng,
+        zona: s.zona || null,
+        direccion: s.direccion || null,
+        dormitorios: s.dormitorios,
+        banos: s.banos,
+        superficie_m2: s.superficie_m2 ? parseFloat(s.superficie_m2) : null,
+        terreno_m2: s.terreno_m2 ? parseFloat(s.terreno_m2) : null,
+        amenities: s.amenities,
+        precio: s.precio ? parseFloat(s.precio) : null,
+        moneda: s.moneda,
         estado: 'activo',
         publicado_en_web: !draft,
       })
 
-      // 2. Upload photos
       let portadaPath: string | null = null
-      for (let i = 0; i < state.fotos.length; i++) {
-        const file = state.fotos[i]
+      for (let i = 0; i < s.fotos.length; i++) {
+        const file = s.fotos[i]
         const ext = file.name.split('.').pop()
         const path = `${property.id}/${Date.now()}-${i}.${ext}`
-        const { error: uploadError } = await supabase.storage
-          .from('property-photos')
-          .upload(path, file)
-        if (uploadError) continue
+        const { error } = await supabase.storage.from('property-photos').upload(path, file)
+        if (error) continue
         await supabase.from('property_photos').insert({
           property_id: property.id,
           storage_path: path,
@@ -645,7 +291,6 @@ export function PropiedadNuevaPage() {
         if (i === 0) portadaPath = path
       }
 
-      // 3. Set foto_portada
       if (portadaPath) {
         await supabase.from('properties').update({ foto_portada: portadaPath }).eq('id', property.id)
       }
@@ -658,79 +303,413 @@ export function PropiedadNuevaPage() {
     setIsSaving(false)
   }
 
-  const showFooter = step >= 3 && step <= 7
+  const showDormBanos = s.tipo !== 'terreno'
+  const showTerreno = s.tipo === 'casa' || s.tipo === 'terreno'
+  const presets = s.moneda === 'USD' ? PRESETS_USD : PRESETS_PYG
 
   return (
-    <div className="flex flex-col h-screen bg-white">
-      {/* Progress bar */}
-      <div className="h-1 bg-gray-100 flex-shrink-0">
-        <div
-          className="h-full bg-gray-900 transition-all duration-300"
-          style={{ width: `${(step / TOTAL_STEPS) * 100}%` }}
-        />
-      </div>
+    <div className="min-h-screen bg-gray-50 pb-28">
 
-      {/* Header */}
-      <header className="flex items-center px-4 py-3 border-b border-gray-100 flex-shrink-0">
-        {step > 2 ? (
-          <button
-            onClick={back}
-            className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-800 transition-colors min-w-[60px]"
-          >
-            <ArrowLeft className="w-4 h-4" /> Volver
-          </button>
-        ) : (
-          <div className="min-w-[60px]" />
-        )}
-        <span className="flex-1 text-center text-sm font-medium text-gray-600">
-          Paso {step} de {TOTAL_STEPS}
-        </span>
+      {/* ── Header ── */}
+      <header className="sticky top-0 z-30 bg-white/90 backdrop-blur border-b border-gray-100 px-6 py-4 flex items-center justify-between">
+        <div>
+          <h1 className="text-sm font-semibold text-gray-900">Nueva propiedad</h1>
+          <p className="text-xs text-gray-400 mt-0.5">Completá los datos y publicá</p>
+        </div>
         <button
           onClick={() => navigate('/propiedades')}
-          className="text-gray-400 hover:text-gray-700 transition-colors min-w-[60px] flex justify-end"
+          className="p-2 rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-700 transition-colors"
         >
           <X className="w-5 h-5" />
         </button>
       </header>
 
-      {/* Content */}
-      <main className="flex-1 overflow-y-auto">
-        <div className="max-w-lg mx-auto px-4 py-6">
-          {step === 1 && <Step1 state={state} update={update} onNext={next} />}
-          {step === 2 && <Step2 state={state} update={update} onNext={next} />}
-          {step === 3 && <Step3 state={state} update={update} />}
-          {step === 4 && <Step4 state={state} update={update} />}
-          {step === 5 && <Step5 state={state} update={update} />}
-          {step === 6 && <Step6 state={state} update={update} />}
-          {step === 7 && <Step7 state={state} update={update} />}
-          {step === 8 && (
-            <Step8
-              state={state}
-              update={update}
-              isSaving={isSaving}
-              onPublish={handlePublish}
-            />
-          )}
-        </div>
-      </main>
+      {/* ── Content ── */}
+      <div className="max-w-[900px] mx-auto px-4 sm:px-6 py-8 flex flex-col gap-6">
 
-      {/* Footer nav (steps 3–7) */}
-      {showFooter && (
-        <div className="flex-shrink-0 border-t border-gray-100 px-4 py-3 flex gap-3 bg-white">
-          <button
-            onClick={back}
-            className="px-5 py-2.5 rounded-xl text-sm text-gray-600 border border-gray-200 hover:bg-gray-50 transition-colors"
-          >
-            Volver
-          </button>
-          <button
-            onClick={next}
-            className="flex-1 py-2.5 rounded-xl text-sm font-medium bg-gray-900 text-white hover:bg-gray-700 transition-colors"
-          >
-            Siguiente
-          </button>
-        </div>
-      )}
+        {/* BLOQUE 1 — Operación + Tipo */}
+        <Block title="Operación y tipo">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            {/* Operación */}
+            <div>
+              <Label>¿Qué querés hacer?</Label>
+              <div className="flex gap-2">
+                {([
+                  { value: 'venta' as const, label: 'Venta', icon: Home },
+                  { value: 'alquiler' as const, label: 'Alquiler', icon: Key },
+                ]).map(({ value, label, icon: Icon }) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => update({ operacion: value })}
+                    className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border-2 text-sm font-medium transition-all ${
+                      s.operacion === value
+                        ? 'border-gray-900 bg-gray-900 text-white'
+                        : 'border-gray-200 text-gray-600 hover:border-gray-400'
+                    }`}
+                  >
+                    <Icon className="w-4 h-4" />
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Tipo */}
+            <div>
+              <Label>Tipo de propiedad</Label>
+              <div className="grid grid-cols-2 gap-2">
+                {([
+                  { value: 'departamento' as const, label: 'Departamento', icon: Building2 },
+                  { value: 'casa' as const, label: 'Casa', icon: Home },
+                  { value: 'terreno' as const, label: 'Terreno', icon: Map },
+                  { value: 'comercial' as const, label: 'Comercial', icon: Store },
+                ]).map(({ value, label, icon: Icon }) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => update({ tipo: value })}
+                    className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border-2 text-sm font-medium transition-all ${
+                      s.tipo === value
+                        ? 'border-gray-900 bg-gray-900 text-white'
+                        : 'border-gray-200 text-gray-600 hover:border-gray-400'
+                    }`}
+                  >
+                    <Icon className="w-4 h-4 flex-shrink-0" />
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </Block>
+
+        {/* BLOQUE 2 — Ubicación */}
+        <Block title="Ubicación">
+          <div className="flex flex-col gap-4">
+            <div>
+              <Label>Link de Google Maps</Label>
+              <div className="relative">
+                <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                <input
+                  type="url"
+                  value={s.mapsLink}
+                  onChange={e => handleMapsLink(e.target.value)}
+                  placeholder="https://www.google.com/maps/place/..."
+                  className="w-full pl-9 pr-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gray-900/20 focus:border-gray-400"
+                />
+              </div>
+              {isShortUrl && (
+                <p className="text-xs text-amber-600 mt-1.5">
+                  Link corto detectado. Usá el link completo de Google Maps para obtener el mapa.
+                </p>
+              )}
+              {mapsData && !isShortUrl && (
+                <p className="text-xs text-emerald-600 mt-1.5 flex items-center gap-1">
+                  <Check className="w-3.5 h-3.5" />
+                  {mapsData.lat ? `Coordenadas: ${mapsData.lat.toFixed(4)}, ${mapsData.lng?.toFixed(4)}` : 'Link válido'}
+                </p>
+              )}
+            </div>
+
+            {/* Map preview */}
+            {mapsData && !isShortUrl && (
+              <div className="overflow-hidden rounded-xl border border-gray-200" style={{ height: 220 }}>
+                <iframe
+                  src={mapsData.embedSrc}
+                  className="w-full h-full border-0"
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                />
+              </div>
+            )}
+
+            {/* Zona y dirección manual */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <Label>Zona / Barrio</Label>
+                <TextInput
+                  value={s.zona}
+                  onChange={e => update({ zona: e.target.value })}
+                  placeholder="Ej: Luque – Zona CIT"
+                />
+              </div>
+              <div>
+                <Label>Dirección</Label>
+                <TextInput
+                  value={s.direccion}
+                  onChange={e => update({ direccion: e.target.value })}
+                  placeholder="Ej: Av. Mariscal López 123"
+                />
+              </div>
+            </div>
+          </div>
+        </Block>
+
+        {/* BLOQUE 3 — Características */}
+        <Block title="Características">
+          <div className="flex flex-col gap-5">
+            {showDormBanos && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                <div>
+                  <Label>Dormitorios</Label>
+                  <div className="flex gap-2">
+                    {[{ v: 0, l: 'Mono' }, { v: 1, l: '1' }, { v: 2, l: '2' }, { v: 3, l: '3' }, { v: 4, l: '4+' }].map(({ v, l }) => (
+                      <NumChip key={v} n={l} active={s.dormitorios === v} onClick={() => update({ dormitorios: v })} />
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <Label>Baños</Label>
+                  <div className="flex gap-2">
+                    {[1, 2, 3].map(v => (
+                      <NumChip key={v} n={v === 3 ? '3+' : v} active={s.banos === v} onClick={() => update({ banos: v })} />
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <Label>Superficie total</Label>
+                <div className="flex items-center gap-2">
+                  <TextInput
+                    type="number"
+                    value={s.superficie_m2}
+                    onChange={e => update({ superficie_m2: e.target.value })}
+                    placeholder="Ej: 66"
+                    className="text-right"
+                  />
+                  <span className="text-sm text-gray-500 flex-shrink-0">m²</span>
+                </div>
+              </div>
+              {showTerreno && (
+                <div>
+                  <Label>Superficie de terreno</Label>
+                  <div className="flex items-center gap-2">
+                    <TextInput
+                      type="number"
+                      value={s.terreno_m2}
+                      onChange={e => update({ terreno_m2: e.target.value })}
+                      placeholder="Ej: 200"
+                      className="text-right"
+                    />
+                    <span className="text-sm text-gray-500 flex-shrink-0">m²</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </Block>
+
+        {/* BLOQUE 4 — Amenities */}
+        <Block title="Amenities">
+          <div className="flex flex-col gap-5">
+            {AMENITIES_GRUPOS.map(({ grupo, items }) => (
+              <div key={grupo}>
+                <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-2.5">{grupo}</p>
+                <div className="flex flex-wrap gap-2">
+                  {items.map(({ id, label }) => (
+                    <Chip
+                      key={id}
+                      label={label}
+                      active={s.amenities.includes(id)}
+                      onClick={() => {
+                        const next = s.amenities.includes(id)
+                          ? s.amenities.filter(a => a !== id)
+                          : [...s.amenities, id]
+                        update({ amenities: next })
+                      }}
+                    />
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </Block>
+
+        {/* BLOQUE 5 — Fotos */}
+        <Block title="Fotos">
+          <div className="flex flex-col gap-4">
+            <div
+              onClick={() => inputRef.current?.click()}
+              onDragOver={e => { e.preventDefault(); setIsDragging(true) }}
+              onDragLeave={() => setIsDragging(false)}
+              onDrop={e => { e.preventDefault(); setIsDragging(false); addFiles(e.dataTransfer.files) }}
+              className={`border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer transition-colors ${
+                isDragging ? 'border-gray-400 bg-gray-50' : 'border-gray-200 hover:border-gray-400'
+              }`}
+            >
+              <Camera className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+              <p className="text-sm text-gray-500">Tocá para agregar fotos</p>
+              <p className="text-xs text-gray-400 mt-1">o arrastrá y soltá · JPG, PNG · máx. 20 fotos</p>
+              <input
+                ref={inputRef}
+                type="file"
+                accept="image/*"
+                multiple
+                className="hidden"
+                onChange={e => e.target.files && addFiles(e.target.files)}
+              />
+            </div>
+
+            {s.fotos.length > 0 && (
+              <>
+                <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
+                  {s.fotos.map((file, i) => (
+                    <div key={i} className="relative aspect-square rounded-xl overflow-hidden group">
+                      <img
+                        src={getPreviewUrl(file)}
+                        alt=""
+                        className="w-full h-full object-cover"
+                      />
+                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors" />
+                      {i === 0 && (
+                        <span className="absolute bottom-1 left-1 text-[10px] bg-black/60 text-white px-1.5 py-0.5 rounded">
+                          Portada
+                        </span>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => removeFile(i)}
+                        className="absolute top-1 right-1 p-1 rounded-full bg-black/60 text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-xs text-gray-400">{s.fotos.length}/20 fotos · La primera es la portada</p>
+              </>
+            )}
+          </div>
+        </Block>
+
+        {/* BLOQUE 6 — Precio */}
+        <Block title="Precio">
+          <div className="flex flex-col gap-5">
+            {/* Moneda */}
+            <div>
+              <Label>Moneda</Label>
+              <div className="flex gap-2">
+                {(['USD', 'PYG'] as const).map(m => (
+                  <button
+                    key={m}
+                    type="button"
+                    onClick={() => update({ moneda: m, precio: '' })}
+                    className={`px-5 py-2 rounded-xl text-sm font-medium border-2 transition-all ${
+                      s.moneda === m ? 'border-gray-900 bg-gray-900 text-white' : 'border-gray-200 text-gray-600 hover:border-gray-400'
+                    }`}
+                  >
+                    {m === 'USD' ? '$ USD' : '₲ PYG'}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Presets */}
+            <div>
+              <Label>Precios frecuentes</Label>
+              <div className="flex flex-wrap gap-2">
+                {presets.map(v => (
+                  <Chip
+                    key={v}
+                    label={formatPreset(v, s.moneda)}
+                    active={s.precio === String(v)}
+                    onClick={() => update({ precio: String(v) })}
+                  />
+                ))}
+              </div>
+            </div>
+
+            {/* Input exacto */}
+            <div>
+              <Label>Precio exacto</Label>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-500 w-5 flex-shrink-0">{s.moneda === 'USD' ? '$' : '₲'}</span>
+                <TextInput
+                  type="number"
+                  value={s.precio}
+                  onChange={e => update({ precio: e.target.value })}
+                  placeholder={s.moneda === 'USD' ? '120000' : '250000000'}
+                  className="text-right"
+                />
+              </div>
+              {s.precio && parseFloat(s.precio) > 0 && (
+                <p className="text-xs text-gray-400 mt-1.5 text-right">
+                  {s.moneda === 'USD' ? '$' : '₲'}{' '}
+                  {parseFloat(s.precio).toLocaleString(s.moneda === 'USD' ? 'en-US' : 'es-PY')}
+                </p>
+              )}
+            </div>
+          </div>
+        </Block>
+
+        {/* BLOQUE 7 — Título y descripción */}
+        <Block title="Título y descripción">
+          <div className="flex flex-col gap-4">
+            <div>
+              <Label>Título</Label>
+              <TextInput
+                value={s.titulo}
+                onChange={e => update({ titulo: e.target.value })}
+                placeholder={s.operacion && s.tipo ? generateTitle(s) : 'Se genera automáticamente'}
+              />
+              {s.operacion && s.tipo && !s.titulo && (
+                <button
+                  type="button"
+                  onClick={() => update({ titulo: generateTitle(s) })}
+                  className="text-xs text-gray-400 hover:text-gray-700 mt-1 transition-colors"
+                >
+                  Usar sugerido: "{generateTitle(s)}"
+                </button>
+              )}
+            </div>
+            <div>
+              <Label>Descripción</Label>
+              <textarea
+                value={s.descripcion}
+                onChange={e => update({ descripcion: e.target.value })}
+                rows={6}
+                placeholder="Describirás la propiedad aquí..."
+                className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gray-900/20 focus:border-gray-400 resize-none"
+              />
+              {s.operacion && s.tipo && !s.descripcion && (
+                <button
+                  type="button"
+                  onClick={() => update({ descripcion: generateDescription(s) })}
+                  className="text-xs text-gray-400 hover:text-gray-700 mt-1 transition-colors"
+                >
+                  Generar descripción automática
+                </button>
+              )}
+            </div>
+          </div>
+        </Block>
+
+      </div>
+
+      {/* ── Bottom action bar (fija) ── */}
+      <div className="fixed bottom-0 inset-x-0 z-30 bg-white/95 backdrop-blur border-t border-gray-100 px-4 sm:px-6 py-3 flex gap-3 max-w-[900px] mx-auto left-0 right-0">
+        <button
+          type="button"
+          onClick={() => handleSave(true)}
+          disabled={isSaving}
+          className="px-5 py-2.5 rounded-xl text-sm text-gray-600 border border-gray-200 hover:bg-gray-50 transition-colors disabled:opacity-50 flex-shrink-0"
+        >
+          Guardar borrador
+        </button>
+        <button
+          type="button"
+          onClick={() => handleSave(false)}
+          disabled={isSaving}
+          className="flex-1 py-2.5 rounded-xl text-sm font-semibold bg-gray-900 text-white hover:bg-gray-700 transition-colors disabled:opacity-50"
+        >
+          {isSaving ? 'Guardando...' : 'Publicar propiedad'}
+        </button>
+      </div>
+
     </div>
   )
 }
