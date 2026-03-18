@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import { useNavigate } from 'react-router'
 import { X, Upload, Link as LinkIcon, Check, Plus, Trash2, Clipboard } from 'lucide-react'
 import { toast } from 'sonner'
@@ -23,6 +23,19 @@ interface TypologyDraft {
   variants: TypologyVariant[]
 }
 
+interface LinkEntry {
+  _id: string
+  type: string
+  url: string
+}
+
+interface PlanoModalState {
+  typologyType: TypologyType
+  variantId: string
+  previewUrl: string | null
+  file: File | null
+}
+
 interface FormState {
   name: string
   status: Status
@@ -34,9 +47,7 @@ interface FormState {
   lng: number | null
   zona: string
   direccion: string
-  link_drive: string
-  link_brochure: string
-  link_vista360: string
+  links: LinkEntry[]
   selected_types: TypologyType[]
   typology_data: Partial<Record<TypologyType, TypologyDraft>>
   caracteristicas: string
@@ -47,14 +58,14 @@ interface FormState {
 const INITIAL: FormState = {
   name: '', status: 'en_pozo', developer_name: '', tipo_proyecto: null, delivery_date: '',
   maps_url: '', lat: null, lng: null, zona: '', direccion: '',
-  link_drive: '', link_brochure: '', link_vista360: '',
+  links: [],
   selected_types: [], typology_data: {},
   caracteristicas: '',
   fotos: [],
   resumen: '',
 }
 
-// ─── Typology definitions (fixed order) ────────────────────────────────────────
+// ─── Constants ────────────────────────────────────────────────────────────────
 
 const TYPOLOGY_DEFS: Array<{
   id: TypologyType
@@ -70,6 +81,14 @@ const TYPOLOGY_DEFS: Array<{
   { id: 'cochera',    label: 'Cochera',        hasBanos: false, category: 'cochera' },
   { id: 'cochera_xl', label: 'Cochera XL',     hasBanos: false, category: 'cochera' },
   { id: 'baulera',    label: 'Baulera',        hasBanos: false, category: 'baulera' },
+]
+
+const LINK_TYPE_OPTIONS = [
+  { value: 'maps',     label: 'Google Maps' },
+  { value: 'drive',    label: 'Drive' },
+  { value: 'vista360', label: 'Vista 360' },
+  { value: 'brochure', label: 'Brochure' },
+  { value: 'otro',     label: 'Otro' },
 ]
 
 // ─── Maps resolver ─────────────────────────────────────────────────────────────
@@ -96,66 +115,12 @@ function parseMapsUrl(url: string): { embedSrc: string; lat: number | null; lng:
   return null
 }
 
-// ─── PlanoInput ────────────────────────────────────────────────────────────────
-
-function PlanoInput({ value, onChange }: { value: File | null; onChange: (f: File | null) => void }) {
-  const [dragging, setDragging] = useState(false)
-
-  function handlePaste(e: React.ClipboardEvent) {
-    const items = e.clipboardData?.items
-    if (!items) return
-    for (const item of Array.from(items)) {
-      if (item.type.startsWith('image/')) {
-        const f = item.getAsFile()
-        if (f) onChange(f)
-        break
-      }
-    }
-  }
-
-  function handleDrop(e: React.DragEvent) {
-    e.preventDefault()
-    setDragging(false)
-    const f = e.dataTransfer.files[0]
-    if (f && (f.type.startsWith('image/') || f.type === 'application/pdf')) onChange(f)
-  }
-
-  return (
-    <div className="flex gap-2 mt-2">
-      <label
-        className={`flex-1 flex items-center gap-1.5 px-3 py-2 border border-dashed rounded-xl text-xs cursor-pointer transition-colors ${
-          dragging ? 'border-gray-900 bg-gray-50' : 'border-gray-300 text-gray-500 hover:border-gray-400'
-        }`}
-        onDragOver={e => { e.preventDefault(); setDragging(true) }}
-        onDragLeave={() => setDragging(false)}
-        onDrop={handleDrop}
-      >
-        <Upload className="w-3 h-3 flex-shrink-0" />
-        {value
-          ? <span className="truncate text-emerald-600 max-w-[120px]">{value.name}</span>
-          : <span>Subir archivo</span>
-        }
-        <input type="file" accept="image/*,.pdf" className="hidden"
-          onChange={e => e.target.files?.[0] && onChange(e.target.files[0])}
-        />
-      </label>
-      <div
-        tabIndex={0}
-        onPaste={handlePaste}
-        className="flex items-center gap-1.5 px-3 py-2 border border-dashed border-gray-300 rounded-xl text-xs text-gray-400 hover:border-gray-400 hover:text-gray-600 cursor-pointer transition-colors focus:outline-none focus:border-gray-400 focus:ring-1 focus:ring-gray-300 select-none"
-      >
-        <Clipboard className="w-3 h-3" /> Pegar
-      </div>
-    </div>
-  )
-}
-
 // ─── UI atoms ─────────────────────────────────────────────────────────────────
 
 function PrimaryBlock({ children }: { children: React.ReactNode }) {
   return (
     <div className="bg-white border-2 border-gray-900 rounded-2xl p-6 shadow-[0_4px_24px_rgba(0,0,0,0.1)]">
-      <h2 className="text-xs font-bold uppercase tracking-widest text-gray-900 mb-6">Lo esencial</h2>
+      <h2 className="text-xs font-bold uppercase tracking-widest text-gray-900 mb-5">Lo esencial</h2>
       {children}
     </div>
   )
@@ -163,22 +128,22 @@ function PrimaryBlock({ children }: { children: React.ReactNode }) {
 
 function Block({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm">
-      <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-5">{title}</h2>
+    <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm">
+      <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-4">{title}</h2>
       {children}
     </div>
   )
 }
 
 function Label({ children }: { children: React.ReactNode }) {
-  return <p className="text-sm font-medium text-gray-700 mb-2">{children}</p>
+  return <p className="text-sm font-medium text-gray-700 mb-1.5">{children}</p>
 }
 
 function TextInput(props: React.InputHTMLAttributes<HTMLInputElement>) {
   return (
     <input
       {...props}
-      className={`w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gray-900/20 focus:border-gray-400 ${props.className ?? ''}`}
+      className={`w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gray-900/20 focus:border-gray-400 ${props.className ?? ''}`}
     />
   )
 }
@@ -191,11 +156,21 @@ export function ProyectoNuevoPage() {
   const [isSaving, setIsSaving] = useState(false)
   const [isResolvingMap, setIsResolvingMap] = useState(false)
   const [resolvedEmbed, setResolvedEmbed] = useState<{ embedSrc: string; lat: number | null; lng: number | null } | null>(null)
+  const [planoModal, setPlanoModal] = useState<PlanoModalState | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const [isDragging, setIsDragging] = useState(false)
   const previewUrls = useRef<Record<string, string>>({})
+  const modalRef = useRef<HTMLDivElement>(null)
 
   function update(patch: Partial<FormState>) { setS(prev => ({ ...prev, ...patch })) }
+
+  // Auto-focus paste area when modal opens
+  useEffect(() => {
+    if (planoModal) {
+      const t = setTimeout(() => modalRef.current?.focus(), 50)
+      return () => clearTimeout(t)
+    }
+  }, [planoModal])
 
   // ── Maps ─────────────────────────────────────────────────────────────────
   const isShortUrl = (url: string) => url.includes('goo.gl') || url.includes('maps.app.goo.gl')
@@ -232,6 +207,17 @@ export function ProyectoNuevoPage() {
     update({ lat: parsed?.lat ?? null, lng: parsed?.lng ?? null })
   }
 
+  // ── Links ─────────────────────────────────────────────────────────────────
+  function addLink() {
+    update({ links: [...s.links, { _id: crypto.randomUUID(), type: 'drive', url: '' }] })
+  }
+  function updateLink(id: string, field: 'type' | 'url', value: string) {
+    update({ links: s.links.map(l => l._id === id ? { ...l, [field]: value } : l) })
+  }
+  function removeLink(id: string) {
+    update({ links: s.links.filter(l => l._id !== id) })
+  }
+
   // ── Photos ───────────────────────────────────────────────────────────────
   function fileKey(file: File) { return `${file.name}-${file.size}-${file.lastModified}` }
   function getPreviewUrl(file: File): string {
@@ -262,40 +248,50 @@ export function ProyectoNuevoPage() {
       update({ selected_types: [...s.selected_types, type], typology_data: newData })
     }
   }
-
   function updateBanos(type: TypologyType, banos: number | null) {
     update({ typology_data: { ...s.typology_data, [type]: { ...s.typology_data[type]!, banos } } })
   }
-
   function addVariant(type: TypologyType) {
     const draft = s.typology_data[type]!
-    update({
-      typology_data: {
-        ...s.typology_data,
-        [type]: { ...draft, variants: [...draft.variants, { _id: crypto.randomUUID(), area_m2: '', plano: null }] },
-      },
-    })
+    update({ typology_data: { ...s.typology_data, [type]: { ...draft, variants: [...draft.variants, { _id: crypto.randomUUID(), area_m2: '', plano: null }] } } })
   }
-
   function removeVariant(type: TypologyType, variantId: string) {
     const draft = s.typology_data[type]!
     if (draft.variants.length <= 1) return
-    update({
-      typology_data: {
-        ...s.typology_data,
-        [type]: { ...draft, variants: draft.variants.filter(v => v._id !== variantId) },
-      },
-    })
+    update({ typology_data: { ...s.typology_data, [type]: { ...draft, variants: draft.variants.filter(v => v._id !== variantId) } } })
   }
-
   function updateVariantField(type: TypologyType, variantId: string, field: 'area_m2' | 'plano', value: string | File | null) {
     const draft = s.typology_data[type]!
-    update({
-      typology_data: {
-        ...s.typology_data,
-        [type]: { ...draft, variants: draft.variants.map(v => v._id === variantId ? { ...v, [field]: value } : v) },
-      },
-    })
+    update({ typology_data: { ...s.typology_data, [type]: { ...draft, variants: draft.variants.map(v => v._id === variantId ? { ...v, [field]: value } : v) } } })
+  }
+
+  // ── Plano modal ──────────────────────────────────────────────────────────
+  function openPlanoModal(type: TypologyType, variantId: string) {
+    setPlanoModal({ typologyType: type, variantId, previewUrl: null, file: null })
+  }
+  function closePlanoModal() {
+    if (planoModal?.previewUrl) URL.revokeObjectURL(planoModal.previewUrl)
+    setPlanoModal(null)
+  }
+  function handleModalPaste(e: React.ClipboardEvent) {
+    const items = e.clipboardData?.items
+    if (!items) return
+    for (const item of Array.from(items)) {
+      if (item.type.startsWith('image/')) {
+        const f = item.getAsFile()
+        if (f) {
+          if (planoModal?.previewUrl) URL.revokeObjectURL(planoModal.previewUrl)
+          setPlanoModal(prev => prev ? { ...prev, file: f, previewUrl: URL.createObjectURL(f) } : null)
+        }
+        break
+      }
+    }
+  }
+  function confirmPlano() {
+    if (!planoModal?.file) return
+    updateVariantField(planoModal.typologyType, planoModal.variantId, 'plano', planoModal.file)
+    if (planoModal.previewUrl) URL.revokeObjectURL(planoModal.previewUrl)
+    setPlanoModal(null)
   }
 
   // ── Save ─────────────────────────────────────────────────────────────────
@@ -303,11 +299,11 @@ export function ProyectoNuevoPage() {
     if (!s.name.trim()) { toast.error('El nombre del proyecto es requerido'); return }
     setIsSaving(true)
     try {
-      const links = [
-        s.maps_url      && { type: 'maps',     name: 'Google Maps',  url: s.maps_url },
-        s.link_drive    && { type: 'drive',    name: 'Google Drive', url: s.link_drive },
-        s.link_brochure && { type: 'brochure', name: 'Brochure',     url: s.link_brochure },
-        s.link_vista360 && { type: 'vista360', name: 'Vista 360',    url: s.link_vista360 },
+      const dbLinks = [
+        s.maps_url && { type: 'maps', name: 'Google Maps', url: s.maps_url },
+        ...s.links
+          .filter(l => l.url.trim())
+          .map(l => ({ type: l.type, name: LINK_TYPE_OPTIONS.find(o => o.value === l.type)?.label ?? 'Link', url: l.url.trim() })),
       ].filter(Boolean) as Array<{ type: string; name: string; url: string }>
 
       const project = await createProject({
@@ -319,11 +315,10 @@ export function ProyectoNuevoPage() {
         description: s.resumen || null,
         delivery_date: s.delivery_date || null,
         amenities: [],
-        links,
+        links: dbLinks,
         caracteristicas: s.caracteristicas || null,
       })
 
-      // Tipologías — orden fijo, una fila por variante
       for (const def of TYPOLOGY_DEFS) {
         if (!s.selected_types.includes(def.id)) continue
         const typDraft = s.typology_data[def.id]!
@@ -349,7 +344,6 @@ export function ProyectoNuevoPage() {
         }
       }
 
-      // Fotos del proyecto
       for (let i = 0; i < s.fotos.length; i++) {
         const file = s.fotos[i]
         const ext = file.name.split('.').pop()
@@ -368,7 +362,6 @@ export function ProyectoNuevoPage() {
     setIsSaving(false)
   }
 
-  // ── Header summary ────────────────────────────────────────────────────────
   const TIPO_LABEL: Record<TipoProyecto, string> = { residencial: 'Residencial', comercial: 'Comercial', mixto: 'Mixto' }
   const hasHeaderSummary = !!(s.name || s.tipo_proyecto)
 
@@ -388,28 +381,21 @@ export function ProyectoNuevoPage() {
             <p className="text-xs text-gray-400 mt-0.5">Completá los datos y publicá</p>
           )}
         </div>
-        <button
-          onClick={() => navigate('/proyectos')}
-          className="p-2 rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-700 transition-colors flex-shrink-0"
-        >
+        <button onClick={() => navigate('/proyectos')} className="p-2 rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-700 transition-colors flex-shrink-0">
           <X className="w-5 h-5" />
         </button>
       </header>
 
-      <div className="max-w-[900px] mx-auto px-4 sm:px-6 py-8 flex flex-col gap-5">
+      <div className="max-w-[900px] mx-auto px-4 sm:px-6 py-6 flex flex-col gap-4">
 
         {/* ══ 1 — LO ESENCIAL ══ */}
         <PrimaryBlock>
-          <div className="mb-5">
+          <div className="mb-4">
             <Label>Nombre del proyecto</Label>
-            <TextInput
-              value={s.name}
-              onChange={e => update({ name: e.target.value })}
-              placeholder="Ej: Urban Cumbres Torre B"
-            />
+            <TextInput value={s.name} onChange={e => update({ name: e.target.value })} placeholder="Ej: Urban Cumbres Torre B" />
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
             <div>
               <Label>Estado</Label>
               <div className="flex gap-2">
@@ -418,22 +404,15 @@ export function ProyectoNuevoPage() {
                   { v: 'en_construccion' as Status, l: 'En obra' },
                   { v: 'entregado' as Status, l: 'Terminado' },
                 ]).map(({ v, l }) => (
-                  <button
-                    key={v} type="button" onClick={() => update({ status: v })}
-                    className={`flex-1 py-2 rounded-xl border-2 text-sm font-medium transition-all ${
-                      s.status === v ? 'border-gray-900 bg-gray-900 text-white' : 'border-gray-200 text-gray-600 hover:border-gray-400'
-                    }`}
+                  <button key={v} type="button" onClick={() => update({ status: v })}
+                    className={`flex-1 py-2 rounded-xl border-2 text-sm font-medium transition-all ${s.status === v ? 'border-gray-900 bg-gray-900 text-white' : 'border-gray-200 text-gray-600 hover:border-gray-400'}`}
                   >{l}</button>
                 ))}
               </div>
             </div>
             <div>
               <Label>Desarrolladora</Label>
-              <TextInput
-                value={s.developer_name}
-                onChange={e => update({ developer_name: e.target.value })}
-                placeholder="Ej: Urban Domus"
-              />
+              <TextInput value={s.developer_name} onChange={e => update({ developer_name: e.target.value })} placeholder="Ej: Urban Domus" />
             </div>
           </div>
 
@@ -446,22 +425,16 @@ export function ProyectoNuevoPage() {
                   { v: 'comercial' as TipoProyecto, l: 'Comercial' },
                   { v: 'mixto' as TipoProyecto, l: 'Mixto' },
                 ]).map(({ v, l }) => (
-                  <button
-                    key={v} type="button" onClick={() => update({ tipo_proyecto: v })}
-                    className={`flex-1 py-2 rounded-xl border-2 text-sm font-medium transition-all ${
-                      s.tipo_proyecto === v ? 'border-gray-900 bg-gray-900 text-white' : 'border-gray-200 text-gray-600 hover:border-gray-400'
-                    }`}
+                  <button key={v} type="button" onClick={() => update({ tipo_proyecto: v })}
+                    className={`flex-1 py-2 rounded-xl border-2 text-sm font-medium transition-all ${s.tipo_proyecto === v ? 'border-gray-900 bg-gray-900 text-white' : 'border-gray-200 text-gray-600 hover:border-gray-400'}`}
                   >{l}</button>
                 ))}
               </div>
             </div>
             <div>
               <Label>Entrega estimada</Label>
-              <input
-                type="date"
-                value={s.delivery_date}
-                onChange={e => update({ delivery_date: e.target.value })}
-                className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gray-900/20 focus:border-gray-400"
+              <input type="date" value={s.delivery_date} onChange={e => update({ delivery_date: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gray-900/20 focus:border-gray-400"
               />
             </div>
           </div>
@@ -469,17 +442,14 @@ export function ProyectoNuevoPage() {
 
         {/* ══ 2 — UBICACIÓN ══ */}
         <Block title="Ubicación">
-          <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-3">
             <div>
               <Label>Google Maps</Label>
               <div className="relative">
                 <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-                <input
-                  type="url"
-                  value={s.maps_url}
-                  onChange={e => handleMapsLink(e.target.value)}
+                <input type="url" value={s.maps_url} onChange={e => handleMapsLink(e.target.value)}
                   placeholder="https://www.google.com/maps/place/..."
-                  className="w-full pl-9 pr-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gray-900/20 focus:border-gray-400"
+                  className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gray-900/20 focus:border-gray-400"
                 />
               </div>
               {isResolvingMap && <p className="text-xs text-gray-400 mt-1.5">Resolviendo link…</p>}
@@ -491,7 +461,7 @@ export function ProyectoNuevoPage() {
               )}
             </div>
             {mapsData && !isResolvingMap && (
-              <div className="overflow-hidden rounded-xl border border-gray-200" style={{ height: 200 }}>
+              <div className="overflow-hidden rounded-xl border border-gray-200" style={{ height: 180 }}>
                 <iframe src={mapsData.embedSrc} className="w-full h-full border-0" loading="lazy" referrerPolicy="no-referrer-when-downgrade" />
               </div>
             )}
@@ -510,115 +480,122 @@ export function ProyectoNuevoPage() {
 
         {/* ══ 3 — LINKS ══ */}
         <Block title="Links">
-          <div className="flex flex-col gap-3">
-            {([
-              { label: 'Google Maps', value: s.maps_url,      onChange: (v: string) => handleMapsLink(v),             ph: 'https://maps.app.goo.gl/...' },
-              { label: 'Brochure',    value: s.link_brochure, onChange: (v: string) => update({ link_brochure: v }), ph: 'https://...' },
-              { label: 'Drive',       value: s.link_drive,    onChange: (v: string) => update({ link_drive: v }),    ph: 'https://drive.google.com/...' },
-              { label: 'Vista 360',   value: s.link_vista360, onChange: (v: string) => update({ link_vista360: v }), ph: 'https://...' },
-            ]).map(({ label, value, onChange, ph }) => (
-              <div key={label} className="flex items-center gap-3">
-                <span className="text-sm text-gray-400 w-24 flex-shrink-0">{label}</span>
-                <input
-                  type="url"
-                  value={value}
-                  onChange={e => onChange(e.target.value)}
-                  placeholder={ph}
-                  className="flex-1 px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gray-900/20 focus:border-gray-400"
-                />
-              </div>
-            ))}
-          </div>
+          {s.links.length > 0 && (
+            <div className="flex flex-col gap-2 mb-3">
+              {s.links.map(link => (
+                <div key={link._id} className="flex items-center gap-2">
+                  <select
+                    value={link.type}
+                    onChange={e => updateLink(link._id, 'type', e.target.value)}
+                    style={{ width: 128 }}
+                    className="flex-shrink-0 px-2 py-2 border border-gray-200 rounded-xl text-sm bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-900/20 focus:border-gray-400"
+                  >
+                    {LINK_TYPE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                  </select>
+                  <input
+                    type="url"
+                    value={link.url}
+                    onChange={e => updateLink(link._id, 'url', e.target.value)}
+                    placeholder="https://..."
+                    className="flex-1 px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gray-900/20 focus:border-gray-400"
+                  />
+                  <button type="button" onClick={() => removeLink(link._id)} className="text-gray-300 hover:text-red-400 transition-colors flex-shrink-0">
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+          <button type="button" onClick={addLink}
+            className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-900 transition-colors"
+          >
+            <Plus className="w-4 h-4" /> Agregar link
+          </button>
         </Block>
 
         {/* ══ 4 — TIPOLOGÍAS ══ */}
         <Block title="Tipologías">
-          {/* Selector chips */}
-          <div className="flex flex-wrap gap-2 mb-5">
+          <div className="flex flex-wrap gap-2 mb-4">
             {TYPOLOGY_DEFS.map(def => {
               const active = s.selected_types.includes(def.id)
               return (
-                <button
-                  key={def.id} type="button"
-                  onClick={() => toggleTypology(def.id)}
-                  className={`px-3 py-1.5 rounded-xl border-2 text-sm font-medium transition-all ${
-                    active ? 'border-gray-900 bg-gray-900 text-white' : 'border-gray-200 text-gray-600 hover:border-gray-400'
-                  }`}
+                <button key={def.id} type="button" onClick={() => toggleTypology(def.id)}
+                  className={`px-3 py-1.5 rounded-xl border-2 text-sm font-medium transition-all ${active ? 'border-gray-900 bg-gray-900 text-white' : 'border-gray-200 text-gray-600 hover:border-gray-400'}`}
                 >{def.label}</button>
               )
             })}
           </div>
 
-          {/* Cards en orden fijo */}
           {s.selected_types.length > 0 ? (
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-3">
               {TYPOLOGY_DEFS.filter(def => s.selected_types.includes(def.id)).map(def => {
                 const draft = s.typology_data[def.id]!
                 return (
                   <div key={def.id} className="border border-gray-200 rounded-2xl p-4">
-                    <p className="text-sm font-semibold text-gray-800 mb-4">{def.label}</p>
+                    <p className="text-sm font-semibold text-gray-800 mb-3">{def.label}</p>
 
-                    {/* Baños — nivel tipología, solo residencial */}
                     {def.hasBanos && (
-                      <div className="flex items-center gap-3 mb-4">
-                        <span className="text-xs text-gray-400 w-10 flex-shrink-0">Baños</span>
+                      <div className="flex items-center gap-2.5 mb-3">
+                        <span className="text-xs text-gray-400 w-9 flex-shrink-0">Baños</span>
                         <div className="flex gap-1">
                           {[1, 2, 3].map(n => (
-                            <button
-                              key={n} type="button"
+                            <button key={n} type="button"
                               onClick={() => updateBanos(def.id, draft.banos === n ? null : n)}
-                              className={`w-9 h-9 rounded-xl border-2 text-sm font-medium transition-all ${
-                                draft.banos === n ? 'border-gray-900 bg-gray-900 text-white' : 'border-gray-200 text-gray-500 hover:border-gray-400'
-                              }`}
+                              className={`w-8 h-8 rounded-xl border-2 text-xs font-medium transition-all ${draft.banos === n ? 'border-gray-900 bg-gray-900 text-white' : 'border-gray-200 text-gray-500 hover:border-gray-400'}`}
                             >{n === 3 ? '3+' : n}</button>
                           ))}
                         </div>
                       </div>
                     )}
 
-                    {/* Variantes */}
-                    <div className="flex flex-col gap-3">
+                    <div className="flex flex-col gap-2">
                       {draft.variants.map((variant, idx) => (
-                        <div key={variant._id}>
+                        <div key={variant._id} className="flex items-center gap-2">
                           {draft.variants.length > 1 && (
-                            <p className="text-xs text-gray-400 mb-1.5">Variante {idx + 1}</p>
+                            <span className="text-xs text-gray-400 w-14 flex-shrink-0">Var. {idx + 1}</span>
                           )}
-                          <div className="flex items-start gap-3">
-                            <div className="flex items-center gap-2 flex-shrink-0 pt-2">
-                              <span className="text-xs text-gray-400">m²</span>
-                              <input
-                                type="number"
-                                value={variant.area_m2}
-                                onChange={e => updateVariantField(def.id, variant._id, 'area_m2', e.target.value)}
-                                placeholder="50"
-                                style={{ width: 80 }}
-                                className="px-3 py-2 border border-gray-200 rounded-xl text-sm text-right focus:outline-none focus:ring-2 focus:ring-gray-900/20 focus:border-gray-400"
-                              />
-                            </div>
-                            <div className="flex-1">
-                              <PlanoInput
-                                value={variant.plano}
-                                onChange={f => updateVariantField(def.id, variant._id, 'plano', f)}
-                              />
-                            </div>
-                            {draft.variants.length > 1 && (
-                              <button
-                                type="button"
-                                onClick={() => removeVariant(def.id, variant._id)}
-                                className="text-gray-300 hover:text-red-400 transition-colors flex-shrink-0 mt-2"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            )}
+                          {/* m² */}
+                          <div className="flex items-center gap-1.5 flex-shrink-0">
+                            <span className="text-xs text-gray-400">m²</span>
+                            <input type="number" value={variant.area_m2}
+                              onChange={e => updateVariantField(def.id, variant._id, 'area_m2', e.target.value)}
+                              placeholder="50"
+                              style={{ width: 76 }}
+                              className="px-2 py-1.5 border border-gray-200 rounded-xl text-sm text-right focus:outline-none focus:ring-2 focus:ring-gray-900/20 focus:border-gray-400"
+                            />
                           </div>
+                          {/* Plano */}
+                          <div className="flex-1 flex gap-1.5">
+                            {/* Subir — secundario */}
+                            <label className="flex items-center gap-1 px-2.5 py-1.5 border border-gray-200 rounded-xl text-xs text-gray-500 hover:border-gray-400 cursor-pointer transition-colors flex-shrink-0">
+                              <Upload className="w-3 h-3" />
+                              {variant.plano
+                                ? <span className="text-emerald-600 max-w-[60px] truncate">{variant.plano.name}</span>
+                                : 'Subir'
+                              }
+                              <input type="file" accept="image/*,.pdf" className="hidden"
+                                onChange={e => e.target.files?.[0] && updateVariantField(def.id, variant._id, 'plano', e.target.files[0])}
+                              />
+                            </label>
+                            {/* Pegar — protagonista */}
+                            <button type="button"
+                              onClick={() => openPlanoModal(def.id, variant._id)}
+                              className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-xl bg-gray-900 text-white text-xs font-medium hover:bg-gray-800 transition-colors"
+                            >
+                              <Clipboard className="w-3 h-3" /> Pegar plano
+                            </button>
+                          </div>
+                          {draft.variants.length > 1 && (
+                            <button type="button" onClick={() => removeVariant(def.id, variant._id)} className="text-gray-300 hover:text-red-400 transition-colors flex-shrink-0">
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
                         </div>
                       ))}
                     </div>
 
-                    <button
-                      type="button"
-                      onClick={() => addVariant(def.id)}
-                      className="flex items-center gap-1.5 mt-3 text-xs text-gray-400 hover:text-gray-700 transition-colors"
+                    <button type="button" onClick={() => addVariant(def.id)}
+                      className="flex items-center gap-1.5 mt-2.5 text-xs text-gray-400 hover:text-gray-700 transition-colors"
                     >
                       <Plus className="w-3.5 h-3.5" /> Agregar variante
                     </button>
@@ -627,16 +604,13 @@ export function ProyectoNuevoPage() {
               })}
             </div>
           ) : (
-            <p className="text-sm text-gray-400 text-center py-2">Seleccioná las tipologías del proyecto arriba</p>
+            <p className="text-sm text-gray-400 text-center py-1">Seleccioná las tipologías del proyecto arriba</p>
           )}
         </Block>
 
-        {/* ══ 5 — CARACTERÍSTICAS DEL EDIFICIO ══ */}
+        {/* ══ 5 — CARACTERÍSTICAS ══ */}
         <Block title="Características del edificio">
-          <textarea
-            value={s.caracteristicas}
-            onChange={e => update({ caracteristicas: e.target.value })}
-            rows={5}
+          <textarea value={s.caracteristicas} onChange={e => update({ caracteristicas: e.target.value })} rows={5}
             placeholder={"4 Torres · 6 pisos · 14 dptos por piso\n2 Piscinas · Solarium\n1 Gimnasio por torre\nSeguridad 24h · Ascensor panorámico"}
             className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gray-900/20 focus:border-gray-400 resize-none"
           />
@@ -644,22 +618,18 @@ export function ProyectoNuevoPage() {
 
         {/* ══ 6 — FOTOS ══ */}
         <Block title="Fotos">
-          <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-3">
             <div
               onClick={() => inputRef.current?.click()}
               onDragOver={e => { e.preventDefault(); setIsDragging(true) }}
               onDragLeave={() => setIsDragging(false)}
               onDrop={e => { e.preventDefault(); setIsDragging(false); addFiles(e.dataTransfer.files) }}
-              className={`border-2 border-dashed rounded-2xl px-6 py-5 text-center cursor-pointer transition-colors ${
-                isDragging ? 'border-gray-400 bg-gray-50' : 'border-gray-200 hover:border-gray-400'
-              }`}
+              className={`border-2 border-dashed rounded-2xl px-6 py-5 text-center cursor-pointer transition-colors ${isDragging ? 'border-gray-400 bg-gray-50' : 'border-gray-200 hover:border-gray-400'}`}
             >
               <Upload className="w-6 h-6 text-gray-300 mx-auto mb-1.5" />
               <p className="text-sm text-gray-500">Tocá para agregar fotos</p>
               <p className="text-xs text-gray-400 mt-0.5">JPG, PNG · máx. 20</p>
-              <input ref={inputRef} type="file" accept="image/*" multiple className="hidden"
-                onChange={e => e.target.files && addFiles(e.target.files)}
-              />
+              <input ref={inputRef} type="file" accept="image/*" multiple className="hidden" onChange={e => e.target.files && addFiles(e.target.files)} />
             </div>
             {s.fotos.length > 0 && (
               <>
@@ -683,11 +653,8 @@ export function ProyectoNuevoPage() {
 
         {/* ══ 7 — RESUMEN ══ */}
         <Block title="Resumen">
-          <textarea
-            value={s.resumen}
-            onChange={e => update({ resumen: e.target.value })}
-            rows={6}
-            placeholder={"URBAN CUMBRES TORRE B\nEntrega: Marzo 2027\n\nUbicación estratégica en el corazón de Luque. Proyecto residencial con amenities premium..."}
+          <textarea value={s.resumen} onChange={e => update({ resumen: e.target.value })} rows={6}
+            placeholder={"URBAN CUMBRES TORRE B\nEntrega: Marzo 2027\n\nUbicación estratégica en el corazón de Luque..."}
             className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gray-900/20 focus:border-gray-400 resize-none"
           />
         </Block>
@@ -696,19 +663,60 @@ export function ProyectoNuevoPage() {
 
       {/* Panel flotante */}
       <div className="fixed bottom-6 right-6 z-30 w-[280px] bg-gray-900 rounded-2xl shadow-[0_8px_40px_rgba(0,0,0,0.35)] p-4 flex flex-col gap-2">
-        <button
-          type="button" onClick={handleSave} disabled={isSaving}
+        <button type="button" onClick={handleSave} disabled={isSaving}
           className="w-full py-3 rounded-xl text-sm font-semibold bg-white text-gray-900 hover:bg-gray-100 transition-colors disabled:opacity-50"
         >
           {isSaving ? 'Guardando...' : 'Publicar proyecto'}
         </button>
-        <button
-          type="button" onClick={() => navigate('/proyectos')} disabled={isSaving}
+        <button type="button" onClick={() => navigate('/proyectos')} disabled={isSaving}
           className="w-full py-2.5 rounded-xl text-sm font-medium text-white/50 hover:text-white/80 transition-colors"
         >
           Cancelar
         </button>
       </div>
+
+      {/* Modal plano */}
+      {planoModal && (
+        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" onClick={closePlanoModal}>
+          <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <p className="text-sm font-semibold text-gray-900">Pegar plano</p>
+              <button onClick={closePlanoModal} className="p-1.5 rounded-full hover:bg-gray-100 text-gray-400">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div
+              ref={modalRef}
+              tabIndex={0}
+              onPaste={handleModalPaste}
+              className="border-2 border-dashed border-gray-300 rounded-xl focus:outline-none focus:border-gray-900 transition-colors cursor-default"
+              style={{ minHeight: 180 }}
+            >
+              {planoModal.previewUrl ? (
+                <img src={planoModal.previewUrl} alt="preview" className="w-full rounded-xl object-contain" style={{ maxHeight: 240 }} />
+              ) : (
+                <div className="flex flex-col items-center justify-center py-10 px-4 text-center">
+                  <Clipboard className="w-8 h-8 text-gray-300 mb-3" />
+                  <p className="text-sm text-gray-500 font-medium">Pegá con Ctrl + V</p>
+                  <p className="text-xs text-gray-400 mt-1">Se detecta la imagen automáticamente</p>
+                </div>
+              )}
+            </div>
+
+            <div className="flex gap-2 mt-4">
+              <button onClick={closePlanoModal} className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-600 hover:bg-gray-50 transition-colors">
+                Cancelar
+              </button>
+              <button onClick={confirmPlano} disabled={!planoModal.file}
+                className="flex-1 py-2.5 rounded-xl bg-gray-900 text-white text-sm font-semibold hover:bg-gray-800 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                {planoModal.file ? 'Confirmar' : 'Esperando imagen…'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   )
