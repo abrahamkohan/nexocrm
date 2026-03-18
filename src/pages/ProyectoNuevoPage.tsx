@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router'
-import { X, Camera, Link as LinkIcon, Check, Plus, Trash2 } from 'lucide-react'
+import { X, Camera, Link as LinkIcon, Check } from 'lucide-react'
 import { toast } from 'sonner'
 import { supabase } from '@/lib/supabase'
 import { createProject } from '@/lib/projects'
@@ -10,13 +10,13 @@ import { createTypology } from '@/lib/typologies'
 
 type Status = 'en_pozo' | 'en_construccion' | 'entregado'
 type TipoProyecto = 'residencial' | 'comercial' | 'mixto'
+type TypologyType = 'mono' | '1dorm' | '2dorm' | '3dorm' | '4dorm' | 'cochera' | 'cochera_xl' | 'baulera'
 
 interface TypologyDraft {
-  _id: string
-  name: string
   area_m2: string
   price_usd: string
-  units_available: string
+  banos: number | null
+  plano: File | null
 }
 
 interface FormState {
@@ -34,7 +34,8 @@ interface FormState {
   moneda: 'USD' | 'PYG'
   delivery_date: string
   amenities: string[]
-  typologies: TypologyDraft[]
+  selected_types: TypologyType[]
+  typology_data: Partial<Record<TypologyType, TypologyDraft>>
   fotos: File[]
   description: string
 }
@@ -43,8 +44,21 @@ const INITIAL: FormState = {
   name: '', status: 'en_pozo', developer_name: '', tipo_proyecto: null,
   maps_url: '', lat: null, lng: null, zona: '', direccion: '',
   precio_desde: '', precio_hasta: '', moneda: 'USD', delivery_date: '',
-  amenities: [], typologies: [], fotos: [], description: '',
+  amenities: [], selected_types: [], typology_data: {}, fotos: [], description: '',
 }
+
+// ─── Typology definitions (fixed order) ────────────────────────────────────────
+
+const TYPOLOGY_DEFS: Array<{ id: TypologyType; label: string; hasBanos: boolean; category: 'unidad' | 'cochera' | 'baulera' }> = [
+  { id: 'mono',       label: 'Monoambiente',  hasBanos: true,  category: 'unidad'   },
+  { id: '1dorm',      label: '1 Dormitorio',  hasBanos: true,  category: 'unidad'   },
+  { id: '2dorm',      label: '2 Dormitorios', hasBanos: true,  category: 'unidad'   },
+  { id: '3dorm',      label: '3 Dormitorios', hasBanos: true,  category: 'unidad'   },
+  { id: '4dorm',      label: '4 Dormitorios', hasBanos: true,  category: 'unidad'   },
+  { id: 'cochera',    label: 'Cochera',        hasBanos: false, category: 'cochera'  },
+  { id: 'cochera_xl', label: 'Cochera XL',     hasBanos: false, category: 'cochera'  },
+  { id: 'baulera',    label: 'Baulera',        hasBanos: false, category: 'baulera'  },
+]
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -203,18 +217,17 @@ export function ProyectoNuevoPage() {
   }
 
   // ── Typologies ─────────────────────────────────────────────────────────────
-  function addTypology() {
-    update({
-      typologies: [...s.typologies, {
-        _id: crypto.randomUUID(), name: '', area_m2: '', price_usd: '', units_available: '',
-      }],
-    })
+  function toggleTypology(type: TypologyType) {
+    if (s.selected_types.includes(type)) {
+      update({ selected_types: s.selected_types.filter(t => t !== type) })
+    } else {
+      const newData = { ...s.typology_data }
+      if (!newData[type]) newData[type] = { area_m2: '', price_usd: '', banos: null, plano: null }
+      update({ selected_types: [...s.selected_types, type], typology_data: newData })
+    }
   }
-  function updateTypology(id: string, field: keyof TypologyDraft, value: string) {
-    update({ typologies: s.typologies.map(t => t._id === id ? { ...t, [field]: value } : t) })
-  }
-  function removeTypology(id: string) {
-    update({ typologies: s.typologies.filter(t => t._id !== id) })
+  function updateTypologyField(type: TypologyType, field: keyof TypologyDraft, value: string | number | null | File) {
+    update({ typology_data: { ...s.typology_data, [type]: { ...s.typology_data[type]!, [field]: value } } })
   }
 
   // ── Save ───────────────────────────────────────────────────────────────────
@@ -241,15 +254,27 @@ export function ProyectoNuevoPage() {
         links,
       })
 
-      // Save typologies
-      for (const t of s.typologies) {
-        if (!t.name || !t.area_m2 || !t.price_usd) continue
+      // Save typologies (in fixed order)
+      for (const def of TYPOLOGY_DEFS) {
+        if (!s.selected_types.includes(def.id)) continue
+        const t = s.typology_data[def.id]!
+        let floorPlanPath: string | null = null
+        if (t.plano) {
+          const ext = t.plano.name.split('.').pop()
+          const planPath = `${project.id}/plan-${def.id}.${ext}`
+          const { error: uploadErr } = await supabase.storage.from('project-photos').upload(planPath, t.plano)
+          if (!uploadErr) floorPlanPath = planPath
+        }
         await createTypology({
           project_id: project.id,
-          name: t.name,
-          area_m2: parseFloat(t.area_m2),
-          price_usd: parseFloat(t.price_usd),
-          units_available: parseInt(t.units_available || '0'),
+          name: def.label,
+          area_m2: parseFloat(t.area_m2) || 0,
+          price_usd: parseFloat(t.price_usd) || 0,
+          units_available: 0,
+          category: def.category,
+          unit_type: def.id,
+          bathrooms: t.banos,
+          floor_plan_path: floorPlanPath,
         })
       }
 
@@ -499,68 +524,98 @@ export function ProyectoNuevoPage() {
 
         {/* ══ BLOQUE 5 — TIPOLOGÍAS ══ */}
         <Block title="Tipologías">
-          <div className="flex flex-col gap-3">
-            {s.typologies.length > 0 && (
-              <>
-                {/* Header de columnas */}
-                <div className="grid gap-2 px-1 mb-1" style={{ gridTemplateColumns: '1fr 90px 120px 80px 32px' }}>
-                  <span className="text-xs text-gray-400">Nombre</span>
-                  <span className="text-xs text-gray-400 text-right">m²</span>
-                  <span className="text-xs text-gray-400 text-right">Precio USD</span>
-                  <span className="text-xs text-gray-400 text-right">Unidades</span>
-                  <span />
-                </div>
-                {s.typologies.map(t => (
-                  <div key={t._id} className="grid gap-2 items-center" style={{ gridTemplateColumns: '1fr 90px 120px 80px 32px' }}>
-                    <input
-                      type="text"
-                      value={t.name}
-                      onChange={e => updateTypology(t._id, 'name', e.target.value)}
-                      placeholder="Ej: 1 Dormitorio"
-                      className="px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gray-900/20 focus:border-gray-400"
-                    />
-                    <input
-                      type="number"
-                      value={t.area_m2}
-                      onChange={e => updateTypology(t._id, 'area_m2', e.target.value)}
-                      placeholder="66"
-                      className="px-2 py-2 border border-gray-200 rounded-xl text-sm text-right focus:outline-none focus:ring-2 focus:ring-gray-900/20 focus:border-gray-400"
-                    />
-                    <input
-                      type="number"
-                      value={t.price_usd}
-                      onChange={e => updateTypology(t._id, 'price_usd', e.target.value)}
-                      placeholder="120000"
-                      className="px-2 py-2 border border-gray-200 rounded-xl text-sm text-right focus:outline-none focus:ring-2 focus:ring-gray-900/20 focus:border-gray-400"
-                    />
-                    <input
-                      type="number"
-                      value={t.units_available}
-                      onChange={e => updateTypology(t._id, 'units_available', e.target.value)}
-                      placeholder="0"
-                      className="px-2 py-2 border border-gray-200 rounded-xl text-sm text-right focus:outline-none focus:ring-2 focus:ring-gray-900/20 focus:border-gray-400"
-                    />
-                    <button type="button" onClick={() => removeTypology(t._id)} className="flex items-center justify-center text-gray-300 hover:text-red-500 transition-colors">
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                ))}
-                <div className="border-t border-gray-100 mt-1 pt-3">
-                  <button type="button" onClick={addTypology} className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-900 transition-colors">
-                    <Plus className="w-4 h-4" /> Agregar tipología
-                  </button>
-                </div>
-              </>
-            )}
-            {s.typologies.length === 0 && (
-              <button
-                type="button" onClick={addTypology}
-                className="flex items-center gap-2 px-4 py-3 border-2 border-dashed border-gray-200 rounded-2xl text-sm text-gray-500 hover:border-gray-400 hover:text-gray-700 transition-colors w-full justify-center"
-              >
-                <Plus className="w-4 h-4" /> Agregar primera tipología
-              </button>
-            )}
+          {/* Selector de chips */}
+          <div className="flex flex-wrap gap-2 mb-5">
+            {TYPOLOGY_DEFS.map(def => {
+              const active = s.selected_types.includes(def.id)
+              return (
+                <button
+                  key={def.id} type="button"
+                  onClick={() => toggleTypology(def.id)}
+                  className={`px-3 py-1.5 rounded-xl border-2 text-sm font-medium transition-all ${
+                    active ? 'border-gray-900 bg-gray-900 text-white' : 'border-gray-200 text-gray-600 hover:border-gray-400'
+                  }`}
+                >{def.label}</button>
+              )
+            })}
           </div>
+
+          {/* Cards en orden fijo */}
+          {s.selected_types.length > 0 ? (
+            <div className="flex flex-col gap-3">
+              {TYPOLOGY_DEFS.filter(def => s.selected_types.includes(def.id)).map(def => {
+                const draft = s.typology_data[def.id]!
+                return (
+                  <div key={def.id} className="border border-gray-200 rounded-2xl p-4">
+                    <p className="text-sm font-semibold text-gray-800 mb-3">{def.label}</p>
+                    <div className="flex flex-wrap gap-4 items-end">
+                      {/* m² */}
+                      <div>
+                        <p className="text-xs text-gray-400 mb-1.5">m²</p>
+                        <input
+                          type="number"
+                          value={draft.area_m2}
+                          onChange={e => updateTypologyField(def.id, 'area_m2', e.target.value)}
+                          placeholder="50"
+                          style={{ width: 90 }}
+                          className="px-3 py-2 border border-gray-200 rounded-xl text-sm text-right focus:outline-none focus:ring-2 focus:ring-gray-900/20 focus:border-gray-400"
+                        />
+                      </div>
+
+                      {/* Baños (solo residencial) */}
+                      {def.hasBanos && (
+                        <div>
+                          <p className="text-xs text-gray-400 mb-1.5">Baños</p>
+                          <div className="flex gap-1">
+                            {[1, 2, 3].map(n => (
+                              <button
+                                key={n} type="button"
+                                onClick={() => updateTypologyField(def.id, 'banos', draft.banos === n ? null : n)}
+                                className={`w-9 h-9 rounded-xl border-2 text-sm font-medium transition-all ${
+                                  draft.banos === n ? 'border-gray-900 bg-gray-900 text-white' : 'border-gray-200 text-gray-600 hover:border-gray-400'
+                                }`}
+                              >{n === 3 ? '3+' : n}</button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Precio USD */}
+                      <div>
+                        <p className="text-xs text-gray-400 mb-1.5">Precio USD</p>
+                        <input
+                          type="number"
+                          value={draft.price_usd}
+                          onChange={e => updateTypologyField(def.id, 'price_usd', e.target.value)}
+                          placeholder="85000"
+                          style={{ width: 130 }}
+                          className="px-3 py-2 border border-gray-200 rounded-xl text-sm text-right focus:outline-none focus:ring-2 focus:ring-gray-900/20 focus:border-gray-400"
+                        />
+                      </div>
+
+                      {/* Plano */}
+                      <div>
+                        <p className="text-xs text-gray-400 mb-1.5">Plano</p>
+                        <label className="flex items-center gap-1.5 px-3 py-2 border border-dashed border-gray-300 rounded-xl text-xs text-gray-500 hover:border-gray-400 cursor-pointer transition-colors" style={{ height: 36 }}>
+                          {draft.plano ? (
+                            <span className="text-emerald-600 max-w-[100px] truncate">{draft.plano.name}</span>
+                          ) : (
+                            <><Camera className="w-3.5 h-3.5" /> Subir plano</>
+                          )}
+                          <input
+                            type="file" accept="image/*,.pdf" className="hidden"
+                            onChange={e => e.target.files?.[0] && updateTypologyField(def.id, 'plano', e.target.files[0])}
+                          />
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          ) : (
+            <p className="text-sm text-gray-400 text-center py-2">Seleccioná las tipologías del proyecto arriba</p>
+          )}
         </Block>
 
         {/* ══ BLOQUE 6 — FOTOS ══ */}
