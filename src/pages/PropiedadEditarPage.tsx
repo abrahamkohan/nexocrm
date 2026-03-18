@@ -713,27 +713,22 @@ export function PropiedadEditarPage() {
 
       </div>
 
-      {/* Sticky save bar */}
-      <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-gray-100 bg-white/95 backdrop-blur-sm px-4 py-3 flex items-center gap-3">
-        <button
-          type="button"
-          onClick={() => navigate(`/propiedades/${id}`)}
-          className="px-4 py-2.5 rounded-xl text-sm text-gray-500 hover:text-gray-800 hover:bg-gray-100 transition-colors"
-        >
-          Cancelar
-        </button>
+      {/* Panel flotante */}
+      <div className="fixed bottom-6 right-6 z-30 w-[280px] bg-gray-900 rounded-2xl shadow-[0_8px_40px_rgba(0,0,0,0.35)] p-4 flex flex-col gap-2">
         <button
           type="button"
           onClick={handleSave}
           disabled={!isDirty || saving}
-          className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium transition-colors ${
-            isDirty && !saving
-              ? 'bg-gray-900 text-white hover:bg-gray-700'
-              : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-          }`}
+          className="w-full py-3 rounded-xl text-sm font-semibold bg-white text-gray-900 hover:bg-gray-100 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
         >
-          <Save className="w-4 h-4" />
           {saving ? 'Guardando...' : 'Guardar cambios'}
+        </button>
+        <button
+          type="button"
+          onClick={() => navigate(`/propiedades/${id}`)}
+          className="w-full py-2.5 rounded-xl text-sm font-medium text-white/50 hover:text-white/80 transition-colors"
+        >
+          Cancelar
         </button>
       </div>
     </>
