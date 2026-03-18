@@ -143,6 +143,11 @@ export interface Database {
           phone: string | null
           nationality: string | null
           notes: string | null
+          tipo: 'lead' | 'cliente'
+          fuente: string | null
+          dni: string | null
+          fecha_nacimiento: string | null
+          campos_extra: Record<string, string> | null
           created_at: string
           updated_at: string
         }
@@ -152,6 +157,11 @@ export interface Database {
           phone?: string | null
           nationality?: string | null
           notes?: string | null
+          tipo?: 'lead' | 'cliente'
+          fuente?: string | null
+          dni?: string | null
+          fecha_nacimiento?: string | null
+          campos_extra?: Record<string, string> | null
         }
         Update: {
           full_name?: string
@@ -159,6 +169,11 @@ export interface Database {
           phone?: string | null
           nationality?: string | null
           notes?: string | null
+          tipo?: 'lead' | 'cliente'
+          fuente?: string | null
+          dni?: string | null
+          fecha_nacimiento?: string | null
+          campos_extra?: Record<string, string> | null
         }
         Relationships: []
       }

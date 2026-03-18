@@ -56,18 +56,23 @@ export function ClientesPage() {
   async function handleSubmit(values: ClientFormValues) {
     try {
       const payload = {
-        full_name: values.full_name,
-        email: values.email || null,
-        phone: values.phone || null,
-        nationality: values.nationality || null,
-        notes: values.notes || null,
+        full_name:        values.full_name,
+        email:            values.email || null,
+        phone:            values.phone || null,
+        nationality:      values.nationality || null,
+        notes:            values.notes || null,
+        tipo:             values.tipo,
+        fuente:           values.fuente || null,
+        dni:              values.dni || null,
+        fecha_nacimiento: values.fecha_nacimiento || null,
+        campos_extra:     Object.keys(values.campos_extra).length > 0 ? values.campos_extra : null,
       }
       if (editing) {
         await updateClient.mutateAsync({ id: editing.id, input: payload })
         toast.success('Guardado')
       } else {
         await createClient.mutateAsync(payload)
-        toast.success('Cliente creado')
+        toast.success(values.tipo === 'lead' ? 'Lead creado' : 'Cliente creado')
       }
       setSheetOpen(false)
       setEditing(null)

@@ -26,12 +26,24 @@ export function ClientCard({ client, onEdit, onDelete }: ClientCardProps) {
       <div className="rounded-lg border bg-card p-4 flex flex-col gap-3">
         <div className="flex items-start justify-between gap-2">
           <div className="flex flex-col gap-0.5 min-w-0">
-            <p className="font-semibold truncate">{client.full_name}</p>
+            <div className="flex items-center gap-2">
+              <p className="font-semibold truncate">{client.full_name}</p>
+              <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full flex-shrink-0 ${
+                (client.tipo ?? 'lead') === 'cliente'
+                  ? 'bg-emerald-100 text-emerald-700'
+                  : 'bg-amber-100 text-amber-700'
+              }`}>
+                {(client.tipo ?? 'lead') === 'cliente' ? 'Cliente' : 'Lead'}
+              </span>
+            </div>
             {client.email && (
               <p className="text-sm text-muted-foreground truncate">{client.email}</p>
             )}
             {client.phone && (
               <p className="text-sm text-muted-foreground">{client.phone}</p>
+            )}
+            {client.fuente && (
+              <p className="text-xs text-muted-foreground">{client.fuente}</p>
             )}
           </div>
           {client.nationality && (
