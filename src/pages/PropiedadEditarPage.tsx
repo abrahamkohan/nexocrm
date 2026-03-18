@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router'
-import { ArrowLeft, Save, Camera, X, MapPin, Link } from 'lucide-react'
+import { ArrowLeft, Camera, X, MapPin, Link } from 'lucide-react'
 import { toast } from 'sonner'
 import {
   useProperty, usePropertyPhotos, useUpdateProperty,
