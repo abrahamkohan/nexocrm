@@ -62,6 +62,7 @@ export function PropertyCard({ property, onConsultar }: Props) {
     `${TIPO_LABEL[property.tipo] ?? property.tipo} en ${property.zona ?? 'Sin ubicación'}`
 
   return (
+    <>
     <div
       onClick={() => navigate(`/propiedades/${property.id}`)}
       className="bg-white rounded-xl border border-gray-100 overflow-hidden cursor-pointer hover:shadow-md transition-shadow flex flex-col"
@@ -213,5 +214,6 @@ export function PropertyCard({ property, onConsultar }: Props) {
         </div>
       </div>
     )}
+    </>
   )
 }
