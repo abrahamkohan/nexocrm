@@ -37,6 +37,40 @@ interface Props {
   onChange: (value: LocationValue) => void
 }
 
+const RESOLVE_MAPS_API = 'https://kohancampos.com.py/api/resolve-maps'
+
+function isGoogleMapsUrl(input: string): boolean {
+  return /google\.com\/maps|maps\.app\.goo\.gl|goo\.gl\/maps/i.test(input.trim())
+}
+
+function extractCoordsFromUrl(url: string): { lat: number; lng: number } | null {
+  const atMatch = url.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/)
+  if (atMatch) return { lat: parseFloat(atMatch[1]), lng: parseFloat(atMatch[2]) }
+  const qMatch = url.match(/[?&]q=(-?\d+\.\d+),(-?\d+\.\d+)/)
+  if (qMatch) return { lat: parseFloat(qMatch[1]), lng: parseFloat(qMatch[2]) }
+  const latMatch = url.match(/!3d(-?\d+\.\d+)/)
+  const lngMatch = url.match(/!2d(-?\d+\.\d+)/)
+  if (latMatch && lngMatch) return { lat: parseFloat(latMatch[1]), lng: parseFloat(lngMatch[1]) }
+  const llMatch = url.match(/[?&]ll=(-?\d+\.\d+),(-?\d+\.\d+)/)
+  if (llMatch) return { lat: parseFloat(llMatch[1]), lng: parseFloat(llMatch[2]) }
+  return null
+}
+
+async function resolveGoogleMapsUrl(url: string): Promise<{ lat: number; lng: number } | null> {
+  // Try to extract coords directly first (works for full URLs)
+  const direct = extractCoordsFromUrl(url)
+  if (direct) return direct
+  // For short URLs: call API route that resolves server-side
+  try {
+    const res = await fetch(`${RESOLVE_MAPS_API}?url=${encodeURIComponent(url)}`)
+    if (!res.ok) return null
+    const data = await res.json()
+    return data.coords ?? null
+  } catch {
+    return null
+  }
+}
+
 async function nominatimSearch(query: string): Promise<NominatimResult[]> {
   const params = new URLSearchParams({
     q: query,
@@ -95,7 +129,21 @@ export function LocationPicker({ value, onChange }: Props) {
   function handleQueryChange(v: string) {
     setQuery(v)
     if (debounceRef.current) clearTimeout(debounceRef.current)
-    debounceRef.current = setTimeout(() => search(v), 450)
+    if (isGoogleMapsUrl(v)) {
+      debounceRef.current = setTimeout(async () => {
+        setIsSearching(true)
+        const coords = await resolveGoogleMapsUrl(v)
+        setIsSearching(false)
+        if (coords) {
+          const loc: LocationValue = { lat: coords.lat, lng: coords.lng, zona: '', direccion: '' }
+          onChange(loc)
+          mapRef.current?.flyTo({ center: [coords.lng, coords.lat], zoom: 16, duration: 800 })
+          setQuery('')
+        }
+      }, 600)
+    } else {
+      debounceRef.current = setTimeout(() => search(v), 450)
+    }
   }
 
   function selectResult(r: NominatimResult) {
