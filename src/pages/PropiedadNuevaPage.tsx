@@ -425,49 +425,36 @@ export function PropiedadNuevaPage() {
           {/* Precio */}
           <div>
             <Label>Precio</Label>
-
-            {/* Moneda */}
-            <div className="flex gap-2 mb-3">
-              {(['USD', 'PYG'] as const).map(m => (
-                <button
-                  key={m}
-                  type="button"
-                  onClick={() => update({ moneda: m, precio: '' })}
-                  className={`px-5 py-2 rounded-xl text-sm font-semibold border-2 transition-all ${
-                    s.moneda === m ? 'border-gray-900 bg-gray-900 text-white' : 'border-gray-200 text-gray-600 hover:border-gray-400'
-                  }`}
-                >
-                  {m === 'USD' ? '$ USD' : '₲ PYG'}
-                </button>
-              ))}
-            </div>
-
-            {/* Presets */}
-            <div className="flex flex-wrap gap-1.5 mb-3">
-              {presets.map(v => (
-                <Chip
-                  key={v}
-                  label={formatPreset(v, s.moneda)}
-                  active={s.precio === String(v)}
-                  onClick={() => update({ precio: String(v) })}
-                />
-              ))}
-            </div>
-
-            {/* Input exacto */}
-            <div className="flex items-center gap-2" style={{ maxWidth: 280 }}>
-              <span className="text-sm font-medium text-gray-500 w-5 flex-shrink-0">{s.moneda === 'USD' ? '$' : '₲'}</span>
-              <TextInput
+            <div className="flex items-center gap-3">
+              {/* Toggle moneda */}
+              <div className="flex rounded-xl border border-gray-200 overflow-hidden flex-shrink-0">
+                {(['USD', 'PYG'] as const).map(m => (
+                  <button
+                    key={m}
+                    type="button"
+                    onClick={() => update({ moneda: m, precio: '' })}
+                    className={`px-3 py-2 text-sm font-semibold transition-all ${
+                      s.moneda === m ? 'bg-gray-900 text-white' : 'text-gray-500 hover:bg-gray-50'
+                    }`}
+                  >
+                    {m}
+                  </button>
+                ))}
+              </div>
+              {/* Input */}
+              <input
                 type="number"
                 value={s.precio}
                 onChange={e => update({ precio: e.target.value })}
                 placeholder={s.moneda === 'USD' ? '120000' : '250000000'}
-                className="text-right"
+                maxLength={9}
+                style={{ width: 200 }}
+                className="px-3 py-2 border border-gray-200 rounded-xl text-base font-medium text-right focus:outline-none focus:ring-2 focus:ring-gray-900/20 focus:border-gray-400"
               />
             </div>
             {s.precio && parseFloat(s.precio) > 0 && (
-              <p className="text-xs text-gray-400 mt-1.5" style={{ maxWidth: 280, textAlign: 'right' }}>
-                {s.moneda === 'USD' ? '$' : '₲'}{' '}
+              <p className="text-xs text-gray-400 mt-1.5" style={{ marginLeft: 94 }}>
+                {s.moneda === 'USD' ? 'USD ' : '₲ '}
                 {parseFloat(s.precio).toLocaleString(s.moneda === 'USD' ? 'en-US' : 'es-PY')}
               </p>
             )}
@@ -540,60 +527,57 @@ export function PropiedadNuevaPage() {
             BLOQUE 3 — CARACTERÍSTICAS (compacto)
         ══════════════════════════════════════════ */}
         <Block title="Características">
-          <div className="flex flex-col gap-3">
+          <div className={`grid gap-x-6 gap-y-3 items-start ${showDormBanos ? 'grid-cols-1 sm:grid-cols-3' : 'grid-cols-1 sm:grid-cols-2'}`}>
             {showDormBanos && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <Label>Dormitorios</Label>
-                  <div className="flex gap-1.5">
-                    {[{ v: 0, l: 'Mono' }, { v: 1, l: '1' }, { v: 2, l: '2' }, { v: 3, l: '3' }, { v: 4, l: '4+' }].map(({ v, l }) => (
-                      <NumChip key={v} n={l} active={s.dormitorios === v} onClick={() => update({ dormitorios: v })} />
-                    ))}
-                  </div>
-                </div>
-                <div>
-                  <Label>Baños</Label>
-                  <div className="flex gap-1.5">
-                    {[1, 2, 3].map(v => (
-                      <NumChip key={v} n={v === 3 ? '3+' : v} active={s.banos === v} onClick={() => update({ banos: v })} />
-                    ))}
-                  </div>
+              <div>
+                <Label>Dormitorios</Label>
+                <div className="flex gap-1.5 flex-wrap">
+                  {[{ v: 0, l: 'Mono' }, { v: 1, l: '1' }, { v: 2, l: '2' }, { v: 3, l: '3' }, { v: 4, l: '4+' }].map(({ v, l }) => (
+                    <NumChip key={v} n={l} active={s.dormitorios === v} onClick={() => update({ dormitorios: v })} />
+                  ))}
                 </div>
               </div>
             )}
-
-            <div className="flex flex-wrap gap-4">
+            {showDormBanos && (
               <div>
-                <Label>Superficie total</Label>
+                <Label>Baños</Label>
+                <div className="flex gap-1.5">
+                  {[1, 2, 3].map(v => (
+                    <NumChip key={v} n={v === 3 ? '3+' : v} active={s.banos === v} onClick={() => update({ banos: v })} />
+                  ))}
+                </div>
+              </div>
+            )}
+            <div>
+              <Label>Superficie{showTerreno ? ' cubierta' : ''}</Label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  value={s.superficie_m2}
+                  onChange={e => update({ superficie_m2: e.target.value })}
+                  placeholder="66"
+                  style={{ width: 110 }}
+                  className="px-3 py-2 border border-gray-200 rounded-xl text-sm text-right focus:outline-none focus:ring-2 focus:ring-gray-900/20 focus:border-gray-400"
+                />
+                <span className="text-sm text-gray-500">m²</span>
+              </div>
+            </div>
+            {showTerreno && (
+              <div>
+                <Label>Terreno</Label>
                 <div className="flex items-center gap-2">
                   <input
                     type="number"
-                    value={s.superficie_m2}
-                    onChange={e => update({ superficie_m2: e.target.value })}
-                    placeholder="66"
-                    style={{ width: 120 }}
+                    value={s.terreno_m2}
+                    onChange={e => update({ terreno_m2: e.target.value })}
+                    placeholder="200"
+                    style={{ width: 110 }}
                     className="px-3 py-2 border border-gray-200 rounded-xl text-sm text-right focus:outline-none focus:ring-2 focus:ring-gray-900/20 focus:border-gray-400"
                   />
                   <span className="text-sm text-gray-500">m²</span>
                 </div>
               </div>
-              {showTerreno && (
-                <div>
-                  <Label>Terreno</Label>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="number"
-                      value={s.terreno_m2}
-                      onChange={e => update({ terreno_m2: e.target.value })}
-                      placeholder="200"
-                      style={{ width: 120 }}
-                      className="px-3 py-2 border border-gray-200 rounded-xl text-sm text-right focus:outline-none focus:ring-2 focus:ring-gray-900/20 focus:border-gray-400"
-                    />
-                    <span className="text-sm text-gray-500">m²</span>
-                  </div>
-                </div>
-              )}
-            </div>
+            )}
           </div>
         </Block>
 
