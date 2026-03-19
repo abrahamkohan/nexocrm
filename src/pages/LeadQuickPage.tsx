@@ -1,7 +1,9 @@
 import { useState, useRef, useEffect } from 'react'
 import { useSearchParams } from 'react-router'
-import { Check } from 'lucide-react'
+import { Check, MessageCircle } from 'lucide-react'
 import { toast } from 'sonner'
+import { CountryPicker, COUNTRIES } from '@/components/ui/CountryPicker'
+import type { Country } from '@/components/ui/CountryPicker'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -12,13 +14,15 @@ const NAT_LABEL: Record<string, string> = {
 }
 const FUENTE_CHIPS = ['Instagram', 'Facebook', 'Referido', 'WhatsApp', 'Web', 'Portales']
 
+const PY = COUNTRIES.find(c => c.code === 'PY')!
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface FormState {
   full_name: string
-  phone: string
+  phoneNum: string
   apodo: string
-  nat: string      // chip code or 'Otro'
+  nat: string
   nat_otro: string
   fuente: string
   fuente_otro: string
@@ -26,7 +30,7 @@ interface FormState {
 }
 
 const EMPTY: FormState = {
-  full_name: '', phone: '', apodo: '',
+  full_name: '', phoneNum: '', apodo: '',
   nat: '', nat_otro: '', fuente: '', fuente_otro: '', notes: '',
 }
 
@@ -38,13 +42,30 @@ export function LeadQuickPage() {
   const ref   = params.get('ref')   ?? ''
 
   const [s, setS] = useState<FormState>(EMPTY)
+  const [dialCountry, setDialCountry] = useState<Country>(PY)
+  const [detected, setDetected] = useState<Country | null>(null)   // IP-detected country if ≠ PY
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
 
   const nameRef  = useRef<HTMLInputElement>(null)
   const phoneRef = useRef<HTMLInputElement>(null)
 
-  useEffect(() => { nameRef.current?.focus() }, [])
+  // Autofocus + IP detection
+  useEffect(() => {
+    nameRef.current?.focus()
+    fetch('https://ipapi.co/json/')
+      .then(r => r.json())
+      .then((d: { country_code?: string }) => {
+        const found = COUNTRIES.find(c => c.code === d.country_code)
+        if (!found) return
+        if (found.code === 'PY') {
+          setDialCountry(found)
+        } else {
+          setDetected(found)   // show banner, don't auto-apply
+        }
+      })
+      .catch(() => {})         // default PY
+  }, [])
 
   function update(patch: Partial<FormState>) { setS(prev => ({ ...prev, ...patch })) }
 
@@ -52,10 +73,18 @@ export function LeadQuickPage() {
     if (e.key === 'Enter') { e.preventDefault(); phoneRef.current?.focus() }
   }
   function handlePhoneKey(e: React.KeyboardEvent) {
-    if (e.key === 'Enter') { e.preventDefault(); save() }
+    if (e.key === 'Enter') { e.preventDefault(); doSave(false) }
   }
 
-  async function save() {
+  function openWhatsApp(name: string, phone: string) {
+    const clean = phone.replace(/\D/g, '')
+    if (!clean) return
+    const fullNum = dialCountry.dial.replace('+', '') + clean
+    const msg = encodeURIComponent(`Hola ${name}, te contacto por tu consulta en Kohan & Campos.`)
+    window.open(`https://wa.me/${fullNum}?text=${msg}`, '_blank')
+  }
+
+  async function doSave(withWhatsApp: boolean) {
     if (!s.full_name.trim()) {
       toast.error('El nombre es requerido')
       nameRef.current?.focus()
@@ -65,6 +94,7 @@ export function LeadQuickPage() {
     try {
       const natValue  = s.nat === 'Otro' ? s.nat_otro : (NAT_LABEL[s.nat] ?? s.nat)
       const fuenValue = s.fuente === 'Otro' ? s.fuente_otro : s.fuente
+      const fullPhone = s.phoneNum.trim() ? `${dialCountry.dial} ${s.phoneNum.trim()}` : ''
 
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL ?? ''
       const res = await fetch(`${supabaseUrl}/functions/v1/quick-service`, {
@@ -74,7 +104,7 @@ export function LeadQuickPage() {
           token,
           lead: {
             full_name:    s.full_name.trim(),
-            phone:        s.phone,
+            phone:        fullPhone,
             nationality:  natValue,
             fuente:       fuenValue,
             notes:        s.notes,
@@ -87,6 +117,11 @@ export function LeadQuickPage() {
       if (!res.ok) throw new Error(data.error ?? 'Error al guardar')
 
       if ('vibrate' in navigator) navigator.vibrate(30)
+
+      if (withWhatsApp) {
+        openWhatsApp(s.full_name.trim(), s.phoneNum)
+      }
+
       setSaved(true)
       setTimeout(() => {
         setSaved(false)
@@ -115,7 +150,32 @@ export function LeadQuickPage() {
       </header>
 
       {/* Form */}
-      <div className="px-4 py-5 flex flex-col gap-5 pb-28">
+      <div className="px-4 py-5 flex flex-col gap-5 pb-36">
+
+        {/* Banner de país detectado */}
+        {detected && (
+          <div className="flex items-center justify-between gap-3 bg-white border border-gray-200 rounded-2xl px-4 py-3">
+            <p className="text-sm text-gray-700">
+              Detectamos <span className="font-semibold">{detected.flag} {detected.name}</span>
+            </p>
+            <div className="flex gap-2 flex-shrink-0">
+              <button
+                type="button"
+                onClick={() => { setDialCountry(detected); setDetected(null) }}
+                className="text-xs font-semibold text-white bg-gray-900 px-3 py-1.5 rounded-lg"
+              >
+                Usar
+              </button>
+              <button
+                type="button"
+                onClick={() => setDetected(null)}
+                className="text-xs font-semibold text-gray-600 border border-gray-200 px-3 py-1.5 rounded-lg"
+              >
+                Ignorar
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Nombre */}
         <div>
@@ -134,16 +194,25 @@ export function LeadQuickPage() {
         {/* Teléfono */}
         <div>
           <label className="text-sm font-semibold text-gray-700 block mb-2">Teléfono</label>
-          <input
-            ref={phoneRef}
-            type="tel"
-            inputMode="numeric"
-            value={s.phone}
-            onChange={e => update({ phone: e.target.value })}
-            onKeyDown={handlePhoneKey}
-            placeholder="+595 981 123456"
-            className={INPUT}
-          />
+          <div className="flex gap-2">
+            <CountryPicker
+              value={dialCountry}
+              onChange={setDialCountry}
+              mode="dial"
+              className="w-[32%]"
+            />
+            <input
+              ref={phoneRef}
+              type="tel"
+              inputMode="tel"
+              autoComplete="tel"
+              value={s.phoneNum}
+              onChange={e => update({ phoneNum: e.target.value })}
+              onKeyDown={handlePhoneKey}
+              placeholder="981 123456"
+              className={INPUT + ' flex-1'}
+            />
+          </div>
         </div>
 
         {/* Apodo / referencia */}
@@ -224,24 +293,33 @@ export function LeadQuickPage() {
 
       </div>
 
-      {/* Sticky bottom button */}
+      {/* Sticky bottom buttons */}
       <div className="fixed bottom-0 left-0 right-0 px-4 pb-6 pt-3 bg-white/95 backdrop-blur border-t border-gray-100">
-        <button
-          type="button"
-          onClick={save}
-          disabled={saving || saved}
-          className={`w-full py-4 rounded-2xl text-base font-bold transition-all ${
-            saved
-              ? 'bg-emerald-500 text-white'
-              : 'bg-gray-900 text-white active:scale-[0.98]'
-          } disabled:opacity-70`}
-        >
-          {saved ? (
-            <span className="flex items-center justify-center gap-2">
-              <Check className="w-5 h-5" /> Lead guardado
-            </span>
-          ) : saving ? 'Guardando...' : 'Guardar Lead'}
-        </button>
+        {saved ? (
+          <div className="w-full py-4 rounded-2xl bg-emerald-500 text-white text-base font-bold flex items-center justify-center gap-2">
+            <Check className="w-5 h-5" /> Lead guardado
+          </div>
+        ) : (
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={() => doSave(false)}
+              disabled={saving}
+              className="flex-1 py-4 rounded-2xl text-base font-bold border-2 border-gray-900 text-gray-900 bg-white active:scale-[0.98] transition-all disabled:opacity-50"
+            >
+              {saving ? '...' : 'Guardar'}
+            </button>
+            <button
+              type="button"
+              onClick={() => doSave(true)}
+              disabled={saving}
+              className="flex-[2] py-4 rounded-2xl text-base font-bold bg-emerald-600 text-white active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+            >
+              <MessageCircle className="w-5 h-5" />
+              {saving ? 'Guardando...' : 'Guardar + WhatsApp'}
+            </button>
+          </div>
+        )}
       </div>
 
     </div>
