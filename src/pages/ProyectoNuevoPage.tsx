@@ -5,8 +5,6 @@ import { toast } from 'sonner'
 import { supabase } from '@/lib/supabase'
 import { createProject } from '@/lib/projects'
 import { createTypology } from '@/lib/typologies'
-import { AmenitiesEditor } from '@/components/projects/AmenitiesEditor'
-
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type Status = 'en_pozo' | 'en_construccion' | 'entregado'
@@ -28,6 +26,15 @@ interface LinkEntry {
   _id: string
   type: string
   url: string
+}
+
+interface AmenityDraft {
+  _id: string
+  name: string
+  custom: boolean      // true = nombre editable
+  photo: File | null
+  previewUrl: string | null
+  pasteActive: boolean // paste handler escucha esta fila
 }
 
 interface PlanoModalState {
@@ -54,6 +61,7 @@ interface FormState {
   caracteristicas: string
   fotos: File[]
   resumen: string
+  amenityDrafts: AmenityDraft[]
 }
 
 const INITIAL: FormState = {
@@ -64,6 +72,7 @@ const INITIAL: FormState = {
   caracteristicas: '',
   fotos: [],
   resumen: '',
+  amenityDrafts: [],
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -90,6 +99,15 @@ const LINK_TYPE_OPTIONS = [
   { value: 'vista360', label: 'Vista 360' },
   { value: 'brochure', label: 'Brochure' },
   { value: 'otro',     label: 'Otro' },
+]
+
+const AMENITIES_INTERIOR = [
+  'Aire acondicionado', 'Calefacción', 'Lavandería', 'Cocina equipada',
+  'Placares', 'Balcón', 'Terraza',
+]
+const AMENITIES_EDIFICIO = [
+  'Piscina', 'Gimnasio', 'Parrilla / Quincho', 'Jardín',
+  'Seguridad 24h', 'Ascensor', 'Salón de usos', 'Estacionamiento',
 ]
 
 // ─── Maps resolver ─────────────────────────────────────────────────────────────
@@ -155,7 +173,7 @@ export function ProyectoNuevoPage() {
   const navigate = useNavigate()
   const [s, setS] = useState<FormState>(INITIAL)
   const [isSaving, setIsSaving] = useState(false)
-  const [createdProjectId, setCreatedProjectId] = useState<string | null>(null)
+  const [activePasteId, setActivePasteId] = useState<string | null>(null)
   const [isResolvingMap, setIsResolvingMap] = useState(false)
   const [resolvedEmbed, setResolvedEmbed] = useState<{ embedSrc: string; lat: number | null; lng: number | null } | null>(null)
   const [planoModal, setPlanoModal] = useState<PlanoModalState | null>(null)
@@ -239,6 +257,50 @@ export function ProyectoNuevoPage() {
     delete previewUrls.current[key]
     update({ fotos: s.fotos.filter((_, idx) => idx !== i) })
   }
+
+  // ── Amenities ───────────────────────────────────────────────────────────
+  function toggleAmenity(name: string) {
+    const exists = s.amenityDrafts.find(d => d.name === name && !d.custom)
+    if (exists) {
+      if (exists.previewUrl) URL.revokeObjectURL(exists.previewUrl)
+      update({ amenityDrafts: s.amenityDrafts.filter(d => d._id !== exists._id) })
+    } else {
+      update({ amenityDrafts: [...s.amenityDrafts, { _id: crypto.randomUUID(), name, custom: false, photo: null, previewUrl: null, pasteActive: false }] })
+    }
+  }
+  function addCustomAmenity() {
+    update({ amenityDrafts: [...s.amenityDrafts, { _id: crypto.randomUUID(), name: '', custom: true, photo: null, previewUrl: null, pasteActive: false }] })
+  }
+  function removeAmenity(id: string) {
+    const d = s.amenityDrafts.find(a => a._id === id)
+    if (d?.previewUrl) URL.revokeObjectURL(d.previewUrl)
+    update({ amenityDrafts: s.amenityDrafts.filter(a => a._id !== id) })
+    if (activePasteId === id) setActivePasteId(null)
+  }
+  function setAmenityPhoto(id: string, file: File) {
+    update({ amenityDrafts: s.amenityDrafts.map(a => {
+      if (a._id !== id) return a
+      if (a.previewUrl) URL.revokeObjectURL(a.previewUrl)
+      return { ...a, photo: file, previewUrl: URL.createObjectURL(file) }
+    })})
+  }
+  function setAmenityName(id: string, name: string) {
+    update({ amenityDrafts: s.amenityDrafts.map(a => a._id === id ? { ...a, name } : a) })
+  }
+
+  // Global paste para amenity activo
+  useEffect(() => {
+    function onPaste(e: ClipboardEvent) {
+      if (!activePasteId) return
+      const item = Array.from(e.clipboardData?.items ?? []).find(i => i.type.startsWith('image/'))
+      if (!item) return
+      const file = item.getAsFile()
+      if (file) setAmenityPhoto(activePasteId, file)
+    }
+    document.addEventListener('paste', onPaste)
+    return () => document.removeEventListener('paste', onPaste)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activePasteId, s.amenityDrafts])
 
   // ── Typologies ──────────────────────────────────────────────────────────
   function toggleTypology(type: TypologyType) {
@@ -355,8 +417,30 @@ export function ProyectoNuevoPage() {
         await supabase.from('project_photos').insert({ project_id: project.id, storage_path: path, sort_order: i })
       }
 
+      // ── Amenities ───────────────────────────────────────────────────────
+      for (let i = 0; i < s.amenityDrafts.length; i++) {
+        const draft = s.amenityDrafts[i]
+        if (!draft.name.trim()) continue
+        const { data: amenity } = await supabase
+          .from('project_amenities')
+          .insert({ project_id: project.id, name: draft.name.trim(), sort_order: i })
+          .select().single()
+        if (draft.photo && amenity) {
+          const ext = draft.photo.name.split('.').pop() ?? 'jpg'
+          const path = `${project.id}/amenities/${(amenity as { id: string }).id}/${Date.now()}.${ext}`
+          const { error: upErr } = await supabase.storage.from('project-media').upload(path, draft.photo)
+          if (!upErr) {
+            await supabase.from('project_amenity_images').insert({
+              amenity_id: (amenity as { id: string }).id,
+              storage_path: path,
+              sort_order: 0,
+            })
+          }
+        }
+      }
+
       toast.success('Proyecto creado')
-      setCreatedProjectId(project.id)
+      navigate('/proyectos')
     } catch (err) {
       toast.error('Error al guardar el proyecto')
       console.error(err)
@@ -366,38 +450,6 @@ export function ProyectoNuevoPage() {
 
   const TIPO_LABEL: Record<TipoProyecto, string> = { residencial: 'Residencial', comercial: 'Comercial', mixto: 'Mixto' }
   const hasHeaderSummary = !!(s.name || s.tipo_proyecto)
-
-  // ── Step 2: amenities ──────────────────────────────────────────────────────
-  if (createdProjectId) {
-    return (
-      <div className="min-h-screen bg-gray-50 pb-8">
-        <header className="sticky top-0 z-30 bg-white/90 backdrop-blur border-b border-gray-100 px-6 py-4 flex items-center justify-between gap-4">
-          <div>
-            <h1 className="text-sm font-semibold text-gray-900">Amenities del proyecto</h1>
-            <p className="text-xs text-gray-400 mt-0.5">Opcional — podés agregarlo después</p>
-          </div>
-        </header>
-        <div className="max-w-[900px] mx-auto px-4 sm:px-6 py-6">
-          <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm">
-            <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-4">Amenities</h2>
-            <AmenitiesEditor projectId={createdProjectId} />
-          </div>
-        </div>
-        <div className="fixed bottom-6 right-6 z-30 w-[280px] bg-gray-900 rounded-2xl shadow-[0_8px_40px_rgba(0,0,0,0.35)] p-4 flex flex-col gap-2">
-          <button type="button" onClick={() => navigate('/proyectos')}
-            className="w-full py-3 rounded-xl text-sm font-semibold bg-white text-gray-900 hover:bg-gray-100 transition-colors"
-          >
-            Finalizar
-          </button>
-          <button type="button" onClick={() => navigate('/proyectos')}
-            className="w-full py-2.5 rounded-xl text-sm font-medium text-white/50 hover:text-white/80 transition-colors"
-          >
-            Omitir amenities
-          </button>
-        </div>
-      </div>
-    )
-  }
 
   return (
     <div className="min-h-screen bg-gray-50 pb-8">
@@ -650,7 +702,97 @@ export function ProyectoNuevoPage() {
           />
         </Block>
 
-        {/* ══ 6 — FOTOS ══ */}
+        {/* ══ 6 — AMENITIES ══ */}
+        <Block title="Amenities">
+          {/* Selector */}
+          <div className="grid grid-cols-2 gap-x-6 gap-y-1 mb-4">
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-2">Interior</p>
+              <div className="flex flex-col gap-1.5">
+                {AMENITIES_INTERIOR.map(name => {
+                  const active = s.amenityDrafts.some(d => d.name === name && !d.custom)
+                  return (
+                    <button key={name} type="button" onClick={() => toggleAmenity(name)}
+                      className={`text-left px-3 py-2 rounded-xl border text-sm transition-all ${active ? 'border-gray-900 bg-gray-900 text-white' : 'border-gray-200 text-gray-600 hover:border-gray-400'}`}
+                    >{name}</button>
+                  )
+                })}
+              </div>
+            </div>
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-2">Edificio</p>
+              <div className="flex flex-col gap-1.5">
+                {AMENITIES_EDIFICIO.map(name => {
+                  const active = s.amenityDrafts.some(d => d.name === name && !d.custom)
+                  return (
+                    <button key={name} type="button" onClick={() => toggleAmenity(name)}
+                      className={`text-left px-3 py-2 rounded-xl border text-sm transition-all ${active ? 'border-gray-900 bg-gray-900 text-white' : 'border-gray-200 text-gray-600 hover:border-gray-400'}`}
+                    >{name}</button>
+                  )
+                })}
+              </div>
+            </div>
+          </div>
+          <button type="button" onClick={addCustomAmenity}
+            className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-900 transition-colors mb-4"
+          >
+            <Plus className="w-4 h-4" /> Otro
+          </button>
+
+          {/* Filas de amenities seleccionados */}
+          {s.amenityDrafts.length > 0 && (
+            <div className="flex flex-col gap-2 border-t border-gray-100 pt-4">
+              {s.amenityDrafts.map(draft => (
+                <div key={draft._id} className="flex items-center gap-3 bg-gray-50 rounded-xl px-3 py-2.5">
+                  {/* Nombre */}
+                  {draft.custom ? (
+                    <input
+                      value={draft.name}
+                      onChange={e => setAmenityName(draft._id, e.target.value)}
+                      placeholder="Nombre del amenity"
+                      className="w-36 flex-shrink-0 px-2 py-1 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-900/20"
+                    />
+                  ) : (
+                    <span className="w-36 flex-shrink-0 text-sm font-medium text-gray-800 truncate">{draft.name}</span>
+                  )}
+
+                  {/* Preview */}
+                  {draft.previewUrl && (
+                    <img src={draft.previewUrl} alt="" className="h-10 w-10 rounded-lg object-cover flex-shrink-0 border border-gray-200" />
+                  )}
+
+                  {/* Subir imagen */}
+                  <label className="flex-shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 border border-gray-200 rounded-lg text-xs text-gray-500 hover:border-gray-400 cursor-pointer transition-colors">
+                    <Upload className="w-3 h-3" />Imagen
+                    <input type="file" accept="image/*" className="hidden"
+                      onChange={e => e.target.files?.[0] && setAmenityPhoto(draft._id, e.target.files[0])}
+                    />
+                  </label>
+
+                  {/* Pegar */}
+                  <button
+                    type="button"
+                    onClick={() => setActivePasteId(prev => prev === draft._id ? null : draft._id)}
+                    className={`flex-shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                      activePasteId === draft._id
+                        ? 'bg-gray-900 text-white border border-gray-900'
+                        : 'border border-gray-200 text-gray-500 hover:border-gray-400'
+                    }`}
+                  >
+                    <Clipboard className="w-3 h-3" />
+                    {activePasteId === draft._id ? 'Listo para pegar' : 'Pegar Ctrl+V'}
+                  </button>
+
+                  <button type="button" onClick={() => removeAmenity(draft._id)} className="ml-auto text-gray-300 hover:text-red-400 transition-colors flex-shrink-0">
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </Block>
+
+        {/* ══ 8 — FOTOS ══ */}
         <Block title="Fotos">
           <div className="flex flex-col gap-3">
             <div
@@ -685,7 +827,7 @@ export function ProyectoNuevoPage() {
           </div>
         </Block>
 
-        {/* ══ 7 — RESUMEN ══ */}
+        {/* ══ 9 — RESUMEN ══ */}
         <Block title="Resumen">
           <textarea value={s.resumen} onChange={e => update({ resumen: e.target.value })} rows={6}
             placeholder={"URBAN CUMBRES TORRE B\nEntrega: Marzo 2027\n\nUbicación estratégica en el corazón de Luque..."}
