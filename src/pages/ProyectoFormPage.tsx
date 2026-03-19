@@ -72,8 +72,8 @@ function FieldLabel({ children }: { children: React.ReactNode }) {
 
 // ─── Accordion Section ────────────────────────────────────────────────────────
 
-function Section({ id, title, open, onToggle, children, badge }: {
-  id: SectionId; title: string; open: boolean; onToggle: () => void; children: React.ReactNode; badge?: string
+function Section({ title, open, onToggle, children, badge }: {
+  title: string; open: boolean; onToggle: () => void; children: React.ReactNode; badge?: string
 }) {
   return (
     <div className="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden">
@@ -142,9 +142,10 @@ export function ProyectoFormPage() {
     if (!isEdit || !id) return
     async function load() {
       try {
+        const projectId = id!
         const [proj, photos] = await Promise.all([
-          supabase.from('projects').select('*').eq('id', id).single().then(r => r.data as unknown as ProjectRow),
-          getProjectPhotos(id),
+          supabase.from('projects').select('*').eq('id', projectId).single().then(r => r.data as unknown as ProjectRow),
+          getProjectPhotos(projectId),
         ])
         if (!proj) { navigate('/proyectos'); return }
         const mapsLink = (proj.links as Array<{ type: string; url: string }>)?.find(l => l.type === 'maps')
@@ -493,7 +494,7 @@ export function ProyectoFormPage() {
         </div>
 
         {/* ══ 2 — TIPOLOGÍAS ══ */}
-        <Section id="tipologias" title="Tipologías" open={openSection === 'tipologias'} onToggle={() => toggle('tipologias')}
+        <Section title="Tipologías" open={openSection === 'tipologias'} onToggle={() => toggle('tipologias')}
           badge={isEdit ? 'Ver existentes →' : s.selected_types.length > 0 ? `${s.selected_types.length} seleccionadas` : undefined}
         >
           {isEdit ? (
@@ -580,7 +581,7 @@ export function ProyectoFormPage() {
         </Section>
 
         {/* ══ 3 — AMENITIES ══ */}
-        <Section id="amenities" title="Amenities" open={openSection === 'amenities'} onToggle={() => toggle('amenities')}>
+        <Section title="Amenities" open={openSection === 'amenities'} onToggle={() => toggle('amenities')}>
           {isEdit && id ? (
             <AmenitiesEditor projectId={id} />
           ) : (
@@ -642,7 +643,7 @@ export function ProyectoFormPage() {
         </Section>
 
         {/* ══ 4 — MEDIA (Fotos + Brochure) ══ */}
-        <Section id="media" title="Media" open={openSection === 'media'} onToggle={() => toggle('media')}
+        <Section title="Media" open={openSection === 'media'} onToggle={() => toggle('media')}
           badge={`${existingPhotos.length + s.fotos.length} foto${existingPhotos.length + s.fotos.length !== 1 ? 's' : ''}`}
         >
           <div className="flex flex-col gap-4">
@@ -703,7 +704,7 @@ export function ProyectoFormPage() {
         </Section>
 
         {/* ══ 5 — CONTENIDO (Resumen + Características) ══ */}
-        <Section id="contenido" title="Contenido" open={openSection === 'contenido'} onToggle={() => toggle('contenido')}>
+        <Section title="Contenido" open={openSection === 'contenido'} onToggle={() => toggle('contenido')}>
           <div className="flex flex-col gap-4">
             <div>
               <FieldLabel>Resumen</FieldLabel>
@@ -723,7 +724,7 @@ export function ProyectoFormPage() {
         </Section>
 
         {/* ══ 6 — LINKS ══ */}
-        <Section id="links" title="Links" open={openSection === 'links'} onToggle={() => toggle('links')}
+        <Section title="Links" open={openSection === 'links'} onToggle={() => toggle('links')}
           badge={s.links.length > 0 ? `${s.links.length}` : undefined}
         >
           <div className="flex flex-col gap-3">

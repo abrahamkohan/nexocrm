@@ -2,7 +2,6 @@
 import { useNavigate } from 'react-router'
 import { Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { toast } from 'sonner'
 import { ProjectList } from '@/components/projects/ProjectList'
 import {
   useProjects,
