@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
 import { useNavigate } from 'react-router'
 import { X, Upload, Link as LinkIcon, Check, Plus, Trash2, Clipboard } from 'lucide-react'
+// Clipboard se usa en el modal de planos
 import { toast } from 'sonner'
 import { supabase } from '@/lib/supabase'
 import { createProject } from '@/lib/projects'
@@ -737,21 +738,40 @@ export function ProyectoNuevoPage() {
           {s.amenityDrafts.length > 0 && (
             <div className="flex flex-col gap-1.5 border-t border-gray-100 pt-3">
               {s.amenityDrafts.map(draft => (
-                <div key={draft._id} className="flex items-center gap-2 h-9">
+                <div key={draft._id} className="flex items-center gap-2 group">
                   {/* Nombre */}
                   {draft.custom ? (
                     <input value={draft.name} onChange={e => setAmenityName(draft._id, e.target.value)}
                       placeholder="Nombre..."
-                      className="w-40 flex-shrink-0 px-2 py-1 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-gray-900/20"
+                      className="w-36 flex-shrink-0 px-2 py-1 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-gray-900/20"
                     />
                   ) : (
-                    <span className="w-40 flex-shrink-0 text-xs font-medium text-gray-700 truncate">{draft.name}</span>
+                    <span className="w-36 flex-shrink-0 text-xs font-medium text-gray-700 truncate">{draft.name}</span>
                   )}
 
-                  {/* Preview */}
-                  {draft.previewUrl && (
-                    <img src={draft.previewUrl} alt="" className="h-7 w-7 rounded object-cover flex-shrink-0 border border-gray-200" />
-                  )}
+                  {/* Preview o zona de pegar */}
+                  {draft.previewUrl ? (
+                    <img src={draft.previewUrl} alt="" className="h-8 w-8 rounded object-cover flex-shrink-0 border border-gray-200" />
+                  ) : null}
+
+                  {/* Zona pegar — visible en hover o cuando está activa */}
+                  <div
+                    tabIndex={0}
+                    onFocus={() => setActivePasteId(draft._id)}
+                    onBlur={() => setActivePasteId(prev => prev === draft._id ? null : prev)}
+                    onPaste={e => {
+                      const item = Array.from(e.clipboardData.items).find(i => i.type.startsWith('image/'))
+                      const file = item?.getAsFile()
+                      if (file) setAmenityPhoto(draft._id, file)
+                    }}
+                    className={`flex-1 h-8 flex items-center justify-center rounded-lg border border-dashed text-[11px] cursor-pointer transition-all outline-none
+                      ${activePasteId === draft._id
+                        ? 'border-gray-500 text-gray-600 bg-gray-50'
+                        : 'border-transparent text-transparent group-hover:border-gray-300 group-hover:text-gray-400'
+                      }`}
+                  >
+                    Hacé clic aquí y pegá (Ctrl+V)
+                  </div>
 
                   {/* Subir */}
                   <label className="flex-shrink-0 h-7 w-7 flex items-center justify-center border border-gray-200 rounded-lg text-gray-400 hover:border-gray-400 hover:text-gray-600 cursor-pointer transition-colors" title="Subir imagen">
@@ -761,17 +781,7 @@ export function ProyectoNuevoPage() {
                     />
                   </label>
 
-                  {/* Pegar */}
-                  <button type="button" title="Pegar imagen (Ctrl+V)"
-                    onClick={() => setActivePasteId(prev => prev === draft._id ? null : draft._id)}
-                    className={`flex-shrink-0 h-7 w-7 flex items-center justify-center rounded-lg transition-all ${
-                      activePasteId === draft._id ? 'bg-gray-900 text-white' : 'border border-gray-200 text-gray-400 hover:border-gray-400 hover:text-gray-600'
-                    }`}
-                  >
-                    <Clipboard className="w-3.5 h-3.5" />
-                  </button>
-
-                  <button type="button" onClick={() => removeAmenity(draft._id)} className="ml-auto text-gray-300 hover:text-red-400 transition-colors flex-shrink-0">
+                  <button type="button" onClick={() => removeAmenity(draft._id)} className="flex-shrink-0 text-gray-300 hover:text-red-400 transition-colors">
                     <X className="w-3.5 h-3.5" />
                   </button>
                 </div>
