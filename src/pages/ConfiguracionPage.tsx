@@ -12,7 +12,7 @@ import { useConsultoraConfig, useSaveConsultoraConfig } from '@/hooks/useConsult
 
 // ─── Referidos helpers ────────────────────────────────────────────────────────
 
-const APP_URL  = (import.meta.env.VITE_APP_URL as string ?? '').replace(/\/$/, '')
+const APP_URL    = ((import.meta.env.VITE_APP_URL as string) || window.location.origin).replace(/\/$/, '')
 const SHORT_BASE = `${APP_URL}/l/`
 
 function toSlug(name: string): string {
