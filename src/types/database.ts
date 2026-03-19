@@ -150,6 +150,8 @@ export interface Database {
           campos_extra: Record<string, string> | null
           apodo: string | null
           referido_por: string | null
+          estado: string | null
+          converted_at: string | null
           created_at: string
           updated_at: string
         }
@@ -166,6 +168,8 @@ export interface Database {
           campos_extra?: Record<string, string> | null
           apodo?: string | null
           referido_por?: string | null
+          estado?: string | null
+          converted_at?: string | null
         }
         Update: {
           full_name?: string
@@ -180,6 +184,8 @@ export interface Database {
           campos_extra?: Record<string, string> | null
           apodo?: string | null
           referido_por?: string | null
+          estado?: string | null
+          converted_at?: string | null
         }
         Relationships: []
       }

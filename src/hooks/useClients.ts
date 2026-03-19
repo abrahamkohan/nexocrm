@@ -45,3 +45,25 @@ export function useDeleteClient() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['clients'] }),
   })
 }
+
+export function useConvertToCliente() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) =>
+      updateClient(id, {
+        tipo: 'cliente',
+        estado: 'convertido',
+        converted_at: new Date().toISOString(),
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['clients'] }),
+  })
+}
+
+export function useChangeEstado() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, estado }: { id: string; estado: string }) =>
+      updateClient(id, { estado }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['clients'] }),
+  })
+}
