@@ -149,6 +149,14 @@
   background-color: rgba(222, 160, 36, 0.05);
 }
 
+/* ─── Autofill override (evita amarillo iOS/Chrome) ─────────────────────── */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 30px white inset !important;
+  -webkit-text-fill-color: inherit !important;
+}
+
 /* ─── Base ───────────────────────────────────────────────────────────────── */
 @layer base {
   * {

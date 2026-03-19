@@ -7,12 +7,28 @@ import type { Country } from '@/components/ui/CountryPicker'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const NAT_CHIPS = ['PY', 'AR', 'BR', 'UY', 'ES', 'DE', 'EEUU']
+const NAT_CHIPS = [
+  { code: 'PY',   label: '🇵🇾 PY'   },
+  { code: 'AR',   label: '🇦🇷 AR'   },
+  { code: 'BR',   label: '🇧🇷 BR'   },
+  { code: 'UY',   label: '🇺🇾 UY'   },
+  { code: 'ES',   label: '🇪🇸 ES'   },
+  { code: 'DE',   label: '🇩🇪 DE'   },
+  { code: 'EEUU', label: '🇺🇸 EEUU' },
+]
 const NAT_LABEL: Record<string, string> = {
   PY: 'Paraguayo', AR: 'Argentino', BR: 'Brasileño', UY: 'Uruguayo',
-  ES: 'Español', DE: 'Alemán', EEUU: 'Estadounidense',
+  ES: 'Español',   DE: 'Alemán',    EEUU: 'Estadounidense',
 }
-const FUENTE_CHIPS = ['Instagram', 'Facebook', 'Referido', 'WhatsApp', 'Web', 'Portales']
+
+const FUENTE_CHIPS = [
+  { code: 'Instagram', label: '📷 Instagram' },
+  { code: 'Facebook',  label: '👍 Facebook'  },
+  { code: 'WhatsApp',  label: '🟢 WhatsApp'  },
+  { code: 'Referido',  label: '👥 Referido'  },
+  { code: 'Web',       label: '🌐 Web'       },
+  { code: 'Portales',  label: '🏠 Portales'  },
+]
 
 const PY = COUNTRIES.find(c => c.code === 'PY')!
 
@@ -20,13 +36,13 @@ const PY = COUNTRIES.find(c => c.code === 'PY')!
 
 interface FormState {
   full_name: string
-  phoneNum: string
-  apodo: string
-  nat: string
-  nat_otro: string
-  fuente: string
+  phoneNum:  string
+  apodo:     string
+  nat:       string
+  nat_otro:  string
+  fuente:    string
   fuente_otro: string
-  notes: string
+  notes:     string
 }
 
 const EMPTY: FormState = {
@@ -41,16 +57,15 @@ export function LeadQuickPage() {
   const token = params.get('token') ?? ''
   const ref   = params.get('ref')   ?? ''
 
-  const [s, setS] = useState<FormState>(EMPTY)
-  const [dialCountry, setDialCountry] = useState<Country>(PY)
-  const [detected, setDetected] = useState<Country | null>(null)   // IP-detected country if ≠ PY
-  const [saving, setSaving] = useState(false)
-  const [saved, setSaved] = useState(false)
+  const [s, setS]               = useState<FormState>(EMPTY)
+  const [dialCountry, setDial]  = useState<Country>(PY)
+  const [detected, setDetected] = useState<Country | null>(null)
+  const [saving, setSaving]     = useState(false)
+  const [saved, setSaved]       = useState(false)
 
   const nameRef  = useRef<HTMLInputElement>(null)
   const phoneRef = useRef<HTMLInputElement>(null)
 
-  // Autofocus + IP detection
   useEffect(() => {
     nameRef.current?.focus()
     fetch('https://ipapi.co/json/')
@@ -58,16 +73,13 @@ export function LeadQuickPage() {
       .then((d: { country_code?: string }) => {
         const found = COUNTRIES.find(c => c.code === d.country_code)
         if (!found) return
-        if (found.code === 'PY') {
-          setDialCountry(found)
-        } else {
-          setDetected(found)   // show banner, don't auto-apply
-        }
+        if (found.code === 'PY') setDial(found)
+        else setDetected(found)
       })
-      .catch(() => {})         // default PY
+      .catch(() => {})
   }, [])
 
-  function update(patch: Partial<FormState>) { setS(prev => ({ ...prev, ...patch })) }
+  function update(patch: Partial<FormState>) { setS(p => ({ ...p, ...patch })) }
 
   function handleNameKey(e: React.KeyboardEvent) {
     if (e.key === 'Enter') { e.preventDefault(); phoneRef.current?.focus() }
@@ -76,8 +88,8 @@ export function LeadQuickPage() {
     if (e.key === 'Enter') { e.preventDefault(); doSave(false) }
   }
 
-  function openWhatsApp(name: string, phone: string) {
-    const clean = phone.replace(/\D/g, '')
+  function openWhatsApp(name: string) {
+    const clean = s.phoneNum.replace(/\D/g, '')
     if (!clean) return
     const fullNum = dialCountry.dial.replace('+', '') + clean
     const msg = encodeURIComponent(`Hola ${name}, te contacto por tu consulta en Kohan & Campos.`)
@@ -96,8 +108,7 @@ export function LeadQuickPage() {
       const fuenValue = s.fuente === 'Otro' ? s.fuente_otro : s.fuente
       const fullPhone = s.phoneNum.trim() ? `${dialCountry.dial} ${s.phoneNum.trim()}` : ''
 
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL ?? ''
-      const res = await fetch(`${supabaseUrl}/functions/v1/quick-service`, {
+      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/quick-service`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -117,69 +128,59 @@ export function LeadQuickPage() {
       if (!res.ok) throw new Error(data.error ?? 'Error al guardar')
 
       if ('vibrate' in navigator) navigator.vibrate(30)
-
-      if (withWhatsApp) {
-        openWhatsApp(s.full_name.trim(), s.phoneNum)
-      }
+      if (withWhatsApp) openWhatsApp(s.full_name.trim())
 
       setSaved(true)
-      setTimeout(() => {
-        setSaved(false)
-        setS(EMPTY)
-        nameRef.current?.focus()
-      }, 1400)
+      setTimeout(() => { setSaved(false); setS(EMPTY); nameRef.current?.focus() }, 1400)
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Error al guardar')
     }
     setSaving(false)
   }
 
-  const INPUT = 'w-full px-4 py-3.5 border border-gray-200 rounded-2xl text-base focus:outline-none focus:ring-2 focus:ring-gray-900/15 focus:border-gray-400 bg-white'
-  const CHIP = (active: boolean) =>
-    `px-3.5 py-2 rounded-xl border-2 text-sm font-medium transition-all select-none ${
-      active ? 'border-gray-900 bg-gray-900 text-white' : 'border-gray-200 text-gray-600 bg-white active:bg-gray-50'
+  // ─── Styles ─────────────────────────────────────────────────────────────────
+
+  const INPUT = 'w-full px-4 h-14 border border-gray-200 rounded-2xl text-base bg-white focus:outline-none focus:border-gray-800 focus:ring-0 transition-colors'
+  const CHIP  = (active: boolean) =>
+    `px-4 py-2 rounded-2xl border text-sm font-medium transition-all select-none ${
+      active
+        ? 'border-gray-900 bg-gray-900 text-white'
+        : 'border-gray-200 text-gray-700 bg-white active:bg-gray-50'
     }`
 
   return (
     <div className="min-h-screen bg-gray-50">
 
       {/* Header */}
-      <header className="bg-white border-b border-gray-100 px-5 py-4 sticky top-0 z-10">
-        <h1 className="text-sm font-bold text-gray-900">Agregar Lead</h1>
+      <header className="bg-white border-b border-gray-100 px-5 py-3.5 sticky top-0 z-10">
+        <h1 className="text-base font-bold text-gray-900">Agregar Lead</h1>
         {ref && <p className="text-xs text-gray-400 mt-0.5">ref: {ref}</p>}
       </header>
 
-      {/* Form */}
-      <div className="px-4 py-5 flex flex-col gap-5 pb-36">
+      <div className="px-4 pt-6 pb-36 flex flex-col gap-6">
 
-        {/* Banner de país detectado */}
+        {/* Banner país detectado */}
         {detected && (
           <div className="flex items-center justify-between gap-3 bg-white border border-gray-200 rounded-2xl px-4 py-3">
             <p className="text-sm text-gray-700">
               Detectamos <span className="font-semibold">{detected.flag} {detected.name}</span>
             </p>
             <div className="flex gap-2 flex-shrink-0">
-              <button
-                type="button"
-                onClick={() => { setDialCountry(detected); setDetected(null) }}
-                className="text-xs font-semibold text-white bg-gray-900 px-3 py-1.5 rounded-lg"
-              >
-                Usar
-              </button>
-              <button
-                type="button"
+              <button type="button"
+                onClick={() => { setDial(detected); setDetected(null) }}
+                className="text-xs font-bold text-white bg-gray-900 px-3 py-1.5 rounded-xl"
+              >Usar</button>
+              <button type="button"
                 onClick={() => setDetected(null)}
-                className="text-xs font-semibold text-gray-600 border border-gray-200 px-3 py-1.5 rounded-lg"
-              >
-                Ignorar
-              </button>
+                className="text-xs font-semibold text-gray-500 border border-gray-200 px-3 py-1.5 rounded-xl"
+              >Ignorar</button>
             </div>
           </div>
         )}
 
         {/* Nombre */}
-        <div>
-          <label className="text-sm font-semibold text-gray-700 block mb-2">Nombre</label>
+        <div className="flex flex-col gap-2">
+          <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Nombre</label>
           <input
             ref={nameRef}
             value={s.full_name}
@@ -187,25 +188,18 @@ export function LeadQuickPage() {
             onKeyDown={handleNameKey}
             placeholder="Nombre del contacto"
             autoComplete="off"
-            className={INPUT}
+            className={INPUT + ' text-lg font-medium placeholder:font-normal placeholder:text-base'}
           />
         </div>
 
         {/* Teléfono */}
-        <div>
-          <label className="text-sm font-semibold text-gray-700 block mb-2">Teléfono</label>
+        <div className="flex flex-col gap-2">
+          <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Teléfono</label>
           <div className="flex gap-2">
-            <CountryPicker
-              value={dialCountry}
-              onChange={setDialCountry}
-              mode="dial"
-              className="w-[32%]"
-            />
+            <CountryPicker value={dialCountry} onChange={setDial} mode="dial" className="w-[32%]" />
             <input
               ref={phoneRef}
-              type="tel"
-              inputMode="tel"
-              autoComplete="tel"
+              type="tel" inputMode="tel" autoComplete="tel"
               value={s.phoneNum}
               onChange={e => update({ phoneNum: e.target.value })}
               onKeyDown={handlePhoneKey}
@@ -215,27 +209,28 @@ export function LeadQuickPage() {
           </div>
         </div>
 
-        {/* Apodo / referencia */}
-        <div>
-          <label className="text-sm font-semibold text-gray-700 block mb-1">Apodo / referencia</label>
-          <p className="text-xs text-gray-400 mb-2">Para recordarte quién es. Ej: "Señor alto Expo"</p>
+        {/* Apodo */}
+        <div className="flex flex-col gap-2">
+          <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+            Apodo <span className="normal-case font-normal text-gray-400">— para recordarte quién es</span>
+          </label>
           <input
             value={s.apodo}
             onChange={e => update({ apodo: e.target.value })}
-            placeholder="Nota rápida de identificación"
+            placeholder='Ej: "Señor alto Expo"'
             className={INPUT}
           />
         </div>
 
         {/* Nacionalidad */}
-        <div>
-          <label className="text-sm font-semibold text-gray-700 block mb-2">Nacionalidad</label>
+        <div className="flex flex-col gap-2">
+          <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Nacionalidad</label>
           <div className="flex flex-wrap gap-2">
             {NAT_CHIPS.map(c => (
-              <button key={c} type="button"
-                onClick={() => update({ nat: s.nat === c ? '' : c, nat_otro: '' })}
-                className={CHIP(s.nat === c)}
-              >{c}</button>
+              <button key={c.code} type="button"
+                onClick={() => update({ nat: s.nat === c.code ? '' : c.code, nat_otro: '' })}
+                className={CHIP(s.nat === c.code)}
+              >{c.label}</button>
             ))}
             <button type="button"
               onClick={() => update({ nat: s.nat === 'Otro' ? '' : 'Otro', nat_otro: '' })}
@@ -243,77 +238,59 @@ export function LeadQuickPage() {
             >Otro</button>
           </div>
           {s.nat === 'Otro' && (
-            <input
-              value={s.nat_otro}
-              onChange={e => update({ nat_otro: e.target.value })}
-              placeholder="Escribir nacionalidad..."
-              className={INPUT + ' mt-2'}
-              autoFocus
-            />
+            <input value={s.nat_otro} onChange={e => update({ nat_otro: e.target.value })}
+              placeholder="Escribir nacionalidad..." className={INPUT + ' mt-1'} autoFocus />
           )}
         </div>
 
         {/* Fuente */}
-        <div>
-          <label className="text-sm font-semibold text-gray-700 block mb-2">Fuente</label>
+        <div className="flex flex-col gap-2">
+          <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Fuente</label>
           <div className="flex flex-wrap gap-2">
             {FUENTE_CHIPS.map(c => (
-              <button key={c} type="button"
-                onClick={() => update({ fuente: s.fuente === c ? '' : c, fuente_otro: '' })}
-                className={CHIP(s.fuente === c)}
-              >{c}</button>
+              <button key={c.code} type="button"
+                onClick={() => update({ fuente: s.fuente === c.code ? '' : c.code, fuente_otro: '' })}
+                className={CHIP(s.fuente === c.code)}
+              >{c.label}</button>
             ))}
             <button type="button"
               onClick={() => update({ fuente: s.fuente === 'Otro' ? '' : 'Otro', fuente_otro: '' })}
               className={CHIP(s.fuente === 'Otro')}
-            >Otro</button>
+            >➕ Otro</button>
           </div>
           {s.fuente === 'Otro' && (
-            <input
-              value={s.fuente_otro}
-              onChange={e => update({ fuente_otro: e.target.value })}
-              placeholder="Escribir fuente..."
-              className={INPUT + ' mt-2'}
-              autoFocus
-            />
+            <input value={s.fuente_otro} onChange={e => update({ fuente_otro: e.target.value })}
+              placeholder="Escribir fuente..." className={INPUT + ' mt-1'} autoFocus />
           )}
         </div>
 
         {/* Notas */}
-        <div>
-          <label className="text-sm font-semibold text-gray-700 block mb-2">Notas</label>
+        <div className="flex flex-col gap-2">
+          <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Notas</label>
           <textarea
-            value={s.notes}
-            onChange={e => update({ notes: e.target.value })}
-            rows={2}
+            value={s.notes} onChange={e => update({ notes: e.target.value })} rows={2}
             placeholder="Nota rápida..."
-            className="w-full px-4 py-3 border border-gray-200 rounded-2xl text-base focus:outline-none focus:ring-2 focus:ring-gray-900/15 focus:border-gray-400 resize-none bg-white"
+            className="w-full px-4 py-3.5 border border-gray-200 rounded-2xl text-base bg-white focus:outline-none focus:border-gray-800 resize-none"
           />
         </div>
 
       </div>
 
-      {/* Sticky bottom buttons */}
-      <div className="fixed bottom-0 left-0 right-0 px-4 pb-6 pt-3 bg-white/95 backdrop-blur border-t border-gray-100">
+      {/* Sticky bottom */}
+      <div className="fixed bottom-0 left-0 right-0 px-4 pb-8 pt-3 bg-white/95 backdrop-blur border-t border-gray-100">
         {saved ? (
-          <div className="w-full py-4 rounded-2xl bg-emerald-500 text-white text-base font-bold flex items-center justify-center gap-2">
+          <div className="w-full h-14 rounded-2xl bg-emerald-500 text-white text-base font-bold flex items-center justify-center gap-2">
             <Check className="w-5 h-5" /> Lead guardado
           </div>
         ) : (
           <div className="flex gap-3">
-            <button
-              type="button"
-              onClick={() => doSave(false)}
-              disabled={saving}
-              className="flex-1 py-4 rounded-2xl text-base font-bold border-2 border-gray-900 text-gray-900 bg-white active:scale-[0.98] transition-all disabled:opacity-50"
+            <button type="button" onClick={() => doSave(false)} disabled={saving}
+              className="flex-1 h-14 rounded-2xl text-base font-bold border-2 border-gray-900 text-gray-900 bg-white active:scale-[0.98] transition-all disabled:opacity-50"
             >
               {saving ? '...' : 'Guardar'}
             </button>
-            <button
-              type="button"
-              onClick={() => doSave(true)}
-              disabled={saving}
-              className="flex-[2] py-4 rounded-2xl text-base font-bold bg-emerald-600 text-white active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+            <button type="button" onClick={() => doSave(true)} disabled={saving}
+              className="flex-[2] h-14 rounded-2xl text-base font-bold bg-emerald-600 text-white active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-2"
             >
               <MessageCircle className="w-5 h-5" />
               {saving ? 'Guardando...' : 'Guardar + WhatsApp'}
