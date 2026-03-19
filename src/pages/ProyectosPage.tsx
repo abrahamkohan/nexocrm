@@ -62,6 +62,9 @@ export function ProyectosPage() {
         developer_name:  values.developer_name  ?? null,
         usd_to_pyg_rate: values.usd_to_pyg_rate ?? null,
         links:           values.links           ?? [],
+        tipo_proyecto:   values.tipo_proyecto   ?? null,
+        caracteristicas: values.caracteristicas ?? null,
+        description:     values.description     ?? null,
       }
 
       if (editing) {
