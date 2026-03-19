@@ -3,6 +3,7 @@ import { useState, useRef } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
+import { X, Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -28,8 +29,8 @@ const UNIT_TYPES: { value: UnitType; label: string; category: 'unidad' | 'cocher
   { value: 'otro',           label: 'Otro',            category: 'unidad'   },
 ]
 
-const UNIT_TYPES_FIRST_ROW = UNIT_TYPES.slice(0, 4)   // unit types
-const UNIT_TYPES_SECOND_ROW = UNIT_TYPES.slice(4)      // cochera / baulera / otro
+const UNIT_TYPES_FIRST_ROW  = UNIT_TYPES.slice(0, 4)
+const UNIT_TYPES_SECOND_ROW = UNIT_TYPES.slice(4)
 
 const BATHROOM_OPTIONS = [
   { value: 1, label: '1' },
@@ -37,16 +38,23 @@ const BATHROOM_OPTIONS = [
   { value: 3, label: '3+' },
 ]
 
+// Features predefinidas sugeridas
+const FEATURES_PREDEFINED = [
+  'Balcón', 'Terraza', 'Vista al río', 'Vista al parque', 'Vista panorámica',
+  'Cocina equipada', 'Placard', 'Vestidor', 'Lavadero', 'Doble baño',
+  'Aire acondicionado', 'Chimenea', 'Piso de porcelanato', 'Doble altura',
+]
+
 // ─── Schema ───────────────────────────────────────────────────────────────────
 
 const typologySchema = z.object({
   unit_type: z.string().min(1, 'Seleccioná un tipo'),
-  name: z.string().min(1, 'Requerido'),
+  name:      z.string().min(1, 'Requerido'),
   bathrooms: z.number().nullable().optional(),
-  area_m2: z.number().positive('Debe ser mayor a 0'),
+  area_m2:   z.number().positive('Debe ser mayor a 0'),
 })
 
-export type TypologyFormValues = z.infer<typeof typologySchema>
+export type TypologyFormValues = z.infer<typeof typologySchema> & { features: string[] }
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
@@ -60,8 +68,10 @@ interface TypologyFormProps {
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export function TypologyForm({ defaultValues, onSubmit, onCancel, isSubmitting }: TypologyFormProps) {
-  const [floorPlanFile, setFloorPlanFile] = useState<File | null>(null)
+  const [floorPlanFile,    setFloorPlanFile]    = useState<File | null>(null)
   const [floorPlanPreview, setFloorPlanPreview] = useState<string | null>(null)
+  const [features,         setFeatures]         = useState<string[]>(defaultValues?.features ?? [])
+  const [customFeature,    setCustomFeature]    = useState('')
   const pasteZoneRef = useRef<HTMLDivElement>(null)
 
   function setFloorPlan(file: File) {
@@ -81,13 +91,29 @@ export function TypologyForm({ defaultValues, onSubmit, onCancel, isSubmitting }
     }
   }
 
-  const form = useForm<TypologyFormValues>({
+  // ── Features ────────────────────────────────────────────────────────────────
+  function togglePredefined(name: string) {
+    setFeatures(prev =>
+      prev.includes(name) ? prev.filter(f => f !== name) : [...prev, name]
+    )
+  }
+  function removeFeature(name: string) {
+    setFeatures(prev => prev.filter(f => f !== name))
+  }
+  function addCustom() {
+    const trimmed = customFeature.trim()
+    if (!trimmed || features.includes(trimmed)) return
+    setFeatures(prev => [...prev, trimmed])
+    setCustomFeature('')
+  }
+
+  const form = useForm<z.infer<typeof typologySchema>>({
     resolver: zodResolver(typologySchema),
     defaultValues: {
       unit_type: defaultValues?.unit_type ?? '',
-      name: defaultValues?.name ?? '',
+      name:      defaultValues?.name      ?? '',
       bathrooms: defaultValues?.bathrooms ?? null,
-      area_m2: defaultValues?.area_m2 ?? undefined,
+      area_m2:   defaultValues?.area_m2   ?? undefined,
     },
   })
 
@@ -96,21 +122,15 @@ export function TypologyForm({ defaultValues, onSubmit, onCancel, isSubmitting }
   const typeInfo = UNIT_TYPES.find((t) => t.value === selectedType)
   const isUnit = typeInfo?.category === 'unidad'
 
-  // Auto-populate name when type is selected (unless it's 'otro' or already custom)
   function handleTypeSelect(type: UnitType) {
     form.setValue('unit_type', type)
     const info = UNIT_TYPES.find((t) => t.value === type)!
-    if (type !== 'otro') {
-      form.setValue('name', info.label)
-    }
-    // Clear bathrooms if not a unit
-    if (info.category !== 'unidad') {
-      form.setValue('bathrooms', null)
-    }
+    if (type !== 'otro') form.setValue('name', info.label)
+    if (info.category !== 'unidad') form.setValue('bathrooms', null)
   }
 
   const handleSubmit = form.handleSubmit(async (values) => {
-    await onSubmit(values, floorPlanFile)
+    await onSubmit({ ...values, features }, floorPlanFile)
   })
 
   return (
@@ -121,34 +141,24 @@ export function TypologyForm({ defaultValues, onSubmit, onCancel, isSubmitting }
         <Label className="text-xs text-gray-500 uppercase tracking-wider">Tipo</Label>
         <div className="flex flex-wrap gap-2">
           {UNIT_TYPES_FIRST_ROW.map((opt) => (
-            <button
-              key={opt.value}
-              type="button"
-              onClick={() => handleTypeSelect(opt.value)}
+            <button key={opt.value} type="button" onClick={() => handleTypeSelect(opt.value)}
               className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
                 selectedType === opt.value
                   ? 'bg-gray-900 text-white border-gray-900'
                   : 'bg-white text-gray-600 border-gray-200 hover:border-gray-400'
               }`}
-            >
-              {opt.label}
-            </button>
+            >{opt.label}</button>
           ))}
         </div>
         <div className="flex flex-wrap gap-2">
           {UNIT_TYPES_SECOND_ROW.map((opt) => (
-            <button
-              key={opt.value}
-              type="button"
-              onClick={() => handleTypeSelect(opt.value)}
+            <button key={opt.value} type="button" onClick={() => handleTypeSelect(opt.value)}
               className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
                 selectedType === opt.value
                   ? 'bg-gray-900 text-white border-gray-900'
                   : 'bg-white text-gray-600 border-gray-200 hover:border-gray-400'
               }`}
-            >
-              {opt.label}
-            </button>
+            >{opt.label}</button>
           ))}
         </div>
         {form.formState.errors.unit_type && (
@@ -158,37 +168,27 @@ export function TypologyForm({ defaultValues, onSubmit, onCancel, isSubmitting }
 
       {/* ── Baños (solo unidades) ── */}
       {isUnit && (
-        <>
-          <div className="border-t pt-3 grid gap-2">
-            <Label className="text-xs text-gray-500 uppercase tracking-wider">Baños</Label>
-            <div className="flex gap-2">
-              {BATHROOM_OPTIONS.map((opt) => (
-                <button
-                  key={opt.value}
-                  type="button"
-                  onClick={() => form.setValue('bathrooms', selectedBath === opt.value ? null : opt.value)}
-                  className={`w-12 rounded-md border py-1.5 text-sm font-medium transition-colors ${
-                    selectedBath === opt.value
-                      ? 'bg-gray-900 text-white border-gray-900'
-                      : 'bg-white text-gray-600 border-gray-200 hover:border-gray-400'
-                  }`}
-                >
-                  {opt.label}
-                </button>
-              ))}
-            </div>
+        <div className="border-t pt-3 grid gap-2">
+          <Label className="text-xs text-gray-500 uppercase tracking-wider">Baños</Label>
+          <div className="flex gap-2">
+            {BATHROOM_OPTIONS.map((opt) => (
+              <button key={opt.value} type="button"
+                onClick={() => form.setValue('bathrooms', selectedBath === opt.value ? null : opt.value)}
+                className={`w-12 rounded-md border py-1.5 text-sm font-medium transition-colors ${
+                  selectedBath === opt.value
+                    ? 'bg-gray-900 text-white border-gray-900'
+                    : 'bg-white text-gray-600 border-gray-200 hover:border-gray-400'
+                }`}
+              >{opt.label}</button>
+            ))}
           </div>
-        </>
+        </div>
       )}
 
       {/* ── Nombre ── */}
       <div className="grid gap-1.5">
         <Label htmlFor="ty-name" className="text-xs text-gray-500">Nombre *</Label>
-        <Input
-          id="ty-name"
-          {...form.register('name')}
-          placeholder="Ej: 2 Dormitorios Torre A"
-        />
+        <Input id="ty-name" {...form.register('name')} placeholder="Ej: 2 Dormitorios Torre A" />
         {form.formState.errors.name && (
           <p className="text-xs text-destructive">{form.formState.errors.name.message}</p>
         )}
@@ -197,11 +197,7 @@ export function TypologyForm({ defaultValues, onSubmit, onCancel, isSubmitting }
       {/* ── Área ── */}
       <div className="grid gap-1.5">
         <Label htmlFor="ty-area" className="text-xs text-gray-500">Área m² *</Label>
-        <Input
-          id="ty-area"
-          type="number"
-          min={1}
-          step={0.01}
+        <Input id="ty-area" type="number" min={1} step={0.01}
           {...form.register('area_m2', { setValueAs: (v) => Number(v) })}
         />
         {form.formState.errors.area_m2 && (
@@ -209,28 +205,78 @@ export function TypologyForm({ defaultValues, onSubmit, onCancel, isSubmitting }
         )}
       </div>
 
-      {/* ── Plano ── */}
-      <div className="grid gap-1.5">
-        <Label className="text-xs text-gray-500">Plano de tipología</Label>
+      {/* ── Features ── */}
+      <div className="border-t pt-3 grid gap-2">
+        <Label className="text-xs text-gray-500 uppercase tracking-wider">Características</Label>
 
-        {/* Paste zone */}
-        <div
-          ref={pasteZoneRef}
-          tabIndex={0}
-          onPaste={handlePaste}
+        {/* Chips predefinidas */}
+        <div className="flex flex-wrap gap-1.5">
+          {FEATURES_PREDEFINED.map(name => {
+            const active = features.includes(name)
+            return (
+              <button key={name} type="button" onClick={() => togglePredefined(name)}
+                className={`h-7 px-2.5 rounded-full border text-[11px] font-medium transition-all ${
+                  active
+                    ? 'bg-gray-900 border-gray-900 text-white'
+                    : 'border-gray-200 text-gray-500 hover:border-gray-400'
+                }`}
+              >{name}</button>
+            )
+          })}
+        </div>
+
+        {/* Custom feature */}
+        <div className="flex gap-1.5">
+          <input
+            value={customFeature}
+            onChange={e => setCustomFeature(e.target.value)}
+            onKeyDown={e => {
+              if (e.key === 'Enter') { e.preventDefault(); addCustom() }
+              if (e.key === 'Escape') setCustomFeature('')
+            }}
+            placeholder="Agregar característica..."
+            className="flex-1 h-7 px-2.5 border border-gray-200 rounded-full text-[11px] focus:outline-none focus:ring-2 focus:ring-gray-900/20"
+          />
+          <button type="button" onClick={addCustom} disabled={!customFeature.trim()}
+            className="h-7 px-2.5 rounded-full border border-gray-300 text-[11px] text-gray-500 hover:border-gray-500 transition-colors disabled:opacity-40"
+          ><Plus className="w-3 h-3" /></button>
+        </div>
+
+        {/* Features activas (custom o predefinidas que no están en la lista predefinida) */}
+        {features.filter(f => !FEATURES_PREDEFINED.includes(f)).length > 0 && (
+          <div className="flex flex-wrap gap-1.5 mt-0.5">
+            {features.filter(f => !FEATURES_PREDEFINED.includes(f)).map(f => (
+              <span key={f} className="flex items-center gap-1 h-7 px-2.5 rounded-full bg-gray-900 border border-gray-900 text-[11px] font-medium text-white">
+                {f}
+                <button type="button" onClick={() => removeFeature(f)} className="text-white/60 hover:text-white">
+                  <X className="w-2.5 h-2.5" />
+                </button>
+              </span>
+            ))}
+          </div>
+        )}
+
+        {/* Preview del resultado */}
+        {features.length > 0 && (
+          <p className="text-[10px] text-gray-400 mt-1">
+            {features.length} característica{features.length !== 1 ? 's' : ''} seleccionada{features.length !== 1 ? 's' : ''}
+          </p>
+        )}
+      </div>
+
+      {/* ── Plano ── */}
+      <div className="border-t pt-3 grid gap-1.5">
+        <Label className="text-xs text-gray-500">Plano de tipología</Label>
+        <div ref={pasteZoneRef} tabIndex={0} onPaste={handlePaste}
           className="relative border-2 border-dashed rounded-lg p-3 text-center cursor-text outline-none focus:border-primary transition-colors"
           style={{ minHeight: 72 }}
         >
           {floorPlanPreview ? (
             <div className="flex flex-col items-center gap-2">
               <img src={floorPlanPreview} alt="Vista previa" className="max-h-40 rounded object-contain" />
-              <button
-                type="button"
-                onClick={() => { setFloorPlanFile(null); setFloorPlanPreview(null) }}
+              <button type="button" onClick={() => { setFloorPlanFile(null); setFloorPlanPreview(null) }}
                 className="text-xs text-destructive underline"
-              >
-                Quitar imagen
-              </button>
+              >Quitar imagen</button>
             </div>
           ) : defaultValues?.floor_plan_path && !floorPlanFile ? (
             <p className="text-xs text-muted-foreground py-2">
@@ -243,16 +289,8 @@ export function TypologyForm({ defaultValues, onSubmit, onCancel, isSubmitting }
             </p>
           )}
         </div>
-
-        {/* File picker as fallback */}
-        <Input
-          id="ty-floor"
-          type="file"
-          accept="image/*"
-          onChange={(e) => {
-            const file = e.target.files?.[0]
-            if (file) setFloorPlan(file)
-          }}
+        <Input id="ty-floor" type="file" accept="image/*"
+          onChange={e => { const file = e.target.files?.[0]; if (file) setFloorPlan(file) }}
         />
         <p className="text-xs text-muted-foreground">Pegá una captura de pantalla arriba, o elegí un archivo JPG</p>
       </div>
@@ -280,14 +318,15 @@ export function typologyFormToInsert(
 ) {
   const typeInfo = UNIT_TYPES.find((t) => t.value === values.unit_type)
   return {
-    project_id: projectId,
-    category: typeInfo?.category ?? 'unidad',
-    unit_type: values.unit_type,
-    name: values.name,
-    area_m2: values.area_m2,
-    price_usd: usdToCents(0),
-    bathrooms: values.bathrooms ?? null,
+    project_id:     projectId,
+    category:       typeInfo?.category ?? 'unidad',
+    unit_type:      values.unit_type,
+    name:           values.name,
+    area_m2:        values.area_m2,
+    price_usd:      usdToCents(0),
+    bathrooms:      values.bathrooms ?? null,
     units_available: 0,
+    features:       values.features ?? [],
     floor_plan_path: floorPlanPath !== undefined ? floorPlanPath : (existingFloorPlan ?? null),
   }
 }

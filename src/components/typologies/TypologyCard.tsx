@@ -42,6 +42,15 @@ export function TypologyCard({ typology, onEdit, onDelete }: TypologyCardProps) 
           </div>
         </div>
 
+        {/* Features */}
+        {typology.features && typology.features.length > 0 && (
+          <div className="flex flex-wrap gap-1">
+            {typology.features.map(f => (
+              <span key={f} className="inline-block px-2 py-0.5 rounded-full bg-gray-100 text-[10px] text-gray-600 font-medium">{f}</span>
+            ))}
+          </div>
+        )}
+
         {/* Thumbnail */}
         {url && !imgError && (
           <div

@@ -110,6 +110,7 @@ export interface Database {
           category: 'unidad' | 'cochera' | 'baulera'
           unit_type: string | null
           bathrooms: number | null
+          features: string[]
           created_at: string
           updated_at: string
         }
@@ -125,6 +126,7 @@ export interface Database {
           category?: 'unidad' | 'cochera' | 'baulera'
           unit_type?: string | null
           bathrooms?: number | null
+          features?: string[]
         }
         Update: {
           project_id?: string
@@ -138,6 +140,7 @@ export interface Database {
           category?: 'unidad' | 'cochera' | 'baulera'
           unit_type?: string | null
           bathrooms?: number | null
+          features?: string[]
         }
         Relationships: []
       }
