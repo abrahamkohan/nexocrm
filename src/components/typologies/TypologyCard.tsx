@@ -16,7 +16,12 @@ interface TypologyCardProps {
 export function TypologyCard({ typology, onEdit, onDelete }: TypologyCardProps) {
   const [imgError, setImgError] = useState(false)
   const [lightbox, setLightbox] = useState(false)
-  const url = typology.floor_plan_path ? getPublicUrl(typology.floor_plan_path) : null
+  const floorPlanUrl = typology.floor_plan
+    ? getPublicUrl(typology.floor_plan)
+    : typology.floor_plan_path
+      ? getPublicUrl(typology.floor_plan_path)
+      : null
+  const url = floorPlanUrl  // keep reference for lightbox below
 
   return (
     <>
@@ -51,7 +56,18 @@ export function TypologyCard({ typology, onEdit, onDelete }: TypologyCardProps) 
           </div>
         )}
 
-        {/* Thumbnail */}
+        {/* Gallery thumbnails */}
+        {typology.images && typology.images.length > 0 && (
+          <div className="grid grid-cols-4 gap-1">
+            {typology.images.slice(0, 4).map((path, i) => (
+              <div key={i} className="aspect-square rounded overflow-hidden border border-gray-100 bg-gray-50">
+                <img src={getPublicUrl(path)} alt="" className="w-full h-full object-cover" />
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Floor plan thumbnail */}
         {url && !imgError && (
           <div
             className="relative group cursor-zoom-in rounded-md overflow-hidden bg-gray-50 border"

@@ -66,6 +66,20 @@ export async function uploadPresupuestoFloorPlan(file: File): Promise<string> {
   return path
 }
 
+export async function uploadTypologyImage(
+  projectId: string,
+  typologyId: string,
+  file: File
+): Promise<string> {
+  const ext = file.name.split('.').pop() || 'jpg'
+  const path = `${projectId}/typologies/${typologyId}/${Date.now()}.${ext}`
+  const { error } = await supabase.storage
+    .from(MEDIA_BUCKET)
+    .upload(path, file, { upsert: false })
+  if (error) throw error
+  return path
+}
+
 export async function uploadAmenityImage(
   projectId: string,
   amenityId: string,

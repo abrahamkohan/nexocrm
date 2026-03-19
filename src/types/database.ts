@@ -106,6 +106,8 @@ export interface Database {
           price_pyg: number | null  // bigint Guaraníes
           units_available: number
           floor_plan_path: string | null
+          floor_plan: string | null
+          images: string[]
           base_sim_params: Record<string, unknown> | null
           category: 'unidad' | 'cochera' | 'baulera'
           unit_type: string | null
@@ -122,6 +124,8 @@ export interface Database {
           price_pyg?: number | null
           units_available: number
           floor_plan_path?: string | null
+          floor_plan?: string | null
+          images?: string[]
           base_sim_params?: Record<string, unknown> | null
           category?: 'unidad' | 'cochera' | 'baulera'
           unit_type?: string | null
@@ -136,6 +140,8 @@ export interface Database {
           price_pyg?: number | null
           units_available?: number
           floor_plan_path?: string | null
+          floor_plan?: string | null
+          images?: string[]
           base_sim_params?: Record<string, unknown> | null
           category?: 'unidad' | 'cochera' | 'baulera'
           unit_type?: string | null

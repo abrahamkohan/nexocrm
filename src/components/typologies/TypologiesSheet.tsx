@@ -7,7 +7,7 @@ import { toast } from 'sonner'
 import { TypologyForm, typologyFormToInsert, type TypologyFormValues } from './TypologyForm'
 import { TypologyCard } from './TypologyCard'
 import { useTypologies, useCreateTypology, useUpdateTypology, useDeleteTypology } from '@/hooks/useTypologies'
-import { uploadFloorPlan, deleteStorageFile } from '@/lib/storage'
+import { uploadFloorPlan, uploadTypologyImage, deleteStorageFile } from '@/lib/storage'
 import type { Database } from '@/types/database'
 
 type TypologyRow = Database['public']['Tables']['typologies']['Row']
@@ -51,19 +51,31 @@ export function TypologiesSheet({
     }
   }
 
-  async function handleSubmit(values: TypologyFormValues, floorPlanFile: File | null) {
+  async function handleSubmit(
+    values: TypologyFormValues,
+    floorPlanFile: File | null,
+    newImageFiles: File[],
+    keptImages: string[]
+  ) {
+    // 1. Upload floor plan (if new file selected)
     let floorPlanPath: string | null | undefined = undefined
-
     if (floorPlanFile) {
       floorPlanPath = await uploadFloorPlan(projectId, floorPlanFile)
     }
 
+    // 2. Upload new gallery images
+    const typologyId = editing?.id ?? crypto.randomUUID()
+    const uploadedImages = await Promise.all(
+      newImageFiles.map(file => uploadTypologyImage(projectId, typologyId, file))
+    )
+    const images = [...keptImages, ...uploadedImages]
+
     if (editing) {
-      const input = typologyFormToInsert(projectId, values, floorPlanPath, editing.floor_plan_path)
+      const input = typologyFormToInsert(projectId, values, floorPlanPath, images, editing.floor_plan ?? editing.floor_plan_path)
       await updateTypology.mutateAsync({ id: editing.id, input })
     } else {
-      const input = typologyFormToInsert(projectId, values, floorPlanPath ?? null)
-      await createTypology.mutateAsync(input)
+      const input = typologyFormToInsert(projectId, values, floorPlanPath ?? null, images)
+      await createTypology.mutateAsync({ ...input, id: typologyId } as typeof input)
     }
 
     toast.success(editing ? 'Guardado' : 'Tipología creada')
