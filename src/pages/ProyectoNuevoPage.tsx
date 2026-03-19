@@ -704,87 +704,75 @@ export function ProyectoNuevoPage() {
 
         {/* ══ 6 — AMENITIES ══ */}
         <Block title="Amenities">
-          {/* Selector */}
-          <div className="grid grid-cols-2 gap-x-6 gap-y-1 mb-4">
-            <div>
-              <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-2">Interior</p>
-              <div className="flex flex-col gap-1.5">
-                {AMENITIES_INTERIOR.map(name => {
-                  const active = s.amenityDrafts.some(d => d.name === name && !d.custom)
-                  return (
-                    <button key={name} type="button" onClick={() => toggleAmenity(name)}
-                      className={`text-left px-3 py-2 rounded-xl border text-sm transition-all ${active ? 'border-gray-900 bg-gray-900 text-white' : 'border-gray-200 text-gray-600 hover:border-gray-400'}`}
-                    >{name}</button>
-                  )
-                })}
-              </div>
-            </div>
-            <div>
-              <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-2">Edificio</p>
-              <div className="flex flex-col gap-1.5">
-                {AMENITIES_EDIFICIO.map(name => {
-                  const active = s.amenityDrafts.some(d => d.name === name && !d.custom)
-                  return (
-                    <button key={name} type="button" onClick={() => toggleAmenity(name)}
-                      className={`text-left px-3 py-2 rounded-xl border text-sm transition-all ${active ? 'border-gray-900 bg-gray-900 text-white' : 'border-gray-200 text-gray-600 hover:border-gray-400'}`}
-                    >{name}</button>
-                  )
-                })}
-              </div>
-            </div>
+          {/* Interior */}
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-2">Interior</p>
+          <div className="flex flex-wrap gap-1.5 mb-4">
+            {AMENITIES_INTERIOR.map(name => {
+              const active = s.amenityDrafts.some(d => d.name === name && !d.custom)
+              return (
+                <button key={name} type="button" onClick={() => toggleAmenity(name)}
+                  className={`h-8 px-3 rounded-full border text-[12px] font-medium transition-all ${active ? 'bg-gray-900 border-gray-900 text-white' : 'border-gray-200 text-gray-600 hover:border-gray-400'}`}
+                >{name}</button>
+              )
+            })}
           </div>
-          <button type="button" onClick={addCustomAmenity}
-            className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-900 transition-colors mb-4"
-          >
-            <Plus className="w-4 h-4" /> Otro
-          </button>
 
-          {/* Filas de amenities seleccionados */}
+          {/* Edificio */}
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-2">Edificio</p>
+          <div className="flex flex-wrap gap-1.5 mb-4">
+            {AMENITIES_EDIFICIO.map(name => {
+              const active = s.amenityDrafts.some(d => d.name === name && !d.custom)
+              return (
+                <button key={name} type="button" onClick={() => toggleAmenity(name)}
+                  className={`h-8 px-3 rounded-full border text-[12px] font-medium transition-all ${active ? 'bg-gray-900 border-gray-900 text-white' : 'border-gray-200 text-gray-600 hover:border-gray-400'}`}
+                >{name}</button>
+              )
+            })}
+            <button type="button" onClick={addCustomAmenity}
+              className="h-8 px-3 rounded-full border border-dashed border-gray-300 text-[12px] text-gray-400 hover:border-gray-500 hover:text-gray-600 transition-all"
+            >+ Otro</button>
+          </div>
+
+          {/* Filas de seleccionados */}
           {s.amenityDrafts.length > 0 && (
-            <div className="flex flex-col gap-2 border-t border-gray-100 pt-4">
+            <div className="flex flex-col gap-1.5 border-t border-gray-100 pt-3">
               {s.amenityDrafts.map(draft => (
-                <div key={draft._id} className="flex items-center gap-3 bg-gray-50 rounded-xl px-3 py-2.5">
+                <div key={draft._id} className="flex items-center gap-2 h-9">
                   {/* Nombre */}
                   {draft.custom ? (
-                    <input
-                      value={draft.name}
-                      onChange={e => setAmenityName(draft._id, e.target.value)}
-                      placeholder="Nombre del amenity"
-                      className="w-36 flex-shrink-0 px-2 py-1 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-900/20"
+                    <input value={draft.name} onChange={e => setAmenityName(draft._id, e.target.value)}
+                      placeholder="Nombre..."
+                      className="w-40 flex-shrink-0 px-2 py-1 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-gray-900/20"
                     />
                   ) : (
-                    <span className="w-36 flex-shrink-0 text-sm font-medium text-gray-800 truncate">{draft.name}</span>
+                    <span className="w-40 flex-shrink-0 text-xs font-medium text-gray-700 truncate">{draft.name}</span>
                   )}
 
                   {/* Preview */}
                   {draft.previewUrl && (
-                    <img src={draft.previewUrl} alt="" className="h-10 w-10 rounded-lg object-cover flex-shrink-0 border border-gray-200" />
+                    <img src={draft.previewUrl} alt="" className="h-7 w-7 rounded object-cover flex-shrink-0 border border-gray-200" />
                   )}
 
-                  {/* Subir imagen */}
-                  <label className="flex-shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 border border-gray-200 rounded-lg text-xs text-gray-500 hover:border-gray-400 cursor-pointer transition-colors">
-                    <Upload className="w-3 h-3" />Imagen
+                  {/* Subir */}
+                  <label className="flex-shrink-0 h-7 w-7 flex items-center justify-center border border-gray-200 rounded-lg text-gray-400 hover:border-gray-400 hover:text-gray-600 cursor-pointer transition-colors" title="Subir imagen">
+                    <Upload className="w-3.5 h-3.5" />
                     <input type="file" accept="image/*" className="hidden"
                       onChange={e => e.target.files?.[0] && setAmenityPhoto(draft._id, e.target.files[0])}
                     />
                   </label>
 
                   {/* Pegar */}
-                  <button
-                    type="button"
+                  <button type="button" title="Pegar imagen (Ctrl+V)"
                     onClick={() => setActivePasteId(prev => prev === draft._id ? null : draft._id)}
-                    className={`flex-shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                      activePasteId === draft._id
-                        ? 'bg-gray-900 text-white border border-gray-900'
-                        : 'border border-gray-200 text-gray-500 hover:border-gray-400'
+                    className={`flex-shrink-0 h-7 w-7 flex items-center justify-center rounded-lg transition-all ${
+                      activePasteId === draft._id ? 'bg-gray-900 text-white' : 'border border-gray-200 text-gray-400 hover:border-gray-400 hover:text-gray-600'
                     }`}
                   >
-                    <Clipboard className="w-3 h-3" />
-                    {activePasteId === draft._id ? 'Listo para pegar' : 'Pegar Ctrl+V'}
+                    <Clipboard className="w-3.5 h-3.5" />
                   </button>
 
                   <button type="button" onClick={() => removeAmenity(draft._id)} className="ml-auto text-gray-300 hover:text-red-400 transition-colors flex-shrink-0">
-                    <X className="w-4 h-4" />
+                    <X className="w-3.5 h-3.5" />
                   </button>
                 </div>
               ))}
