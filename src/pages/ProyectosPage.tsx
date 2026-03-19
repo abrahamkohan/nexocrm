@@ -42,6 +42,14 @@ export function ProyectosPage() {
     deleteProject.mutate(id)
   }
 
+  function handleTogglePublicado(id: string, value: boolean) {
+    updateProject.mutate({ id, input: { publicado_en_web: value } })
+  }
+
+  function handleChangeBadge(id: string, value: 'oportunidad' | 'estable' | 'a_evaluar' | null) {
+    updateProject.mutate({ id, input: { badge_analisis: value } })
+  }
+
   async function handleSubmit(values: ProjectFormValues, brochureFile: File | null) {
     try {
       let brochurePath: string | null = editing?.brochure_path ?? null
@@ -110,6 +118,8 @@ export function ProyectosPage() {
           projects={projects}
           onEdit={openEdit}
           onDelete={handleDelete}
+          onTogglePublicado={handleTogglePublicado}
+          onChangeBadge={handleChangeBadge}
         />
       )}
 

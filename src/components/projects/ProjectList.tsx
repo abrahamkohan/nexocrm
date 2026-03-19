@@ -2,15 +2,18 @@
 import { ProjectCard } from './ProjectCard'
 import type { Database } from '@/types/database'
 
-type ProjectRow = Database['public']['Tables']['projects']['Row']
+type ProjectRow   = Database['public']['Tables']['projects']['Row']
+type BadgeAnalisis = 'oportunidad' | 'estable' | 'a_evaluar'
 
 interface ProjectListProps {
   projects: ProjectRow[]
   onEdit: (project: ProjectRow) => void
   onDelete: (id: string) => void
+  onTogglePublicado?: (id: string, value: boolean) => void
+  onChangeBadge?: (id: string, value: BadgeAnalisis | null) => void
 }
 
-export function ProjectList({ projects, onEdit, onDelete }: ProjectListProps) {
+export function ProjectList({ projects, onEdit, onDelete, onTogglePublicado, onChangeBadge }: ProjectListProps) {
   return (
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {projects.map((project) => (
@@ -19,6 +22,8 @@ export function ProjectList({ projects, onEdit, onDelete }: ProjectListProps) {
           project={project}
           onEdit={onEdit}
           onDelete={onDelete}
+          onTogglePublicado={onTogglePublicado}
+          onChangeBadge={onChangeBadge}
         />
       ))}
     </div>

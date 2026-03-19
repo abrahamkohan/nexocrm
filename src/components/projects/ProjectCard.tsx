@@ -1,6 +1,6 @@
 // src/components/projects/ProjectCard.tsx
 import { useState } from 'react'
-import { Pencil, Trash2, Images, LayoutGrid, DollarSign } from 'lucide-react'
+import { Pencil, Trash2, Images, LayoutGrid, DollarSign, Globe } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { ProjectPhotosSheet } from './ProjectPhotosSheet'
@@ -10,6 +10,7 @@ import { linkIcon, linkColor } from './ProjectForm'
 import type { Database } from '@/types/database'
 
 type ProjectRow = Database['public']['Tables']['projects']['Row']
+type BadgeAnalisis = 'oportunidad' | 'estable' | 'a_evaluar'
 
 const STATUS_LABELS: Record<ProjectRow['status'], string> = {
   en_pozo: 'En pozo',
@@ -23,18 +24,29 @@ const STATUS_VARIANTS: Record<ProjectRow['status'], 'default' | 'secondary' | 'o
   entregado: 'outline',
 }
 
+const BADGE_OPTIONS: { value: BadgeAnalisis; label: string; cls: string }[] = [
+  { value: 'oportunidad', label: 'Oportunidad', cls: 'bg-amber-100 text-amber-700 border-amber-200' },
+  { value: 'estable',     label: 'Estable',     cls: 'bg-blue-100  text-blue-700  border-blue-200'  },
+  { value: 'a_evaluar',  label: 'A evaluar',   cls: 'bg-gray-100  text-gray-600  border-gray-200'  },
+]
+
 interface ProjectCardProps {
   project: ProjectRow
   onEdit: (project: ProjectRow) => void
   onDelete: (id: string) => void
+  onTogglePublicado?: (id: string, value: boolean) => void
+  onChangeBadge?: (id: string, value: BadgeAnalisis | null) => void
 }
 
-export function ProjectCard({ project, onEdit, onDelete }: ProjectCardProps) {
+export function ProjectCard({ project, onEdit, onDelete, onTogglePublicado, onChangeBadge }: ProjectCardProps) {
   const [photosOpen,    setPhotosOpen]    = useState(false)
   const [financingOpen, setFinancingOpen] = useState(false)
   const [typologiesOpen, setTypologiesOpen] = useState(false)
 
-  const links = (project.links ?? []) as Array<{ type: string; name: string; url: string }>
+  const links     = (project.links ?? []) as Array<{ type: string; name: string; url: string }>
+  const publicado = project.publicado_en_web ?? false
+  const badge     = project.badge_analisis as BadgeAnalisis | null
+  const badgeCfg  = BADGE_OPTIONS.find(b => b.value === badge)
 
   function handleDelete() {
     if (!confirm(`¿Eliminar "${project.name}"? Esta acción no se puede deshacer.`)) return
@@ -62,6 +74,50 @@ export function ProjectCard({ project, onEdit, onDelete }: ProjectCardProps) {
           <p className="text-xs text-muted-foreground">
             Desarrolladora: <span className="text-foreground font-medium">{project.developer_name}</span>
           </p>
+        )}
+
+        {/* Publicación web */}
+        <div className="flex items-center justify-between gap-2 rounded-md border px-3 py-2 bg-muted/30">
+          <div className="flex items-center gap-2">
+            <Globe className={`h-3.5 w-3.5 ${publicado ? 'text-emerald-500' : 'text-muted-foreground'}`} />
+            <span className="text-xs font-medium">
+              {publicado ? 'Publicado en web' : 'No publicado'}
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={() => onTogglePublicado?.(project.id, !publicado)}
+            className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus-visible:outline-none ${
+              publicado ? 'bg-emerald-500' : 'bg-gray-200'
+            }`}
+          >
+            <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${
+              publicado ? 'translate-x-[18px]' : 'translate-x-[3px]'
+            }`} />
+          </button>
+        </div>
+
+        {/* Badge análisis — solo si publicado */}
+        {publicado && (
+          <div className="flex flex-wrap gap-1.5">
+            {BADGE_OPTIONS.map(opt => (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => onChangeBadge?.(project.id, badge === opt.value ? null : opt.value)}
+                className={`px-2.5 py-1 rounded-full text-[11px] font-semibold border transition-all ${
+                  badge === opt.value ? opt.cls : 'border-border text-muted-foreground hover:border-foreground/30'
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+            {badge && (
+              <span className={`px-2.5 py-1 rounded-full text-[11px] font-semibold border ${badgeCfg?.cls}`}>
+                ✓ {badgeCfg?.label}
+              </span>
+            )}
+          </div>
         )}
 
         {/* Links */}
