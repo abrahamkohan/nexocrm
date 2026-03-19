@@ -2,12 +2,36 @@
 import { useEffect, useState } from 'react'
 import {
   Building2, Phone, Mail, MessageCircle, Instagram, Globe, Image,
-  Loader2, Check,
+  Loader2, Check, Copy, Users,
 } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
+import { toast } from 'sonner'
 import { useConsultoraConfig, useSaveConsultoraConfig } from '@/hooks/useConsultora'
+
+// ─── Referidos helpers ────────────────────────────────────────────────────────
+
+const APP_URL   = import.meta.env.VITE_APP_URL   as string ?? ''
+const LQ_TOKEN  = import.meta.env.VITE_LEAD_QUICK_TOKEN as string ?? ''
+const BASE_LINK = `${APP_URL}/lead-quick?token=${LQ_TOKEN}`
+
+function toSlug(name: string): string {
+  return name
+    .toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .trim()
+    .replace(/\s+/g, '-')
+    .replace(/[^\w-]/g, '')
+}
+
+function copyToClipboard(text: string, label = 'Copiado') {
+  navigator.clipboard.writeText(text).then(() => toast.success(label))
+}
+
+function waShareUrl(text: string) {
+  return `https://wa.me/?text=${encodeURIComponent(text)}`
+}
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -51,6 +75,8 @@ export function ConfiguracionPage() {
   const [form, setForm] = useState<FormState>(EMPTY_FORM)
   const [saved, setSaved] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
+  const [refName, setRefName]     = useState('')
+  const [refLink, setRefLink]     = useState('')
 
   useEffect(() => {
     if (!config) return
@@ -148,6 +174,75 @@ export function ConfiguracionPage() {
           <Field label="Sitio web" icon={Globe} value={form.sitio_web} onChange={setF('sitio_web')} placeholder="https://consultora.com.py" />
         </div>
 
+      </div>
+
+      {/* Referidos */}
+      <div className="rounded-lg border bg-card p-5 flex flex-col gap-5">
+        <div className="flex items-center gap-2">
+          <Users className="h-4 w-4 text-muted-foreground" />
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Referidos</p>
+        </div>
+
+        {/* Link base */}
+        <div className="flex flex-col gap-2">
+          <Label className="text-xs text-muted-foreground">Link base público</Label>
+          <div className="flex gap-2 items-center">
+            <code className="flex-1 text-xs bg-muted px-3 py-2 rounded-md truncate text-muted-foreground">
+              {BASE_LINK}
+            </code>
+            <Button size="sm" variant="outline" onClick={() => copyToClipboard(BASE_LINK, 'Link copiado')}>
+              <Copy className="h-3.5 w-3.5 mr-1.5" />Copiar
+            </Button>
+          </div>
+        </div>
+
+        {/* Generador */}
+        <div className="flex flex-col gap-3">
+          <Label className="text-xs text-muted-foreground">Generar link con referencia</Label>
+          <div className="flex gap-2">
+            <Input
+              value={refName}
+              onChange={e => { setRefName(e.target.value); setRefLink('') }}
+              placeholder="Nombre del referido (ej: Juan Mozo)"
+              className="text-sm"
+              onKeyDown={e => {
+                if (e.key === 'Enter' && refName.trim()) {
+                  const slug = toSlug(refName)
+                  setRefLink(`${BASE_LINK}&ref=${slug}`)
+                }
+              }}
+            />
+            <Button
+              variant="outline"
+              disabled={!refName.trim()}
+              onClick={() => {
+                const slug = toSlug(refName)
+                setRefLink(`${BASE_LINK}&ref=${slug}`)
+              }}
+            >
+              Generar
+            </Button>
+          </div>
+
+          {refLink && (
+            <div className="flex flex-col gap-2 p-3 bg-muted/60 rounded-lg border">
+              <code className="text-xs text-muted-foreground break-all">{refLink}</code>
+              <div className="flex gap-2">
+                <Button size="sm" variant="outline" onClick={() => copyToClipboard(refLink, 'Link copiado')}>
+                  <Copy className="h-3.5 w-3.5 mr-1.5" />Copiar
+                </Button>
+                <a
+                  href={waShareUrl(refLink)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium bg-emerald-600 text-white hover:bg-emerald-700 transition-colors"
+                >
+                  <MessageCircle className="h-3.5 w-3.5" />WhatsApp
+                </a>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Barra sticky de guardado */}
