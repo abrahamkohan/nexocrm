@@ -1,6 +1,6 @@
 // src/components/projects/AmenitiesEditor.tsx
-import { useState } from 'react'
-import { Plus, Upload, X, Loader2 } from 'lucide-react'
+import { useState, useRef, useEffect } from 'react'
+import { Plus, Upload, X, Loader2, Clipboard } from 'lucide-react'
 import { amenityImageUrl } from '@/lib/projectAmenities'
 import {
   useProjectAmenities,
@@ -42,9 +42,10 @@ export function AmenitiesEditor({ projectId }: AmenitiesEditorProps) {
   const addImage      = useAddAmenityImage(projectId)
   const deleteImage   = useDeleteAmenityImage(projectId)
 
-  const [customName, setCustomName]       = useState('')
-  const [showCustom, setShowCustom]       = useState(false)
-  const [activePasteId, setActivePasteId] = useState<string | null>(null)
+  const [customName, setCustomName] = useState('')
+  const [showCustom, setShowCustom] = useState(false)
+  const [pasteModal, setPasteModal] = useState<{ amenityId: string; file: File | null; previewUrl: string | null } | null>(null)
+  const pasteModalRef = useRef<HTMLDivElement>(null)
 
   const existingNames = amenities.map(a => a.name.toLowerCase())
 
@@ -74,6 +75,30 @@ export function AmenitiesEditor({ projectId }: AmenitiesEditorProps) {
   function handleFile(amenityId: string, currentCount: number, file: File) {
     addImage.mutate({ amenityId, file, sortOrder: currentCount })
   }
+
+  function openPasteModal(amenityId: string) { setPasteModal({ amenityId, file: null, previewUrl: null }) }
+  function closePasteModal() {
+    if (pasteModal?.previewUrl) URL.revokeObjectURL(pasteModal.previewUrl)
+    setPasteModal(null)
+  }
+  function handleModalPaste(e: React.ClipboardEvent) {
+    const item = Array.from(e.clipboardData?.items ?? []).find(i => i.type.startsWith('image/'))
+    const f = item?.getAsFile()
+    if (!f) return
+    if (pasteModal?.previewUrl) URL.revokeObjectURL(pasteModal.previewUrl)
+    setPasteModal(prev => prev ? { ...prev, file: f, previewUrl: URL.createObjectURL(f) } : null)
+  }
+  function confirmPaste() {
+    if (!pasteModal?.file) return
+    handleFile(pasteModal.amenityId, amenities.find(a => a.id === pasteModal.amenityId)?.images.length ?? 0, pasteModal.file)
+    if (pasteModal.previewUrl) URL.revokeObjectURL(pasteModal.previewUrl)
+    setPasteModal(null)
+  }
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (pasteModal) { const t = setTimeout(() => pasteModalRef.current?.focus(), 50); return () => clearTimeout(t) }
+  }, [pasteModal])
 
   // ─── Render ───────────────────────────────────────────────────────────────
 
@@ -198,25 +223,6 @@ export function AmenitiesEditor({ projectId }: AmenitiesEditorProps) {
                   </div>
                 )}
 
-                {/* Zona pegar — visible en hover / focus */}
-                <div
-                  tabIndex={0}
-                  onFocus={() => setActivePasteId(amenity.id)}
-                  onBlur={() => setActivePasteId(prev => prev === amenity.id ? null : prev)}
-                  onPaste={e => {
-                    const item = Array.from(e.clipboardData.items).find(i => i.type.startsWith('image/'))
-                    const file = item?.getAsFile()
-                    if (file) handleFile(amenity.id, amenity.images.length, file)
-                  }}
-                  className={`flex-1 h-8 flex items-center justify-center rounded-lg border border-dashed text-[11px] cursor-pointer transition-all outline-none
-                    ${activePasteId === amenity.id
-                      ? 'border-gray-500 text-gray-600 bg-gray-50'
-                      : 'border-transparent text-transparent group-hover:border-gray-300 group-hover:text-gray-400'
-                    }`}
-                >
-                  Hacé clic aquí y pegá (Ctrl+V)
-                </div>
-
                 {/* Subir */}
                 <label className="flex-shrink-0 h-7 w-7 flex items-center justify-center border border-gray-200 rounded-lg text-gray-400 hover:border-gray-400 hover:text-gray-600 cursor-pointer transition-colors" title="Subir imagen">
                   <Upload className="w-3.5 h-3.5" />
@@ -224,6 +230,11 @@ export function AmenitiesEditor({ projectId }: AmenitiesEditorProps) {
                     onChange={e => e.target.files?.[0] && handleFile(amenity.id, amenity.images.length, e.target.files[0])}
                   />
                 </label>
+
+                {/* Pegar */}
+                <button type="button" onClick={() => openPasteModal(amenity.id)}
+                  className="flex-shrink-0 h-7 w-7 flex items-center justify-center border border-gray-200 rounded-lg text-gray-400 hover:border-gray-400 hover:text-gray-600 transition-colors" title="Pegar imagen"
+                ><Clipboard className="w-3.5 h-3.5" /></button>
 
                 {/* Eliminar amenity */}
                 <button type="button" onClick={() => deleteAmenity.mutate(amenity)}
@@ -233,6 +244,36 @@ export function AmenitiesEditor({ projectId }: AmenitiesEditorProps) {
               </div>
             )
           })}
+        </div>
+      )}
+
+      {/* ── Modal pegar imagen ─────────────────────────────────────────────── */}
+      {pasteModal && (
+        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" onClick={closePasteModal}>
+          <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <p className="text-sm font-semibold text-gray-900">Pegar imagen</p>
+              <button onClick={closePasteModal} className="p-1.5 rounded-full hover:bg-gray-100 text-gray-400"><X className="w-4 h-4" /></button>
+            </div>
+            <div ref={pasteModalRef} tabIndex={0} onPaste={handleModalPaste}
+              className="border-2 border-dashed border-gray-300 rounded-xl focus:outline-none focus:border-gray-900 transition-colors cursor-default" style={{ minHeight: 180 }}
+            >
+              {pasteModal.previewUrl ? (
+                <img src={pasteModal.previewUrl} alt="preview" className="w-full rounded-xl object-contain" style={{ maxHeight: 240 }} />
+              ) : (
+                <div className="flex flex-col items-center justify-center py-10 px-4 text-center">
+                  <Clipboard className="w-8 h-8 text-gray-300 mb-3" />
+                  <p className="text-sm text-gray-500 font-medium">Pegá con Ctrl + V</p>
+                </div>
+              )}
+            </div>
+            <div className="flex gap-2 mt-4">
+              <button onClick={closePasteModal} className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-600 hover:bg-gray-50 transition-colors">Cancelar</button>
+              <button onClick={confirmPaste} disabled={!pasteModal.file}
+                className="flex-1 py-2.5 rounded-xl bg-gray-900 text-white text-sm font-semibold hover:bg-gray-800 transition-colors disabled:opacity-40"
+              >{pasteModal.file ? 'Confirmar' : 'Esperando imagen…'}</button>
+            </div>
+          </div>
         </div>
       )}
 

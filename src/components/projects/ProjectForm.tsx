@@ -3,7 +3,7 @@ import { useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Plus, Trash2, MapPin, Globe, FolderOpen, MessageCircle, ExternalLink } from 'lucide-react'
+import { Plus, Trash2, MapPin, Globe, FolderOpen, MessageCircle, ExternalLink, FileText, Eye } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -19,6 +19,8 @@ const LINK_PRESETS: { type: string; name: string; icon: React.ElementType; color
   { type: 'web',      name: 'Web',         icon: Globe,         color: '#1a56db' },
   { type: 'drive',    name: 'Drive',       icon: FolderOpen,    color: '#0F9D58' },
   { type: 'whatsapp', name: 'WhatsApp',    icon: MessageCircle, color: '#25D366' },
+  { type: 'brochure', name: 'Brochure',    icon: FileText,      color: '#6366f1' },
+  { type: 'vista360', name: 'Vista 360',   icon: Eye,           color: '#f59e0b' },
 ]
 
 export function linkIcon(type: string): React.ElementType {

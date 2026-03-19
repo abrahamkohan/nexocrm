@@ -2,7 +2,7 @@
 // Pantalla única para Nuevo proyecto y Editar proyecto
 import { useState, useRef, useCallback, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router'
-import { X, Upload, Link as LinkIcon, Check, Plus, Trash2, Clipboard, ChevronDown } from 'lucide-react'
+import { X, Upload, Link as LinkIcon, Check, Plus, Trash2, Clipboard, ChevronDown, Globe, FolderOpen, MessageCircle, FileText, Eye, ExternalLink } from 'lucide-react'
 import { toast } from 'sonner'
 import { supabase } from '@/lib/supabase'
 import { createProject, updateProject } from '@/lib/projects'
@@ -54,10 +54,16 @@ const TYPOLOGY_DEFS: Array<{ id: TypologyType; label: string; hasBanos: boolean;
   { id: 'cochera_xl', label: 'Cochera XL',     hasBanos: false, category: 'cochera' },
   { id: 'baulera',    label: 'Baulera',        hasBanos: false, category: 'baulera' },
 ]
-const LINK_TYPE_OPTIONS = [
-  { value: 'maps', label: 'Google Maps' }, { value: 'drive', label: 'Drive' },
-  { value: 'vista360', label: 'Vista 360' }, { value: 'brochure', label: 'Brochure' }, { value: 'otro', label: 'Otro' },
+// Orden: primero lo comercial, después lo técnico
+const LINK_PRESETS: { value: string; label: string; icon: React.ElementType; color: string; single?: boolean }[] = [
+  { value: 'web',      label: 'Web',       icon: Globe,         color: '#1a56db', single: true  },
+  { value: 'whatsapp', label: 'WhatsApp',  icon: MessageCircle, color: '#25D366'               },
+  { value: 'drive',    label: 'Drive',     icon: FolderOpen,    color: '#0F9D58'               },
+  { value: 'brochure', label: 'Brochure',  icon: FileText,      color: '#6366f1', single: true  },
+  { value: 'vista360', label: 'Vista 360', icon: Eye,           color: '#f59e0b', single: true  },
+  { value: 'otro',     label: 'Otro',      icon: ExternalLink,  color: '#6b7280'               },
 ]
+function linkPreset(type: string) { return LINK_PRESETS.find(p => p.value === type) }
 const AMENITIES_INTERIOR = ['Aire acondicionado', 'Calefacción', 'Lavandería', 'Cocina equipada', 'Placares', 'Balcón', 'Terraza']
 const AMENITIES_EDIFICIO = ['Piscina', 'Gimnasio', 'Parrilla / Quincho', 'Jardín', 'Seguridad 24h', 'Ascensor', 'Salón de usos', 'Estacionamiento']
 
@@ -123,7 +129,8 @@ export function ProyectoFormPage() {
   const [isLoading, setIsLoading] = useState(isEdit)
   const [openSection, setOpenSection] = useState<SectionId>('esencial')
   const [existingPhotos, setExistingPhotos] = useState<PhotoRow[]>([])
-  const [activePasteId, setActivePasteId]   = useState<string | null>(null)
+  const [amenityModal, setAmenityModal] = useState<{ draftId: string; file: File | null; previewUrl: string | null } | null>(null)
+  const amenityModalRef = useRef<HTMLDivElement>(null)
   const [isResolvingMap, setIsResolvingMap] = useState(false)
   const [resolvedEmbed, setResolvedEmbed]   = useState<{ embedSrc: string; lat: number | null; lng: number | null } | null>(null)
   const [planoModal, setPlanoModal]         = useState<{ typologyType: TypologyType; variantId: string; previewUrl: string | null; file: File | null } | null>(null)
@@ -201,7 +208,7 @@ export function ProyectoFormPage() {
   }
 
   // ── Links ─────────────────────────────────────────────────────────────────
-  function addLink()          { update({ links: [...s.links, { _id: crypto.randomUUID(), type: 'drive', url: '' }] }) }
+  function addLink(type = 'otro') { update({ links: [...s.links, { _id: crypto.randomUUID(), type, url: '' }] }) }
   function removeLink(i: string) { update({ links: s.links.filter(l => l._id !== i) }) }
   function setLinkField(i: string, f: 'type' | 'url', v: string) { update({ links: s.links.map(l => l._id === i ? { ...l, [f]: v } : l) }) }
 
@@ -256,18 +263,27 @@ export function ProyectoFormPage() {
   function setAmenityName(aid: string, name: string) {
     update({ amenityDrafts: s.amenityDrafts.map(a => a._id === aid ? { ...a, name } : a) })
   }
+  function openAmenityModal(draftId: string) { setAmenityModal({ draftId, file: null, previewUrl: null }) }
+  function closeAmenityModal() {
+    if (amenityModal?.previewUrl) URL.revokeObjectURL(amenityModal.previewUrl)
+    setAmenityModal(null)
+  }
+  function handleAmenityModalPaste(e: React.ClipboardEvent) {
+    const item = Array.from(e.clipboardData?.items ?? []).find(i => i.type.startsWith('image/'))
+    const f = item?.getAsFile()
+    if (!f) return
+    if (amenityModal?.previewUrl) URL.revokeObjectURL(amenityModal.previewUrl)
+    setAmenityModal(prev => prev ? { ...prev, file: f, previewUrl: URL.createObjectURL(f) } : null)
+  }
+  function confirmAmenityPaste() {
+    if (!amenityModal?.file) return
+    setAmenityPhoto(amenityModal.draftId, amenityModal.file)
+    if (amenityModal.previewUrl) URL.revokeObjectURL(amenityModal.previewUrl)
+    setAmenityModal(null)
+  }
   useEffect(() => {
-    function onPaste(e: ClipboardEvent) {
-      if (!activePasteId) return
-      const item = Array.from(e.clipboardData?.items ?? []).find(i => i.type.startsWith('image/'))
-      if (!item) return
-      const file = item.getAsFile()
-      if (file) setAmenityPhoto(activePasteId, file)
-    }
-    document.addEventListener('paste', onPaste)
-    return () => document.removeEventListener('paste', onPaste)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activePasteId, s.amenityDrafts])
+    if (amenityModal) { const t = setTimeout(() => amenityModalRef.current?.focus(), 50); return () => clearTimeout(t) }
+  }, [amenityModal])
 
   // ── Typologies ────────────────────────────────────────────────────────────
   function toggleTypology(type: TypologyType) {
@@ -614,7 +630,7 @@ export function ProyectoFormPage() {
               {s.amenityDrafts.length > 0 && (
                 <div className="flex flex-col gap-1.5 border-t border-gray-100 pt-3">
                   {s.amenityDrafts.map(draft => (
-                    <div key={draft._id} className="flex items-center gap-2 group">
+                    <div key={draft._id} className="flex items-center gap-2">
                       {draft.custom ? (
                         <input value={draft.name} onChange={e => setAmenityName(draft._id, e.target.value)} placeholder="Nombre..."
                           className="w-36 flex-shrink-0 px-2 py-1 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-gray-900/20"
@@ -623,16 +639,13 @@ export function ProyectoFormPage() {
                         <span className="w-36 flex-shrink-0 text-xs font-medium text-gray-700 truncate">{draft.name}</span>
                       )}
                       {draft.previewUrl && <img src={draft.previewUrl} alt="" className="h-8 w-8 rounded object-cover flex-shrink-0 border border-gray-200" />}
-                      <div tabIndex={0}
-                        onFocus={() => setActivePasteId(draft._id)}
-                        onBlur={() => setActivePasteId(prev => prev === draft._id ? null : prev)}
-                        onPaste={e => { const item = Array.from(e.clipboardData.items).find(i => i.type.startsWith('image/')); const file = item?.getAsFile(); if (file) setAmenityPhoto(draft._id, file) }}
-                        className={`flex-1 h-8 flex items-center justify-center rounded-lg border border-dashed text-[11px] cursor-pointer transition-all outline-none ${activePasteId === draft._id ? 'border-gray-500 text-gray-600 bg-gray-50' : 'border-transparent text-transparent group-hover:border-gray-300 group-hover:text-gray-400'}`}
-                      >Hacé clic aquí y pegá (Ctrl+V)</div>
                       <label className="flex-shrink-0 h-7 w-7 flex items-center justify-center border border-gray-200 rounded-lg text-gray-400 hover:border-gray-400 hover:text-gray-600 cursor-pointer transition-colors" title="Subir imagen">
                         <Upload className="w-3.5 h-3.5" />
                         <input type="file" accept="image/*" className="hidden" onChange={e => e.target.files?.[0] && setAmenityPhoto(draft._id, e.target.files[0])} />
                       </label>
+                      <button type="button" onClick={() => openAmenityModal(draft._id)}
+                        className="flex-shrink-0 h-7 w-7 flex items-center justify-center border border-gray-200 rounded-lg text-gray-400 hover:border-gray-400 hover:text-gray-600 transition-colors" title="Pegar imagen"
+                      ><Clipboard className="w-3.5 h-3.5" /></button>
                       <button type="button" onClick={() => removeAmenity(draft._id)} className="flex-shrink-0 text-gray-300 hover:text-red-400 transition-colors"><X className="w-3.5 h-3.5" /></button>
                     </div>
                   ))}
@@ -751,28 +764,45 @@ export function ProyectoFormPage() {
               </div>
             )}
 
+            {/* Chips para agregar links */}
+            <div className="flex flex-wrap gap-1.5">
+              {LINK_PRESETS.map(preset => {
+                const Icon = preset.icon
+                const already = preset.single && s.links.some(l => l.type === preset.value)
+                return (
+                  <button key={preset.value} type="button" disabled={already} onClick={() => addLink(preset.value)}
+                    className="flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-xs font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50"
+                    style={{ borderColor: already ? '#e5e7eb' : preset.color, color: already ? '#9ca3af' : preset.color }}
+                  >
+                    <Icon className="h-3 w-3" />{preset.label}
+                  </button>
+                )
+              })}
+            </div>
+
             {s.links.length > 0 && (
-              <div className="flex flex-col gap-2">
-                {s.links.map(link => (
-                  <div key={link._id} className="flex items-center gap-2">
-                    <select value={link.type} onChange={e => setLinkField(link._id, 'type', e.target.value)} style={{ width: 128 }}
-                      className="flex-shrink-0 px-2 py-2 border border-gray-200 rounded-xl text-sm bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-900/20"
-                    >
-                      {LINK_TYPE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                    </select>
-                    <input type="url" value={link.url} onChange={e => setLinkField(link._id, 'url', e.target.value)}
-                      placeholder="https://..." className="flex-1 px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gray-900/20"
-                    />
-                    <button type="button" onClick={() => removeLink(link._id)} className="text-gray-300 hover:text-red-400 transition-colors flex-shrink-0">
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-                ))}
+              <div className="flex flex-col gap-2 mt-1">
+                {s.links.map(link => {
+                  const preset = linkPreset(link.type)
+                  const Icon = preset?.icon ?? ExternalLink
+                  const color = preset?.color ?? '#6b7280'
+                  return (
+                    <div key={link._id} className="flex items-center gap-2 p-2.5 rounded-xl border bg-gray-50/60">
+                      <div className="flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center" style={{ backgroundColor: color + '18' }}>
+                        <Icon className="h-3.5 w-3.5" style={{ color }} />
+                      </div>
+                      <input type="url" value={link.url} onChange={e => setLinkField(link._id, 'url', e.target.value)}
+                        placeholder="https://..."
+                        className="flex-1 min-w-0 h-7 px-2 border border-gray-200 rounded-lg text-xs bg-white focus:outline-none focus:ring-2 focus:ring-gray-900/20"
+                      />
+                      <button type="button" onClick={() => removeLink(link._id)} className="flex-shrink-0 text-gray-300 hover:text-red-400 transition-colors">
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  )
+                })}
               </div>
             )}
-            <button type="button" onClick={addLink} className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-900 transition-colors">
-              <Plus className="w-4 h-4" /> Agregar link
-            </button>
           </div>
         </Section>
 
@@ -817,6 +847,36 @@ export function ProyectoFormPage() {
               <button onClick={confirmPlano} disabled={!planoModal.file}
                 className="flex-1 py-2.5 rounded-xl bg-gray-900 text-white text-sm font-semibold hover:bg-gray-800 transition-colors disabled:opacity-40"
               >{planoModal.file ? 'Confirmar' : 'Esperando imagen…'}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Modal pegar imagen amenity ───────────────────────────────────────── */}
+      {amenityModal && (
+        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" onClick={closeAmenityModal}>
+          <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <p className="text-sm font-semibold text-gray-900">Pegar imagen</p>
+              <button onClick={closeAmenityModal} className="p-1.5 rounded-full hover:bg-gray-100 text-gray-400"><X className="w-4 h-4" /></button>
+            </div>
+            <div ref={amenityModalRef} tabIndex={0} onPaste={handleAmenityModalPaste}
+              className="border-2 border-dashed border-gray-300 rounded-xl focus:outline-none focus:border-gray-900 transition-colors cursor-default" style={{ minHeight: 180 }}
+            >
+              {amenityModal.previewUrl ? (
+                <img src={amenityModal.previewUrl} alt="preview" className="w-full rounded-xl object-contain" style={{ maxHeight: 240 }} />
+              ) : (
+                <div className="flex flex-col items-center justify-center py-10 px-4 text-center">
+                  <Clipboard className="w-8 h-8 text-gray-300 mb-3" />
+                  <p className="text-sm text-gray-500 font-medium">Pegá con Ctrl + V</p>
+                </div>
+              )}
+            </div>
+            <div className="flex gap-2 mt-4">
+              <button onClick={closeAmenityModal} className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-600 hover:bg-gray-50 transition-colors">Cancelar</button>
+              <button onClick={confirmAmenityPaste} disabled={!amenityModal.file}
+                className="flex-1 py-2.5 rounded-xl bg-gray-900 text-white text-sm font-semibold hover:bg-gray-800 transition-colors disabled:opacity-40"
+              >{amenityModal.file ? 'Confirmar' : 'Esperando imagen…'}</button>
             </div>
           </div>
         </div>
