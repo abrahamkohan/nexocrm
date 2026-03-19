@@ -51,12 +51,12 @@ export function AmenitiesEditor({ projectId }: AmenitiesEditorProps) {
 
   // ─── Toggle chip predefinido ──────────────────────────────────────────────
 
-  function toggleChip(name: string) {
+  function toggleChip(name: string, categoria: string) {
     const existing = amenities.find(a => a.name.toLowerCase() === name.toLowerCase())
     if (existing) {
       deleteAmenity.mutate(existing)
     } else {
-      addAmenity.mutate({ name, sortOrder: amenities.length })
+      addAmenity.mutate({ name, sortOrder: amenities.length, categoria })
     }
   }
 
@@ -65,7 +65,7 @@ export function AmenitiesEditor({ projectId }: AmenitiesEditorProps) {
   function doAddCustom() {
     const trimmed = customName.trim()
     if (!trimmed) return
-    addAmenity.mutate({ name: trimmed, sortOrder: amenities.length })
+    addAmenity.mutate({ name: trimmed, sortOrder: amenities.length, categoria: 'edificio' })
     setCustomName('')
     setShowCustom(false)
   }
@@ -122,7 +122,7 @@ export function AmenitiesEditor({ projectId }: AmenitiesEditorProps) {
             return (
               <button key={name} type="button"
                 disabled={addAmenity.isPending}
-                onClick={() => toggleChip(name)}
+                onClick={() => toggleChip(name, 'interior')}
                 className={`h-8 px-3 rounded-full border text-[12px] font-medium transition-all ${
                   active
                     ? 'bg-gray-900 border-gray-900 text-white'
@@ -143,7 +143,7 @@ export function AmenitiesEditor({ projectId }: AmenitiesEditorProps) {
             return (
               <button key={name} type="button"
                 disabled={addAmenity.isPending}
-                onClick={() => toggleChip(name)}
+                onClick={() => toggleChip(name, 'edificio')}
                 className={`h-8 px-3 rounded-full border text-[12px] font-medium transition-all ${
                   active
                     ? 'bg-gray-900 border-gray-900 text-white'

@@ -26,7 +26,7 @@ type SectionId    = 'esencial' | 'tipologias' | 'amenities' | 'media' | 'conteni
 interface TypologyVariant { _id: string; area_m2: string; plano: File | null }
 interface TypologyDraft   { banos: number | null; variants: TypologyVariant[] }
 interface LinkEntry        { _id: string; type: string; url: string }
-interface AmenityDraft     { _id: string; name: string; custom: boolean; photo: File | null; previewUrl: string | null }
+interface AmenityDraft     { _id: string; name: string; categoria: string; custom: boolean; photo: File | null; previewUrl: string | null }
 
 interface FormState {
   name: string; status: Status; developer_name: string; tipo_proyecto: TipoProyecto | null
@@ -235,17 +235,17 @@ export function ProyectoFormPage() {
   }
 
   // ── Amenities (create mode only — edit uses AmenitiesEditor) ─────────────
-  function toggleAmenity(name: string) {
+  function toggleAmenity(name: string, categoria: string) {
     const exists = s.amenityDrafts.find(d => d.name === name && !d.custom)
     if (exists) {
       if (exists.previewUrl) URL.revokeObjectURL(exists.previewUrl)
       update({ amenityDrafts: s.amenityDrafts.filter(d => d._id !== exists._id) })
     } else {
-      update({ amenityDrafts: [...s.amenityDrafts, { _id: crypto.randomUUID(), name, custom: false, photo: null, previewUrl: null }] })
+      update({ amenityDrafts: [...s.amenityDrafts, { _id: crypto.randomUUID(), name, categoria, custom: false, photo: null, previewUrl: null }] })
     }
   }
   function addCustomAmenity() {
-    update({ amenityDrafts: [...s.amenityDrafts, { _id: crypto.randomUUID(), name: '', custom: true, photo: null, previewUrl: null }] })
+    update({ amenityDrafts: [...s.amenityDrafts, { _id: crypto.randomUUID(), name: '', categoria: 'edificio', custom: true, photo: null, previewUrl: null }] })
   }
   function removeAmenity(aid: string) {
     const d = s.amenityDrafts.find(a => a._id === aid)
@@ -385,7 +385,7 @@ export function ProyectoFormPage() {
         for (let i = 0; i < s.amenityDrafts.length; i++) {
           const draft = s.amenityDrafts[i]
           if (!draft.name.trim()) continue
-          const { data: amenity } = await supabase.from('project_amenities').insert({ project_id: projectId, name: draft.name.trim(), sort_order: i }).select().single()
+          const { data: amenity } = await supabase.from('project_amenities').insert({ project_id: projectId, name: draft.name.trim(), sort_order: i, categoria: draft.categoria ?? 'edificio' }).select().single()
           if (draft.photo && amenity) {
             const ext = draft.photo.name.split('.').pop() ?? 'jpg'
             const path = `${projectId}/amenities/${(amenity as { id: string }).id}/${Date.now()}.${ext}`
@@ -606,7 +606,7 @@ export function ProyectoFormPage() {
                 {AMENITIES_INTERIOR.map(name => {
                   const active = s.amenityDrafts.some(d => d.name === name && !d.custom)
                   return (
-                    <button key={name} type="button" onClick={() => toggleAmenity(name)}
+                    <button key={name} type="button" onClick={() => toggleAmenity(name, 'interior')}
                       className={`h-8 px-3 rounded-full border text-[12px] font-medium transition-all ${active ? 'bg-gray-900 border-gray-900 text-white' : 'border-gray-200 text-gray-600 hover:border-gray-400'}`}
                     >{name}</button>
                   )
@@ -617,7 +617,7 @@ export function ProyectoFormPage() {
                 {AMENITIES_EDIFICIO.map(name => {
                   const active = s.amenityDrafts.some(d => d.name === name && !d.custom)
                   return (
-                    <button key={name} type="button" onClick={() => toggleAmenity(name)}
+                    <button key={name} type="button" onClick={() => toggleAmenity(name, 'edificio')}
                       className={`h-8 px-3 rounded-full border text-[12px] font-medium transition-all ${active ? 'bg-gray-900 border-gray-900 text-white' : 'border-gray-200 text-gray-600 hover:border-gray-400'}`}
                     >{name}</button>
                   )

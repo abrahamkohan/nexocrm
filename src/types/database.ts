@@ -209,16 +209,19 @@ export interface Database {
           id:         string
           project_id: string
           name:       string
+          categoria:  string
           sort_order: number
           created_at: string
         }
         Insert: {
           project_id: string
           name:       string
+          categoria?: string
           sort_order?: number
         }
         Update: {
           name?:       string
+          categoria?:  string
           sort_order?: number
         }
         Relationships: []

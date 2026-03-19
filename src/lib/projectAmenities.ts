@@ -37,10 +37,15 @@ export async function getProjectAmenities(projectId: string): Promise<AmenityWit
 
 // ─── Create ───────────────────────────────────────────────────────────────────
 
-export async function addAmenity(projectId: string, name: string, sortOrder: number): Promise<AmenityRow> {
+export async function addAmenity(
+  projectId: string,
+  name: string,
+  sortOrder: number,
+  categoria: string = 'edificio'
+): Promise<AmenityRow> {
   const { data, error } = await supabase
     .from('project_amenities')
-    .insert({ project_id: projectId, name, sort_order: sortOrder })
+    .insert({ project_id: projectId, name, sort_order: sortOrder, categoria })
     .select()
     .single()
   if (error) throw error

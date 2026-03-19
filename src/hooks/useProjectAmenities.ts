@@ -22,8 +22,8 @@ export function useProjectAmenities(projectId: string) {
 export function useAddAmenity(projectId: string) {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ name, sortOrder }: { name: string; sortOrder: number }) =>
-      addAmenity(projectId, name, sortOrder),
+    mutationFn: ({ name, sortOrder, categoria }: { name: string; sortOrder: number; categoria?: string }) =>
+      addAmenity(projectId, name, sortOrder, categoria),
     onSuccess: () => qc.invalidateQueries({ queryKey: key(projectId) }),
   })
 }
