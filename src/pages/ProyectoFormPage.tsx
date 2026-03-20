@@ -400,6 +400,24 @@ export function ProyectoFormPage() {
       } else if (s.hero_url.trim()) {
         heroImageUrl = s.hero_url.trim()
       }
+      // Si terminamos con un data: URL, subir a storage en vez de guardar el base64 en la DB
+      if (heroImageUrl?.startsWith('data:')) {
+        try {
+          const res = await fetch(heroImageUrl)
+          const blob = await res.blob()
+          const ext = blob.type.split('/')[1] ?? 'jpg'
+          const path = `hero/${Date.now()}.${ext}`
+          const { error: upErr } = await supabase.storage.from('project-media').upload(path, blob)
+          if (!upErr) {
+            const { data } = supabase.storage.from('project-media').getPublicUrl(path)
+            heroImageUrl = data.publicUrl
+          } else {
+            heroImageUrl = null  // no guardar base64 en DB
+          }
+        } catch {
+          heroImageUrl = null
+        }
+      }
 
       const payload = {
         name:            s.name.trim(),
