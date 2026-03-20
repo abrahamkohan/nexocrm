@@ -428,6 +428,8 @@ export interface Database {
           precio: number | null
           moneda: 'USD' | 'PYG'
           financiacion: boolean
+          ciudad: string | null
+          barrio: string | null
           zona: string | null
           direccion: string | null
           latitud: number | null
@@ -456,6 +458,8 @@ export interface Database {
           precio?: number | null
           moneda?: 'USD' | 'PYG'
           financiacion?: boolean
+          ciudad?: string | null
+          barrio?: string | null
           zona?: string | null
           direccion?: string | null
           latitud?: number | null
@@ -484,6 +488,8 @@ export interface Database {
           precio?: number | null
           moneda?: 'USD' | 'PYG'
           financiacion?: boolean
+          ciudad?: string | null
+          barrio?: string | null
           zona?: string | null
           direccion?: string | null
           latitud?: number | null

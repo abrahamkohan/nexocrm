@@ -175,6 +175,8 @@ interface Draft {
   precio: string
   moneda: 'USD' | 'PYG'
   publicado_en_web: boolean
+  ciudad: string
+  barrio: string
   zona: string
   direccion: string
   latitud: number | null
@@ -222,6 +224,8 @@ export function PropiedadEditarPage() {
       precio: property.precio != null ? String(property.precio) : '',
       moneda: (property.moneda as 'USD' | 'PYG') ?? 'USD',
       publicado_en_web: property.publicado_en_web ?? false,
+      ciudad: property.ciudad ?? '',
+      barrio: property.barrio ?? '',
       zona: property.zona ?? '',
       direccion: property.direccion ?? '',
       latitud: property.latitud ?? null,
@@ -294,6 +298,8 @@ export function PropiedadEditarPage() {
           precio: draft.precio ? parseFloat(draft.precio) : null,
           moneda: draft.moneda,
           publicado_en_web: draft.publicado_en_web,
+          ciudad: draft.ciudad || null,
+          barrio: draft.barrio || null,
           zona: draft.zona || null,
           direccion: draft.direccion || null,
           latitud: draft.latitud,
@@ -630,14 +636,32 @@ export function PropiedadEditarPage() {
               </div>
             )}
 
-            {/* Zona y dirección */}
+            {/* Ubicación: ciudad / barrio / zona / dirección */}
             <div className="grid grid-cols-2 gap-3">
+              <div>
+                <p className="text-xs text-gray-500 mb-1.5">Ciudad</p>
+                <input
+                  value={draft.ciudad}
+                  onChange={e => patch({ ciudad: e.target.value })}
+                  placeholder="Ej: Asunción"
+                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-gray-300"
+                />
+              </div>
+              <div>
+                <p className="text-xs text-gray-500 mb-1.5">Barrio</p>
+                <input
+                  value={draft.barrio}
+                  onChange={e => patch({ barrio: e.target.value })}
+                  placeholder="Ej: Recoleta"
+                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-gray-300"
+                />
+              </div>
               <div>
                 <p className="text-xs text-gray-500 mb-1.5">Zona</p>
                 <input
                   value={draft.zona}
                   onChange={e => patch({ zona: e.target.value })}
-                  placeholder="Ej: Asunción"
+                  placeholder="Ej: Zona CIT"
                   className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-gray-300"
                 />
               </div>

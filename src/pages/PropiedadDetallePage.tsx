@@ -65,7 +65,7 @@ export function PropiedadDetallePage() {
   function handleConsultar() {
     if (!property) return
     if (consultora?.whatsapp) {
-      const title = property.titulo || `${TIPO_LABEL[property.tipo]} en ${property.zona}`
+      const title = property.titulo || `${TIPO_LABEL[property.tipo]} en ${property.barrio ?? property.zona ?? property.ciudad ?? ''}`
       const msg = encodeURIComponent(`Hola, me interesa la propiedad: ${title}`)
       window.open(`https://wa.me/${consultora.whatsapp.replace(/\D/g, '')}?text=${msg}`, '_blank')
     }
@@ -101,7 +101,7 @@ export function PropiedadDetallePage() {
   }
 
   const title = property.titulo ||
-    `${TIPO_LABEL[property.tipo] ?? property.tipo} en ${property.zona ?? 'Sin ubicación'}`
+    `${TIPO_LABEL[property.tipo] ?? property.tipo} en ${property.barrio ?? property.zona ?? property.ciudad ?? 'Sin ubicación'}`
 
   const statsChips = [
     property.dormitorios != null && {
@@ -122,6 +122,8 @@ export function PropiedadDetallePage() {
     property.garajes != null && { label: 'Garajes', value: String(property.garajes) },
     property.piso != null && { label: 'Piso', value: String(property.piso) },
     property.condicion && { label: 'Condición', value: CONDICION_LABEL[property.condicion] ?? property.condicion },
+    property.ciudad && { label: 'Ciudad', value: property.ciudad },
+    property.barrio && { label: 'Barrio', value: property.barrio },
     property.zona && { label: 'Zona', value: property.zona },
     property.deposito != null && { label: 'Depósito', value: property.deposito ? 'Sí' : 'No' },
     property.estacionamientos != null && { label: 'Estacionamientos', value: String(property.estacionamientos) },
@@ -186,10 +188,15 @@ export function PropiedadDetallePage() {
             )}
           </div>
           <h1 className="text-xl font-semibold text-gray-900 leading-snug">{title}</h1>
-          {(property.zona || property.direccion) && (
+          {(property.barrio || property.zona || property.ciudad || property.direccion) && (
             <p className="flex items-center gap-1.5 text-sm text-gray-400 mt-2">
               <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
-              {[property.zona, property.direccion].filter(Boolean).join(', ')}
+              {[
+                property.barrio && `Barrio ${property.barrio}`,
+                property.zona,
+                property.ciudad,
+                property.direccion,
+              ].filter(Boolean).join(' · ')}
             </p>
           )}
           <div className="flex items-center gap-1.5 text-xs text-gray-400 mt-2">
@@ -232,6 +239,19 @@ export function PropiedadDetallePage() {
                 </div>
               ))}
             </div>
+            {(property.barrio || property.zona || property.ciudad) && (
+              <>
+                <hr className="border-gray-100 mt-3" />
+                <p className="flex items-center gap-1.5 text-sm text-gray-500 mt-3">
+                  <MapPin className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+                  {[
+                    property.barrio && `Barrio ${property.barrio}`,
+                    property.zona,
+                    property.ciudad,
+                  ].filter(Boolean).join(' · ')}
+                </p>
+              </>
+            )}
           </Card>
         )}
 
@@ -285,7 +305,7 @@ export function PropiedadDetallePage() {
           <Card className="p-4">
             <div className="flex items-center justify-between mb-4">
               <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                Ubicación{property.zona ? ` · ${property.zona}` : ''}
+                Ubicación{(property.barrio || property.zona || property.ciudad) ? ` · ${property.barrio ?? property.zona ?? property.ciudad}` : ''}
               </p>
               {mapsUrl && (
                 <a
@@ -307,12 +327,17 @@ export function PropiedadDetallePage() {
               />
             </div>
           </Card>
-        ) : property.zona ? (
+        ) : (property.barrio || property.zona || property.ciudad || property.direccion) ? (
           <Card>
             <CardTitle>Ubicación</CardTitle>
             <p className="flex items-center gap-2 text-sm text-gray-600">
               <MapPin className="w-4 h-4 text-gray-400" />
-              {[property.zona, property.direccion].filter(Boolean).join(', ')}
+              {[
+                property.barrio && `Barrio ${property.barrio}`,
+                property.zona,
+                property.ciudad,
+                property.direccion,
+              ].filter(Boolean).join(' · ')}
             </p>
           </Card>
         ) : null}

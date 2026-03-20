@@ -13,6 +13,8 @@ interface FormState {
   mapsLink: string
   lat: number | null
   lng: number | null
+  ciudad: string
+  barrio: string
   zona: string
   direccion: string
   dormitorios: number | null
@@ -30,7 +32,7 @@ interface FormState {
 
 const INITIAL: FormState = {
   operacion: null, tipo: null,
-  mapsLink: '', lat: null, lng: null, zona: '', direccion: '',
+  mapsLink: '', lat: null, lng: null, ciudad: '', barrio: '', zona: '', direccion: '',
   dormitorios: null, banos: null, superficie_m2: '', terreno_m2: '',
   amenities: [], fotos: [],
   precio: '', moneda: 'USD', financiacion: false,
@@ -104,15 +106,16 @@ function generateTitle(s: FormState): string {
   const tipo = TIPO_LABEL[s.tipo!] ?? ''
   const op = OP_LABEL[s.operacion!] ?? ''
   const dormStr = s.dormitorios ? ` de ${s.dormitorios} dormitorio${s.dormitorios !== 1 ? 's' : ''}` : ''
-  const zonaStr = s.zona ? ` en ${s.zona}` : ''
-  return `${tipo}${dormStr}${zonaStr} ${op}`.trim()
+  const ubicStr = s.barrio || s.zona || s.ciudad ? ` en ${s.barrio || s.zona || s.ciudad}` : ''
+  return `${tipo}${dormStr}${ubicStr} ${op}`.trim()
 }
 
 function generateDescription(s: FormState): string {
   const tipo = TIPO_LABEL[s.tipo!] ?? ''
   const op = { venta: 'venta', alquiler: 'alquiler' }[s.operacion!] ?? ''
+  const ubic = s.barrio || s.zona || s.ciudad
   const lines: string[] = []
-  lines.push(`${tipo}${s.zona ? ` en ${s.zona}` : ''} disponible para ${op}.`)
+  lines.push(`${tipo}${ubic ? ` en ${ubic}` : ''} disponible para ${op}.`)
   if (s.dormitorios != null) lines.push(`• ${s.dormitorios === 0 ? 'Monoambiente' : `${s.dormitorios} dormitorio${s.dormitorios !== 1 ? 's' : ''}`}`)
   if (s.banos) lines.push(`• ${s.banos} baño${s.banos !== 1 ? 's' : ''}`)
   if (s.superficie_m2) lines.push(`• ${s.superficie_m2} m² de superficie`)
@@ -289,6 +292,8 @@ export function PropiedadNuevaPage() {
         descripcion: descripcion || null,
         latitud: s.lat,
         longitud: s.lng,
+        ciudad: s.ciudad || null,
+        barrio: s.barrio || null,
         zona: s.zona || null,
         direccion: s.direccion || null,
         dormitorios: s.dormitorios,
@@ -532,11 +537,27 @@ export function PropiedadNuevaPage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <Label>Zona / Barrio</Label>
+                <Label>Ciudad</Label>
+                <TextInput
+                  value={s.ciudad}
+                  onChange={e => update({ ciudad: e.target.value })}
+                  placeholder="Ej: Asunción"
+                />
+              </div>
+              <div>
+                <Label>Barrio</Label>
+                <TextInput
+                  value={s.barrio}
+                  onChange={e => update({ barrio: e.target.value })}
+                  placeholder="Ej: Recoleta"
+                />
+              </div>
+              <div>
+                <Label>Zona</Label>
                 <TextInput
                   value={s.zona}
                   onChange={e => update({ zona: e.target.value })}
-                  placeholder="Ej: Luque – Zona CIT"
+                  placeholder="Ej: Zona CIT"
                 />
               </div>
               <div>

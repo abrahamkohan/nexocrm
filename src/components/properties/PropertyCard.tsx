@@ -58,8 +58,9 @@ export function PropertyCard({ property, onConsultar }: Props) {
     })
   }
 
+  const ubicacion = property.barrio ?? property.zona ?? property.ciudad ?? 'Sin ubicación'
   const title = property.titulo ||
-    `${TIPO_LABEL[property.tipo] ?? property.tipo} en ${property.zona ?? 'Sin ubicación'}`
+    `${TIPO_LABEL[property.tipo] ?? property.tipo} en ${ubicacion}`
 
   return (
     <>
@@ -105,9 +106,10 @@ export function PropertyCard({ property, onConsultar }: Props) {
       <div className="p-3 flex flex-col gap-2 flex-1">
         <div>
           <p className="text-sm font-medium text-gray-900 line-clamp-1">{title}</p>
-          {property.zona && (
+          {(property.barrio || property.zona || property.ciudad) && (
             <p className="text-xs text-gray-400 flex items-center gap-0.5 mt-0.5">
-              <MapPin className="w-3 h-3" />{property.zona}
+              <MapPin className="w-3 h-3" />
+              {[property.barrio, property.zona, property.ciudad].filter(Boolean).join(' · ')}
             </p>
           )}
         </div>
