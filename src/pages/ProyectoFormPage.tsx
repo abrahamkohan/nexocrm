@@ -231,8 +231,31 @@ export function ProyectoFormPage() {
   }
   function addFiles(files: FileList | File[]) {
     const valid = Array.from(files).filter(f => f.type.startsWith('image/'))
-    update({ fotos: [...s.fotos, ...valid].slice(0, 20) })
+    // Usar setS funcional para evitar stale closure en el listener global de paste
+    setS(prev => ({ ...prev, fotos: [...prev.fotos, ...valid].slice(0, 20) }))
   }
+
+  // ── Listener global de paste (Ctrl+V) ─────────────────────────────────────
+  useEffect(() => {
+    function handleGlobalPaste(e: ClipboardEvent) {
+      // Ignorar si hay foco en un input de texto (URL, nombre, etc.)
+      const tag = (document.activeElement as HTMLElement)?.tagName
+      if (tag === 'INPUT' || tag === 'TEXTAREA') return
+
+      const items = Array.from(e.clipboardData?.items ?? [])
+      const imageItem = items.find(item => item.type.startsWith('image/'))
+      if (!imageItem) return
+
+      const file = imageItem.getAsFile()
+      if (!file) return
+
+      setS(prev => ({ ...prev, fotos: [...prev.fotos, file].slice(0, 20) }))
+      toast.success('Imagen pegada desde clipboard')
+    }
+
+    window.addEventListener('paste', handleGlobalPaste)
+    return () => window.removeEventListener('paste', handleGlobalPaste)
+  }, []) // setS es estable, no hay dependencias
   function removeNewFile(i: number) {
     const file = s.fotos[i]; const key = fileKey(file)
     const url = previewUrls.current[key]; if (url) URL.revokeObjectURL(url)
@@ -858,10 +881,16 @@ export function ProyectoFormPage() {
                 onDragOver={e => { e.preventDefault(); setIsDragging(true) }}
                 onDragLeave={() => setIsDragging(false)}
                 onDrop={e => { e.preventDefault(); setIsDragging(false); addFiles(e.dataTransfer.files) }}
+                onPaste={e => {
+                  const items = Array.from(e.clipboardData?.items ?? [])
+                  const imageItem = items.find(i => i.type.startsWith('image/'))
+                  const file = imageItem?.getAsFile()
+                  if (file) { addFiles([file]); toast.success('Imagen pegada') }
+                }}
                 className={`border-2 border-dashed rounded-2xl px-6 py-5 text-center cursor-pointer transition-colors ${isDragging ? 'border-gray-400 bg-gray-50' : 'border-gray-200 hover:border-gray-400'}`}
               >
                 <Upload className="w-6 h-6 text-gray-300 mx-auto mb-1.5" />
-                <p className="text-sm text-gray-500">Arrastrá o hacé clic para seleccionar</p>
+                <p className="text-sm text-gray-500">Arrastrá, clic para seleccionar o <kbd className="px-1.5 py-0.5 rounded bg-gray-100 text-gray-500 font-mono text-xs">Ctrl+V</kbd> para pegar</p>
                 <p className="text-xs text-gray-400 mt-0.5">JPG, PNG · máx. 20</p>
                 <input ref={inputRef} type="file" accept="image/*" multiple className="hidden" onChange={e => e.target.files && addFiles(e.target.files)} />
               </div>
