@@ -1,9 +1,9 @@
-"use client"
 import { useState, useRef, useCallback, useEffect } from 'react'
 import { X, Camera, Home, Key, Building2, Map, Store, Link as LinkIcon, Check, MapPin } from 'lucide-react'
 import { toast } from 'sonner'
 import { LocationPicker } from './LocationPicker'
 import type { LocationValue } from './LocationPicker'
+import type { PropertyPhotoRow } from '@/lib/properties'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -207,11 +207,7 @@ function Toggle({ checked, onChange, label, sub }: { checked: boolean; onChange:
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
-export interface ExistingPhoto {
-  id: string
-  storage_path: string
-  sort_order: number
-}
+export type ExistingPhoto = PropertyPhotoRow
 
 interface PropertyFormProps {
   mode: 'create' | 'edit'
