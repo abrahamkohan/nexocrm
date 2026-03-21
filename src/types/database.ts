@@ -519,6 +519,68 @@ export interface Database {
         }
         Relationships: []
       }
+      tasks: {
+        Row: {
+          id:             string
+          title:          string
+          context:        'lead' | 'property' | 'admin' | 'marketing'
+          lead_id:        string | null
+          property_id:    string | null
+          assigned_to:    string
+          created_by:     string
+          team_id:        string | null
+          type:           'whatsapp' | 'call' | 'meeting' | 'email' | 'visit'
+          status:         'pending' | 'contacted' | 'rescheduled' | 'closed'
+          outcome:        'no_response' | 'interested' | 'not_interested' | null
+          priority:       'low' | 'medium' | 'high'
+          due_date:       string
+          recurrence:     'none' | 'weekly' | 'monthly' | 'yearly' | null
+          recurrence_day: number | null
+          notes:          string | null
+          escalated_to:   string | null
+          meet_link:      string | null
+          created_at:     string
+          updated_at:     string
+        }
+        Insert: {
+          title:          string
+          due_date:       string
+          assigned_to:    string
+          created_by:     string
+          context?:       'lead' | 'property' | 'admin' | 'marketing'
+          lead_id?:       string | null
+          property_id?:   string | null
+          team_id?:       string | null
+          type?:          'whatsapp' | 'call' | 'meeting' | 'email' | 'visit'
+          status?:        'pending' | 'contacted' | 'rescheduled' | 'closed'
+          outcome?:       'no_response' | 'interested' | 'not_interested' | null
+          priority?:      'low' | 'medium' | 'high'
+          recurrence?:    'none' | 'weekly' | 'monthly' | 'yearly' | null
+          recurrence_day?: number | null
+          notes?:         string | null
+          escalated_to?:  string | null
+          meet_link?:     string | null
+        }
+        Update: {
+          title?:         string
+          due_date?:      string
+          assigned_to?:   string
+          context?:       'lead' | 'property' | 'admin' | 'marketing'
+          lead_id?:       string | null
+          property_id?:   string | null
+          team_id?:       string | null
+          type?:          'whatsapp' | 'call' | 'meeting' | 'email' | 'visit'
+          status?:        'pending' | 'contacted' | 'rescheduled' | 'closed'
+          outcome?:       'no_response' | 'interested' | 'not_interested' | null
+          priority?:      'low' | 'medium' | 'high'
+          recurrence?:    'none' | 'weekly' | 'monthly' | 'yearly' | null
+          recurrence_day?: number | null
+          notes?:         string | null
+          escalated_to?:  string | null
+          meet_link?:     string | null
+        }
+        Relationships: []
+      }
       property_photos: {
         Row: {
           id: string
