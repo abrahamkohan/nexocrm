@@ -17,6 +17,7 @@ import {
   GripVertical,
 } from 'lucide-react'
 import { useDashboardStats, useExchangeRates, useWeather } from '@/hooks/useDashboardStats'
+import { DayView } from '@/components/tasks/DayView'
 import { useConsultoraConfig } from '@/hooks/useConsultora'
 import {
   DndContext, closestCenter, PointerSensor, useSensor, useSensors, type DragEndEvent,
@@ -702,6 +703,7 @@ const WIDGET_LABELS: Record<string, string> = {
 }
 
 export function InicioPage() {
+  const [view, setView]             = useState<'dashboard' | 'tareas'>('tareas')
   const [editMode, setEditMode]     = useState(false)
   const [layouts, setLayouts]       = useState<Layouts>(loadLayouts)
   const [breakpoint, setBreakpoint] = useState<'lg' | 'md' | 'sm'>('lg')
@@ -789,6 +791,21 @@ export function InicioPage() {
           <Heading size={{ initial: '6', md: '7' }} weight="bold" mt="1">
             {greeting}{config?.nombre ? `, ${config.nombre}` : ''}
           </Heading>
+          <Flex gap="1" mt="3">
+            {(['tareas', 'dashboard'] as const).map(v => (
+              <button key={v} onClick={() => setView(v)}
+                style={{
+                  padding: '4px 14px', borderRadius: 20, fontSize: 13, fontWeight: 500,
+                  background: view === v ? '#D4AF37' : 'transparent',
+                  color: view === v ? '#000' : 'var(--muted-foreground)',
+                  border: `1px solid ${view === v ? '#D4AF37' : 'var(--border)'}`,
+                  cursor: 'pointer', transition: 'all 0.15s',
+                }}
+              >
+                {v === 'tareas' ? 'Mi día' : 'Dashboard'}
+              </button>
+            ))}
+          </Flex>
         </Box>
         <Flex gap="2">
           {editMode && (
@@ -809,6 +826,8 @@ export function InicioPage() {
           </RxButton>
         </Flex>
       </Flex>
+
+      {view === 'tareas' ? <DayView /> : (<>
 
       {/* Quick actions */}
       <QuickActionsBar />
@@ -853,6 +872,7 @@ export function InicioPage() {
           </ResponsiveGridLayout>
         )}
       </div>
+      </>)}
     </Box>
   )
 }
