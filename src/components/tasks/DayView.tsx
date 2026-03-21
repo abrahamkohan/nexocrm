@@ -30,9 +30,10 @@ function getGreeting(): string {
 }
 
 function getTodayLabel(): string {
-  return new Intl.DateTimeFormat('es-PY', {
+  const raw = new Intl.DateTimeFormat('es-PY', {
     weekday: 'long', day: 'numeric', month: 'long',
   }).format(new Date())
+  return raw.toLowerCase()
 }
 
 function sortByPriorityDesc(tasks: TaskRow[]): TaskRow[] {
@@ -147,11 +148,7 @@ export function DayView() {
   const { session } = useAuth()
 
   // Nombre del usuario — email como fallback
-  const userName = (
-    (session?.user?.user_metadata?.full_name as string | undefined) ??
-    session?.user?.email?.split('@')[0] ??
-    ''
-  )
+  const userName = (session?.user?.user_metadata?.full_name as string | undefined) ?? ''
 
   // ── Datos ──────────────────────────────────────────────────────────────
   const { data: allTasks = [], isLoading: loadingTasks } = useTasks()
@@ -226,7 +223,7 @@ export function DayView() {
 
       {/* Saludo + fecha */}
       <div className="flex flex-col gap-0.5">
-        <p className="text-xs text-muted-foreground capitalize">{getTodayLabel()}</p>
+        <p className="text-xs text-muted-foreground">{getTodayLabel()}</p>
         <h1 className="text-2xl font-bold text-foreground">
           {getGreeting()}{userName ? `, ${userName}` : ''}
         </h1>

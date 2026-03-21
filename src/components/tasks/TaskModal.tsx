@@ -3,7 +3,7 @@
 // Siempre side="bottom". Nunca Dialog centrado.
 
 import { useState, useEffect } from 'react'
-import { ChevronDown, ChevronUp, MessageCircle, Loader2 } from 'lucide-react'
+import { ChevronDown, ChevronUp, MessageCircle, Loader2, Phone, MapPin, Mail, Video } from 'lucide-react'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
 import { useCreateTask, useUpdateTask, useTask } from '@/hooks/useTasks'
@@ -22,12 +22,12 @@ type Recurrence = NonNullable<TaskRow['recurrence']>
 
 // ── Chips de tipo ─────────────────────────────────────────────────────────
 
-const TYPE_CHIPS: { value: TaskType; emoji: string; label: string }[] = [
-  { value: 'whatsapp', emoji: '💬', label: 'WhatsApp' },
-  { value: 'call',     emoji: '📞', label: 'Llamar'   },
-  { value: 'visit',    emoji: '🏠', label: 'Visita'   },
-  { value: 'email',    emoji: '📧', label: 'Email'    },
-  { value: 'meeting',  emoji: '📹', label: 'Reunión'  },
+const TYPE_CHIPS: { value: TaskType; icon: React.ElementType; label: string }[] = [
+  { value: 'whatsapp', icon: MessageCircle, label: 'WhatsApp' },
+  { value: 'call',     icon: Phone,         label: 'Llamar'   },
+  { value: 'visit',    icon: MapPin,         label: 'Visita'   },
+  { value: 'email',    icon: Mail,           label: 'Email'    },
+  { value: 'meeting',  icon: Video,          label: 'Reunión'  },
 ]
 
 const CONTEXT_OPTIONS: { value: Context; label: string }[] = [
@@ -208,7 +208,7 @@ export function TaskModal({
     <Sheet open={isOpen} onOpenChange={v => { if (!v) onClose() }}>
       <SheetContent
         side="bottom"
-        className="rounded-t-2xl max-h-[92vh] overflow-y-auto pb-safe"
+        className="rounded-t-2xl max-h-[92vh] overflow-y-auto pb-safe bg-background"
       >
         {/* Handle */}
         <div className="mx-auto w-10 h-1 rounded-full bg-muted mb-5" />
@@ -229,7 +229,7 @@ export function TaskModal({
               placeholder="Ej: Seguimiento inicial"
               value={form.title}
               onChange={e => set('title', e.target.value)}
-              className="w-full rounded-lg border border-input bg-background px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+              className="w-full rounded-lg border border-border bg-muted/50 px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
               autoFocus
             />
           </div>
@@ -244,8 +244,14 @@ export function TaskModal({
               value={form.due_date}
               min={toInputValue(new Date())}
               onChange={e => set('due_date', e.target.value)}
-              className="w-full rounded-lg border border-input bg-background px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+              className="w-full rounded-lg border border-border bg-muted/50 px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
             />
+            {form.due_date && (
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {new Intl.DateTimeFormat('es-PY', { day: 'numeric', month: 'long', year: 'numeric' })
+                  .format(new Date(form.due_date + 'T12:00:00'))}
+              </p>
+            )}
           </div>
 
           {/* ── Tipo (chips) ── */}
@@ -266,7 +272,7 @@ export function TaskModal({
                       : 'border-border text-muted-foreground hover:border-border/80'
                   )}
                 >
-                  <span>{chip.emoji}</span>
+                  <chip.icon className="w-3.5 h-3.5" />
                   {chip.label}
                 </button>
               ))}
@@ -281,7 +287,7 @@ export function TaskModal({
             <select
               value={form.context}
               onChange={e => set('context', e.target.value as Context)}
-              className="w-full rounded-lg border border-input bg-background px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+              className="w-full rounded-lg border border-border bg-muted/50 px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
             >
               {CONTEXT_OPTIONS.map(opt => (
                 <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -324,7 +330,7 @@ export function TaskModal({
                 placeholder="https://meet.google.com/..."
                 value={form.meet_link}
                 onChange={e => set('meet_link', e.target.value)}
-                className="w-full rounded-lg border border-input bg-background px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+                className="w-full rounded-lg border border-border bg-muted/50 px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
               />
             </div>
           )}
@@ -376,7 +382,7 @@ export function TaskModal({
                   placeholder="Contexto adicional..."
                   value={form.notes}
                   onChange={e => set('notes', e.target.value)}
-                  className="w-full rounded-lg border border-input bg-background px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring resize-none"
+                  className="w-full rounded-lg border border-border bg-muted/50 px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring resize-none"
                 />
               </div>
 
@@ -388,7 +394,7 @@ export function TaskModal({
                 <select
                   value={form.recurrence}
                   onChange={e => set('recurrence', e.target.value as Recurrence)}
-                  className="w-full rounded-lg border border-input bg-background px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+                  className="w-full rounded-lg border border-border bg-muted/50 px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
                 >
                   {RECURRENCE_OPTIONS.map(opt => (
                     <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -414,14 +420,16 @@ export function TaskModal({
               Guardar + WhatsApp
             </button>
           )}
-          <Button
+          <button
+            type="button"
             disabled={!canSave || isSaving}
             onClick={() => handleSave(false)}
-            className="w-full py-3"
+            className="w-full py-3 rounded-xl text-sm font-medium transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            style={{ backgroundColor: '#D4AF37', color: '#000' }}
           >
-            {isSaving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+            {isSaving && <Loader2 className="w-4 h-4 animate-spin" />}
             Guardar
-          </Button>
+          </button>
           <Button variant="ghost" onClick={onClose} className="w-full text-muted-foreground">
             Cancelar
           </Button>
