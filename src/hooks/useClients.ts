@@ -1,6 +1,8 @@
 // src/hooks/useClients.ts
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { getClients, getClient, createClient, updateClient, deleteClient } from '@/lib/clients'
+import { createTask } from '@/lib/tasks'
+import { useAuth } from '@/context/AuthContext'
 import type { Database } from '@/types/database'
 
 type ClientInsert = Database['public']['Tables']['clients']['Insert']
@@ -23,9 +25,28 @@ export function useClient(id: string) {
 
 export function useCreateClient() {
   const qc = useQueryClient()
+  const { session } = useAuth()
   return useMutation({
     mutationFn: (input: ClientInsert) => createClient(input),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['clients'] }),
+    onSuccess: (newClient) => {
+      qc.invalidateQueries({ queryKey: ['clients'] })
+      if ((newClient.tipo ?? 'lead') === 'lead' && session?.user?.id) {
+        const tomorrow = new Date()
+        tomorrow.setDate(tomorrow.getDate() + 1)
+        tomorrow.setHours(12, 0, 0, 0)
+        createTask({
+          title:       'Seguimiento inicial',
+          due_date:    tomorrow.toISOString(),
+          type:        'whatsapp',
+          context:     'lead',
+          priority:    'medium',
+          status:      'pending',
+          lead_id:     newClient.id,
+          assigned_to: session.user.id,
+          created_by:  session.user.id,
+        }).then(() => qc.invalidateQueries({ queryKey: ['tasks'] }))
+      }
+    },
   })
 }
 
