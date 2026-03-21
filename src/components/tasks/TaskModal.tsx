@@ -64,17 +64,6 @@ function fromInputValue(val: string): string {
   return new Date(y, mo - 1, d, 12, 0, 0).toISOString()
 }
 
-function formatDateHuman(val: string): string {
-  if (!val) return ''
-  const date     = new Date(val + 'T12:00:00')
-  const today    = new Date(); today.setHours(12, 0, 0, 0)
-  const tomorrow = new Date(today); tomorrow.setDate(today.getDate() + 1)
-  const dayMonth = new Intl.DateTimeFormat('es-PY', { day: 'numeric', month: 'long' }).format(date)
-  if (date.toDateString() === today.toDateString())    return `Hoy, ${dayMonth}`
-  if (date.toDateString() === tomorrow.toDateString()) return `Mañana, ${dayMonth}`
-  const wd = new Intl.DateTimeFormat('es-PY', { weekday: 'long' }).format(date)
-  return `${wd.charAt(0).toUpperCase() + wd.slice(1)}, ${dayMonth}`
-}
 
 // ── Props ─────────────────────────────────────────────────────────────────
 
