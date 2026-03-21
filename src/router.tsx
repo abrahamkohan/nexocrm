@@ -19,6 +19,7 @@ import { LeadQuickPage } from '@/pages/LeadQuickPage'
 import { LeadShortLinkPage } from '@/pages/LeadShortLinkPage'
 import { AuthCallbackPage } from '@/pages/AuthCallbackPage'
 import { ResetPasswordPage } from '@/pages/ResetPasswordPage'
+import { TareasPage } from '@/pages/TareasPage'
 import { RequireAuth } from '@/components/auth/RequireAuth'
 
 export const router = createBrowserRouter([
@@ -40,6 +41,7 @@ export const router = createBrowserRouter([
       { path: 'propiedades/nueva',  element: <PropiedadNuevaPage /> },
       { path: 'propiedades/:id',         element: <PropiedadDetallePage /> },
       { path: 'propiedades/:id/editar', element: <PropiedadEditarPage /> },
+      { path: 'tareas',        element: <TareasPage /> },
       { path: 'configuracion', element: <ConfiguracionPage /> },
     ],
   },

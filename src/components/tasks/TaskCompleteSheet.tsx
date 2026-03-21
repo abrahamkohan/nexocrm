@@ -12,7 +12,7 @@ import type { Database } from '@/types/database'
 import type { TaskLead } from './TaskItem'
 
 type TaskRow    = Database['public']['Tables']['tasks']['Row']
-type OutcomeVal = 'interested' | 'no_response' | 'not_interested'
+export type OutcomeVal = 'interested' | 'no_response' | 'not_interested'
 
 interface TaskCompleteSheetProps {
   isOpen:     boolean

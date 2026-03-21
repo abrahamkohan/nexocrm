@@ -1,11 +1,14 @@
 // src/components/layout/Sidebar.tsx
 import { NavLink } from 'react-router'
-import { Home, Building2, Users, Calculator, FileText, Settings, BookMarked, LogOut, X, Receipt, MapPin } from 'lucide-react'
+import { Home, Building2, Users, Calculator, FileText, Settings, BookMarked, LogOut, X, Receipt, MapPin, ClipboardList } from 'lucide-react'
 import { useConsultoraConfig } from '@/hooks/useConsultora'
 import { supabase } from '@/lib/supabase'
+import { useTasks } from '@/hooks/useTasks'
+import { getUrgency } from '@/lib/tasks'
 
 const NAV_MAIN = [
   { to: '/inicio',    label: 'Inicio',    icon: Home },
+  { to: '/tareas',    label: 'Tareas',    icon: ClipboardList },
   { to: '/proyectos', label: 'Proyectos', icon: Building2 },
   { to: '/clientes',  label: 'Clientes',  icon: Users },
   { to: '/simulador', label: 'Simulador', icon: Calculator },
@@ -23,9 +26,9 @@ const NAV_CONFIG = [
 ] as const
 
 function NavItem({
-  to, label, icon: Icon, end, onClick,
+  to, label, icon: Icon, end, onClick, badge,
 }: {
-  to: string; label: string; icon: React.ElementType; end?: boolean; onClick?: () => void
+  to: string; label: string; icon: React.ElementType; end?: boolean; onClick?: () => void; badge?: number
 }) {
   return (
     <NavLink
@@ -41,7 +44,12 @@ function NavItem({
       }
     >
       <Icon className="h-4 w-4 flex-shrink-0" />
-      {label}
+      <span className="flex-1">{label}</span>
+      {badge != null && badge > 0 && (
+        <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold">
+          {badge}
+        </span>
+      )}
     </NavLink>
   )
 }
@@ -52,6 +60,8 @@ interface SidebarProps {
 
 export function Sidebar({ onClose }: SidebarProps) {
   const { data: consultora } = useConsultoraConfig()
+  const { data: tasks = [] } = useTasks()
+  const overdueCount = tasks.filter(t => getUrgency(t) === 'overdue').length
   const nombre  = consultora?.nombre  ?? 'Consultora Inmobiliaria'
   const logoUrl = consultora?.logo_url ?? null
 
@@ -91,7 +101,8 @@ export function Sidebar({ onClose }: SidebarProps) {
       <nav className="flex-1 px-3 py-4 flex flex-col gap-2 overflow-y-auto">
         <div className="flex flex-col gap-2">
           {NAV_MAIN.map(({ to, label, icon }) => (
-            <NavItem key={to} to={to} label={label} icon={icon} onClick={onClose} />
+            <NavItem key={to} to={to} label={label} icon={icon} onClick={onClose}
+              badge={to === '/tareas' ? overdueCount : undefined} />
           ))}
         </div>
 
