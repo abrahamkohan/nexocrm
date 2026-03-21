@@ -4,8 +4,7 @@
 
 import { useState, useEffect } from 'react'
 import { ChevronDown, ChevronUp, MessageCircle, Loader2, Phone, MapPin, Mail, Video } from 'lucide-react'
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
-import { Button } from '@/components/ui/button'
+import { Sheet, SheetContent } from '@/components/ui/sheet'
 import { useCreateTask, useUpdateTask, useTask } from '@/hooks/useTasks'
 import { useClient } from '@/hooks/useClients'
 import { useWhatsApp } from '@/hooks/useWhatsApp'
