@@ -2,7 +2,7 @@
 // Card optimizada mobile-first — más compacta, accionable y clara.
 
 import { useRef, useState } from 'react'
-import { MessageCircle, Phone, Check, MapPin, Mail, Video } from 'lucide-react'
+import { MessageCircle, Phone, MapPin, Mail, Video } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useWhatsApp } from '@/hooks/useWhatsApp'
 import { urgencyColors } from '@/utils/taskColors'
