@@ -120,8 +120,8 @@ export function TaskItem({
   return (
     <div
       className={cn(
-        'relative rounded-2xl bg-white p-3 flex flex-col gap-2 transition-all duration-150',
-        'shadow-[0_6px_16px_rgba(0,0,0,0.07)]',
+        'relative rounded-2xl bg-white px-3 py-2.5 flex items-center gap-3 transition-all duration-150',
+        'shadow-[0_4px_14px_rgba(0,0,0,0.07)]',
         'active:scale-[0.98]',
         isClosed && 'opacity-50',
         swipeHint === 'complete' && 'translate-x-1',
@@ -131,83 +131,85 @@ export function TaskItem({
       onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
     >
-      {/* BLOQUE 1: tipo + lead + título | fecha */}
-      <div className="flex items-start justify-between gap-2">
+      {/* COLUMNA IZQUIERDA: todo el contenido */}
+      <div className="flex flex-col gap-0.5 flex-1 min-w-0">
 
-        {/* Columna izquierda: tipo → lead → título pegados */}
-        <div className="flex flex-col gap-0.5 flex-1 min-w-0">
-          <div className="flex items-center gap-1.5 text-xs text-gray-400">
-            <TypeIcon className="w-3.5 h-3.5 flex-shrink-0" />
-            <span className="font-medium">{TYPE_LABEL[task.type]}</span>
-          </div>
-          {isLead && lead && (
-            <button
-              onClick={() => onOpenPeek?.(lead.id)}
-              className="text-xs font-semibold text-[#D4AF37] text-left truncate"
-            >
-              {lead.full_name}
-            </button>
-          )}
-          <p className={cn(
-            'text-sm font-semibold leading-snug',
-            isClosed ? 'text-gray-400 line-through' : 'text-gray-900'
-          )}>
-            {task.title}
-          </p>
+        {/* Tipo */}
+        <div className="flex items-center gap-1 text-[11px] text-gray-400 font-medium">
+          <TypeIcon className="w-3 h-3 flex-shrink-0" />
+          <span>{TYPE_LABEL[task.type]}</span>
         </div>
 
-        {/* Fecha — más grande, protagonista */}
-        <div className="w-16 h-16 flex-shrink-0 rounded-xl flex flex-col items-center justify-center leading-none bg-gradient-to-br from-[#FFB86B] to-[#FF7A7A] text-white shadow-[0_4px_12px_rgba(255,120,100,0.35)]">
-          <span className="text-[11px] font-semibold opacity-90 tracking-wide">{month}</span>
-          <span className="text-2xl font-bold leading-none">{day}</span>
-        </div>
-      </div>
-
-      {/* BLOQUE 2: meta */}
-      <div className="flex items-center gap-1.5 text-xs text-gray-400">
-        <span className="text-[11px]">{PRIORITY_DOT[task.priority]}</span>
-        <span>{CONTEXT_LABEL[task.context]} · {PRIORITY_LABEL[task.priority]}</span>
-      </div>
-
-      {/* BLOQUE 3: acciones */}
-      <div className="flex items-center gap-1.5 flex-wrap">
-        {hasPhone && !isClosed && (
+        {/* Lead */}
+        {isLead && lead && (
           <button
-            onClick={handleWhatsApp}
-            className="h-7 px-3 rounded-lg text-xs font-semibold text-white"
-            style={{ backgroundColor: '#25D366' }}
+            onClick={() => onOpenPeek?.(lead.id)}
+            className="text-[11px] font-semibold text-[#D4AF37] text-left truncate leading-none"
           >
-            WhatsApp
+            {lead.full_name}
           </button>
         )}
-        {hasPhone && !isClosed && (
-          <a
-            href={`tel:${lead!.phone!.replace(/\s/g, '')}`}
-            className="h-7 px-3 flex items-center justify-center rounded-lg text-xs font-semibold bg-gray-100 text-gray-700"
-          >
-            Llamar
-          </a>
-        )}
-        {hasMeet && !isClosed && (
-          <a
-            href={task.meet_link!}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="h-7 px-3 flex items-center justify-center rounded-lg text-xs font-semibold bg-blue-100 text-blue-600"
-          >
-            Meet
-          </a>
-        )}
-        <button
-          onClick={() => onComplete(task)}
-          disabled={isClosed}
-          className={cn(
-            'h-7 px-3 rounded-full text-xs font-semibold transition',
-            isClosed ? 'bg-gray-100 text-gray-400' : 'bg-gray-900 text-white'
+
+        {/* Título */}
+        <p className={cn(
+          'text-sm font-bold leading-snug',
+          isClosed ? 'text-gray-400 line-through' : 'text-gray-900'
+        )}>
+          {task.title}
+        </p>
+
+        {/* Meta */}
+        <div className="flex items-center gap-1 text-[11px] text-gray-400 mt-0.5">
+          <span>{PRIORITY_DOT[task.priority]}</span>
+          <span>{CONTEXT_LABEL[task.context]} · {PRIORITY_LABEL[task.priority]}</span>
+        </div>
+
+        {/* Acciones */}
+        <div className="flex items-center gap-1.5 flex-wrap mt-1">
+          {hasPhone && !isClosed && (
+            <button
+              onClick={handleWhatsApp}
+              className="h-6 px-2.5 rounded-md text-[11px] font-semibold text-white"
+              style={{ backgroundColor: '#25D366' }}
+            >
+              WhatsApp
+            </button>
           )}
-        >
-          {isClosed ? 'Cerrado' : '✓ Hecho'}
-        </button>
+          {hasPhone && !isClosed && (
+            <a
+              href={`tel:${lead!.phone!.replace(/\s/g, '')}`}
+              className="h-6 px-2.5 flex items-center rounded-md text-[11px] font-semibold bg-gray-100 text-gray-700"
+            >
+              Llamar
+            </a>
+          )}
+          {hasMeet && !isClosed && (
+            <a
+              href={task.meet_link!}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="h-6 px-2.5 flex items-center rounded-md text-[11px] font-semibold bg-blue-100 text-blue-600"
+            >
+              Meet
+            </a>
+          )}
+          <button
+            onClick={() => onComplete(task)}
+            disabled={isClosed}
+            className={cn(
+              'h-6 px-2.5 rounded-md text-[11px] font-semibold transition',
+              isClosed ? 'bg-gray-100 text-gray-400' : 'bg-gray-900 text-white'
+            )}
+          >
+            {isClosed ? 'Cerrado' : '✓ Hecho'}
+          </button>
+        </div>
+      </div>
+
+      {/* FECHA — centrada verticalmente, protagonista */}
+      <div className="w-14 h-14 flex-shrink-0 rounded-xl flex flex-col items-center justify-center leading-none bg-gradient-to-br from-[#FFB86B] to-[#FF7A7A] text-white shadow-[0_4px_10px_rgba(255,120,100,0.4)]">
+        <span className="text-[10px] font-semibold opacity-90 tracking-wide">{month}</span>
+        <span className="text-2xl font-bold leading-none">{day}</span>
       </div>
     </div>
   )
