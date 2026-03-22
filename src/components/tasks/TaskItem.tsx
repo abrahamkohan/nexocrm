@@ -4,7 +4,6 @@ import { useRef, useState } from 'react'
 import { MessageCircle, Phone, MapPin, Mail, Video } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useWhatsApp } from '@/hooks/useWhatsApp'
-import { urgencyColors } from '@/utils/taskColors'
 import { getUrgency } from '@/lib/tasks'
 import { TaskBadge } from './TaskBadge'
 import type { Database } from '@/types/database'
@@ -72,7 +71,6 @@ export function TaskItem({
   const { openWhatsApp, getTemplate } = useWhatsApp()
 
   const urgency = getUrgency(task)
-  const colors = urgencyColors[urgency]
   const isClosed = urgency === 'closed'
   const isLead = task.context === 'lead'
   const hasPhone = isLead && !!lead?.phone
@@ -114,28 +112,50 @@ export function TaskItem({
     openWhatsApp(lead.phone, message, task.id)
   }
 
+  const date = task.due_date ? new Date(task.due_date) : new Date()
+  const day = date.getDate()
+  const month = date
+    .toLocaleDateString('es-PY', { month: 'short' })
+    .toUpperCase()
+
   return (
     <div
       className={cn(
-        'relative rounded-2xl border bg-card p-3 flex flex-col gap-3 transition-all duration-150',
-        'shadow-sm',
-        colors.border,
+        'relative rounded-2xl bg-white p-4 flex flex-col gap-3 transition-all duration-150',
+        'shadow-[0_10px_25px_rgba(0,0,0,0.08)]',
+        'active:scale-[0.98]',
         isClosed && 'opacity-50',
-        swipeHint === 'complete' && 'translate-x-1 border-green-500/60',
-        swipeHint === 'reschedule' && '-translate-x-1 border-yellow-400/60'
+        swipeHint === 'complete' && 'translate-x-1',
+        swipeHint === 'reschedule' && '-translate-x-1'
       )}
       onTouchStart={onTouchStart}
       onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
     >
       {/* HEADER */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+      <div className="flex items-start justify-between">
+        <div className="flex items-center gap-2 text-sm text-gray-500">
           <TypeIcon className="w-4 h-4" />
-          <span className="font-semibold">{TYPE_LABEL[task.type]}</span>
+          <span className="font-medium">{TYPE_LABEL[task.type]}</span>
         </div>
 
-        <TaskBadge task={task} />
+        {/* FECHA PRO */}
+        <div className="
+          w-14 h-14
+          rounded-xl
+          flex flex-col items-center justify-center
+          leading-none
+          bg-gradient-to-br from-[#FFB86B] to-[#FF7A7A]
+          text-white
+          shadow-[0_6px_16px_rgba(0,0,0,0.15)]
+        ">
+          <span className="text-[10px] font-medium opacity-80">
+            {month}
+          </span>
+          <span className="text-lg font-bold">
+            {day}
+          </span>
+        </div>
       </div>
 
       {/* LEAD */}
@@ -151,15 +171,15 @@ export function TaskItem({
       {/* TITULO */}
       <p
         className={cn(
-          'text-sm font-semibold leading-tight',
-          isClosed ? 'text-muted-foreground line-through' : 'text-foreground'
+          'text-base font-semibold leading-tight',
+          isClosed ? 'text-gray-400 line-through' : 'text-black'
         )}
       >
         {task.title}
       </p>
 
       {/* META */}
-      <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+      <div className="flex items-center gap-2 text-sm text-gray-500">
         <span>{PRIORITY_DOT[task.priority]}</span>
         <span>
           {CONTEXT_LABEL[task.context]} · {PRIORITY_LABEL[task.priority]}
@@ -167,11 +187,11 @@ export function TaskItem({
       </div>
 
       {/* ACCIONES */}
-      <div className="flex items-center gap-2 pt-1">
+      <div className="flex items-center gap-2 pt-1 flex-wrap">
         {hasPhone && !isClosed && (
           <button
             onClick={handleWhatsApp}
-            className="flex-1 h-8 rounded-lg text-xs font-semibold text-white shadow-sm"
+            className="h-8 px-3 rounded-lg text-xs font-semibold text-white shadow-sm"
             style={{ backgroundColor: '#25D366' }}
           >
             WhatsApp
@@ -181,7 +201,7 @@ export function TaskItem({
         {hasPhone && !isClosed && (
           <a
             href={`tel:${lead!.phone!.replace(/\s/g, '')}`}
-            className="flex-1 h-8 flex items-center justify-center rounded-lg text-xs font-semibold bg-white/5 text-white/70"
+            className="h-8 px-3 flex items-center justify-center rounded-lg text-xs font-semibold bg-gray-100 text-gray-700"
           >
             Llamar
           </a>
@@ -192,21 +212,20 @@ export function TaskItem({
             href={task.meet_link!}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex-1 h-8 flex items-center justify-center rounded-lg text-xs font-semibold bg-blue-600/20 text-blue-400"
+            className="h-8 px-3 flex items-center justify-center rounded-lg text-xs font-semibold bg-blue-100 text-blue-600"
           >
             Meet
           </a>
         )}
 
-        {/* BOTÓN NUEVO */}
         <button
           onClick={() => onComplete(task)}
           disabled={isClosed}
           className={cn(
-            'px-3 h-8 rounded-full text-xs font-semibold transition active:scale-[0.96]',
+            'h-8 px-3 rounded-full text-xs font-semibold transition',
             isClosed
-              ? 'bg-zinc-800/50 text-zinc-600'
-              : 'bg-[#D4AF37]/10 border border-[#D4AF37]/40 text-[#D4AF37]'
+              ? 'bg-gray-200 text-gray-400'
+              : 'bg-black/5 text-black/70'
           )}
         >
           {isClosed ? 'Cerrado' : '✓ Hecho'}
