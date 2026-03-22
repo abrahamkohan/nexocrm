@@ -4,7 +4,8 @@
 
 import { useState, useEffect } from 'react'
 import { ChevronDown, ChevronUp, MessageCircle, Loader2, Phone, MapPin, Mail, Video } from 'lucide-react'
-import { Sheet, SheetContent } from '@/components/ui/sheet'
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
+import { Button } from '@/components/ui/button'
 import { useCreateTask, useUpdateTask, useTask } from '@/hooks/useTasks'
 import { useClient } from '@/hooks/useClients'
 import { useWhatsApp } from '@/hooks/useWhatsApp'
@@ -63,6 +64,7 @@ function fromInputValue(val: string): string {
   return new Date(y, mo - 1, d, 12, 0, 0).toISOString()
 }
 
+
 // ── Props ─────────────────────────────────────────────────────────────────
 
 interface DefaultValues {
@@ -74,7 +76,7 @@ interface DefaultValues {
 interface TaskModalProps {
   isOpen:         boolean
   onClose:        () => void
-  taskId?:        string
+  taskId?:        string         // edit mode si está presente
   defaultValues?: DefaultValues
   agencyName?:    string
 }
@@ -105,11 +107,6 @@ function initialForm(defaults?: DefaultValues): FormState {
   }
 }
 
-// ── Estilos reutilizables ─────────────────────────────────────────────────
-
-const inputCls = 'w-full h-11 rounded-lg border border-zinc-800 bg-zinc-900 px-3 text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-[#D4AF37] transition-colors'
-const labelCls = 'text-zinc-500 text-xs font-medium tracking-wider uppercase'
-
 // ── Componente ─────────────────────────────────────────────────────────────
 
 export function TaskModal({
@@ -130,10 +127,11 @@ export function TaskModal({
   const updateTask = useUpdateTask()
   const { openWhatsApp, getTemplate } = useWhatsApp()
 
-  const [form,     setForm]     = useState<FormState>(() => initialForm(defaultValues))
-  const [moreOpen, setMoreOpen] = useState(false)
+  const [form,        setForm]        = useState<FormState>(() => initialForm(defaultValues))
+  const [moreOpen,    setMoreOpen]    = useState(false)
   const isSaving = createTask.isPending || updateTask.isPending
 
+  // Poblar formulario en modo edición
   useEffect(() => {
     if (isOpen && isEdit && existingTask) {
       setForm({
@@ -155,6 +153,8 @@ export function TaskModal({
   function set<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm(prev => ({ ...prev, [key]: value }))
   }
+
+  // ── Submit ──────────────────────────────────────────────────────────────
 
   async function handleSave(withWhatsApp: boolean) {
     if (!form.title.trim() || !form.due_date) return
@@ -196,6 +196,8 @@ export function TaskModal({
     onClose()
   }
 
+  // ── Campos readonly para contexto fijo ──────────────────────────────────
+
   const lockedLeadId     = defaultValues?.lead_id     ?? (isEdit ? existingTask?.lead_id     : null)
   const lockedPropertyId = defaultValues?.property_id ?? (isEdit ? existingTask?.property_id : null)
   const hasLeadPhone     = form.context === 'lead' && !!lead?.phone
@@ -207,204 +209,213 @@ export function TaskModal({
     <Sheet open={isOpen} onOpenChange={v => { if (!v) onClose() }}>
       <SheetContent
         side="bottom"
-        className="rounded-t-2xl max-h-[90vh] flex flex-col p-0 border-zinc-800 bg-zinc-950"
-        style={{ backgroundColor: 'rgb(9,9,11)' }}
+        className="rounded-t-2xl max-h-[92vh] overflow-y-auto pb-safe"
       >
         {/* Handle */}
-        <div className="flex-shrink-0 flex justify-center pt-3 pb-1">
-          <div className="w-10 h-1 rounded-full bg-zinc-700" />
-        </div>
+        <div className="mx-auto w-10 h-1 rounded-full bg-muted mb-5" />
 
-        {/* Scrollable body */}
-        <div className="flex-1 overflow-y-auto px-5 pt-4 pb-2">
+        <SheetHeader className="mb-5">
+          <SheetTitle>{isEdit ? 'Editar tarea' : 'Nueva tarea'}</SheetTitle>
+        </SheetHeader>
 
-          {/* Título del sheet */}
-          <p className="text-zinc-100 text-base font-semibold mb-5">
-            {isEdit ? 'Editar tarea' : 'Nueva tarea'}
-          </p>
+        <div className="flex flex-col gap-4">
 
-          <div className="flex flex-col gap-4">
+          {/* ── Título ── */}
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+              Título *
+            </label>
+            <input
+              type="text"
+              placeholder="Ej: Seguimiento inicial"
+              value={form.title}
+              onChange={e => set('title', e.target.value)}
+              className="w-full rounded-lg border border-input bg-background px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+              autoFocus
+            />
+          </div>
 
-            {/* ── Título ── */}
+          {/* ── Fecha ── */}
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+              Fecha *
+            </label>
+            <input
+              type="date"
+              value={form.due_date}
+              min={toInputValue(new Date())}
+              onChange={e => set('due_date', e.target.value)}
+              className="w-full rounded-lg border border-input bg-background px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+            />
+            {form.due_date && (
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {new Intl.DateTimeFormat('es-PY', { day: 'numeric', month: 'long', year: 'numeric' })
+                  .format(new Date(form.due_date + 'T12:00:00'))}
+              </p>
+            )}
+          </div>
+
+          {/* ── Tipo (chips) ── */}
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+              Tipo
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {TYPE_CHIPS.map(chip => (
+                <button
+                  key={chip.value}
+                  type="button"
+                  onClick={() => set('type', chip.value)}
+                  className={cn(
+                    'flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-medium transition-all',
+                    form.type === chip.value
+                      ? 'border-[#D4AF37] bg-[#D4AF37]/10 text-foreground'
+                      : 'border-border text-muted-foreground hover:border-border/80'
+                  )}
+                >
+                  <chip.icon className="w-3.5 h-3.5" />
+                  {chip.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* ── Contexto ── */}
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+              Contexto
+            </label>
+            <select
+              value={form.context}
+              onChange={e => set('context', e.target.value as Context)}
+              className="w-full rounded-lg border border-input bg-background px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+            >
+              {CONTEXT_OPTIONS.map(opt => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Lead readonly (si viene fijo) */}
+          {lockedLeadId && lead && (
             <div className="flex flex-col gap-1.5">
-              <label className={labelCls}>Título *</label>
+              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                Lead
+              </label>
+              <div className="flex items-center px-3 py-2.5 rounded-lg border border-input bg-muted/30 text-sm text-muted-foreground">
+                {lead.full_name}
+              </div>
+            </div>
+          )}
+
+          {/* Propiedad readonly (si viene fija) */}
+          {lockedPropertyId && !lockedLeadId && (
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                Propiedad
+              </label>
+              <div className="flex items-center px-3 py-2.5 rounded-lg border border-input bg-muted/30 text-sm text-muted-foreground">
+                {lockedPropertyId}
+              </div>
+            </div>
+          )}
+
+          {/* Meet link — solo si type = meeting */}
+          {form.type === 'meeting' && (
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                Link de reunión (Meet / Zoom)
+              </label>
               <input
-                type="text"
-                placeholder="Ej: Seguimiento inicial"
-                value={form.title}
-                onChange={e => set('title', e.target.value)}
-                className={inputCls}
-                autoFocus
+                type="url"
+                placeholder="https://meet.google.com/..."
+                value={form.meet_link}
+                onChange={e => set('meet_link', e.target.value)}
+                className="w-full rounded-lg border border-input bg-background px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
               />
             </div>
+          )}
 
-            {/* ── Fecha ── */}
-            <div className="flex flex-col gap-1.5">
-              <label className={labelCls}>Fecha *</label>
-              <input
-                type="date"
-                value={form.due_date}
-                min={toInputValue(new Date())}
-                onChange={e => set('due_date', e.target.value)}
-                className={inputCls}
-              />
-              {form.due_date && (
-                <p className="text-xs text-zinc-500">
-                  {new Intl.DateTimeFormat('es-PY', { day: 'numeric', month: 'long', year: 'numeric' })
-                    .format(new Date(form.due_date + 'T12:00:00'))}
-                </p>
-              )}
-            </div>
+          {/* ── Más opciones (colapsable) ── */}
+          <button
+            type="button"
+            onClick={() => setMoreOpen(v => !v)}
+            className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors w-fit"
+          >
+            {moreOpen ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+            {moreOpen ? 'Menos opciones' : 'Más opciones'}
+          </button>
 
-            {/* ── Tipo (chips) ── */}
-            <div className="flex flex-col gap-1.5">
-              <label className={labelCls}>Tipo</label>
-              <div className="flex flex-wrap gap-2">
-                {TYPE_CHIPS.map(chip => (
-                  <button
-                    key={chip.value}
-                    type="button"
-                    onClick={() => set('type', chip.value)}
-                    className={cn(
-                      'flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-medium transition-all',
-                      form.type === chip.value
-                        ? 'border-[#D4AF37] bg-[#D4AF37]/10 text-[#D4AF37]'
-                        : 'border-zinc-700 text-zinc-400 hover:border-zinc-500'
-                    )}
-                  >
-                    <chip.icon className="w-3.5 h-3.5" />
-                    {chip.label}
-                  </button>
-                ))}
-              </div>
-            </div>
+          {moreOpen && (
+            <div className="flex flex-col gap-4 pl-1 border-l-2 border-border/40 ml-1">
 
-            {/* ── Contexto ── */}
-            <div className="flex flex-col gap-1.5">
-              <label className={labelCls}>Contexto</label>
-              <select
-                value={form.context}
-                onChange={e => set('context', e.target.value as Context)}
-                className={inputCls}
-              >
-                {CONTEXT_OPTIONS.map(opt => (
-                  <option key={opt.value} value={opt.value}>{opt.label}</option>
-                ))}
-              </select>
-            </div>
-
-            {/* Lead readonly */}
-            {lockedLeadId && lead && (
+              {/* Prioridad */}
               <div className="flex flex-col gap-1.5">
-                <label className={labelCls}>Lead</label>
-                <div className="flex items-center h-11 px-3 rounded-lg border border-zinc-800 bg-zinc-800/50 text-sm text-zinc-400">
-                  {lead.full_name}
+                <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                  Prioridad
+                </label>
+                <div className="flex gap-2">
+                  {PRIORITY_OPTIONS.map(opt => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => set('priority', opt.value)}
+                      className={cn(
+                        'flex-1 py-2 rounded-lg border text-xs font-medium transition-all',
+                        form.priority === opt.value
+                          ? 'border-[#D4AF37] bg-[#D4AF37]/10 text-foreground'
+                          : 'border-border text-muted-foreground hover:border-border/80'
+                      )}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
                 </div>
               </div>
-            )}
 
-            {/* Propiedad readonly */}
-            {lockedPropertyId && !lockedLeadId && (
+              {/* Notas */}
               <div className="flex flex-col gap-1.5">
-                <label className={labelCls}>Propiedad</label>
-                <div className="flex items-center h-11 px-3 rounded-lg border border-zinc-800 bg-zinc-800/50 text-sm text-zinc-400">
-                  {lockedPropertyId}
-                </div>
-              </div>
-            )}
-
-            {/* Meet link — solo si type = meeting */}
-            {form.type === 'meeting' && (
-              <div className="flex flex-col gap-1.5">
-                <label className={labelCls}>Link de reunión (Meet / Zoom)</label>
-                <input
-                  type="url"
-                  placeholder="https://meet.google.com/..."
-                  value={form.meet_link}
-                  onChange={e => set('meet_link', e.target.value)}
-                  className={inputCls}
+                <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                  Notas
+                </label>
+                <textarea
+                  rows={2}
+                  placeholder="Contexto adicional..."
+                  value={form.notes}
+                  onChange={e => set('notes', e.target.value)}
+                  className="w-full rounded-lg border border-input bg-background px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring resize-none"
                 />
               </div>
-            )}
 
-            {/* ── Más opciones ── */}
-            <div className="border-t border-zinc-800 pt-4">
-              <button
-                type="button"
-                onClick={() => setMoreOpen(v => !v)}
-                className="flex items-center gap-1.5 text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
-              >
-                {moreOpen ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-                {moreOpen ? 'Menos opciones' : 'Más opciones'}
-              </button>
+              {/* Recurrencia */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                  Repetición
+                </label>
+                <select
+                  value={form.recurrence}
+                  onChange={e => set('recurrence', e.target.value as Recurrence)}
+                  className="w-full rounded-lg border border-input bg-background px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+                >
+                  {RECURRENCE_OPTIONS.map(opt => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
+                </select>
+              </div>
 
-              {moreOpen && (
-                <div className="flex flex-col gap-4 mt-4">
-
-                  {/* Prioridad */}
-                  <div className="flex flex-col gap-1.5">
-                    <label className={labelCls}>Prioridad</label>
-                    <div className="flex gap-2">
-                      {PRIORITY_OPTIONS.map(opt => (
-                        <button
-                          key={opt.value}
-                          type="button"
-                          onClick={() => set('priority', opt.value)}
-                          className={cn(
-                            'flex-1 h-11 rounded-lg border text-xs font-medium transition-all',
-                            form.priority === opt.value
-                              ? 'border-[#D4AF37] bg-[#D4AF37]/10 text-[#D4AF37]'
-                              : 'border-zinc-700 text-zinc-400 hover:border-zinc-500'
-                          )}
-                        >
-                          {opt.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Notas */}
-                  <div className="flex flex-col gap-1.5">
-                    <label className={labelCls}>Notas</label>
-                    <textarea
-                      rows={2}
-                      placeholder="Contexto adicional..."
-                      value={form.notes}
-                      onChange={e => set('notes', e.target.value)}
-                      className="w-full rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-[#D4AF37] transition-colors resize-none"
-                    />
-                  </div>
-
-                  {/* Recurrencia */}
-                  <div className="flex flex-col gap-1.5">
-                    <label className={labelCls}>Repetición</label>
-                    <select
-                      value={form.recurrence}
-                      onChange={e => set('recurrence', e.target.value as Recurrence)}
-                      className={inputCls}
-                    >
-                      {RECURRENCE_OPTIONS.map(opt => (
-                        <option key={opt.value} value={opt.value}>{opt.label}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                </div>
-              )}
             </div>
-
-          </div>
+          )}
         </div>
 
-        {/* ── Footer fijo ── */}
-        <div className="flex-shrink-0 border-t border-zinc-800 bg-zinc-950 px-5 py-4 flex flex-col gap-2" style={{ backgroundColor: 'rgb(9,9,11)' }}>
+        {/* ── Botones ── */}
+        <div className="flex flex-col gap-2 mt-6">
           {hasLeadPhone && (
             <button
               type="button"
               disabled={!canSave || isSaving}
               onClick={() => handleSave(true)}
-              className="w-full h-11 rounded-xl text-sm font-semibold text-white flex items-center justify-center gap-2 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
-              style={{ backgroundColor: '#25D366' }}
+              className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              style={{ backgroundColor: canSave && !isSaving ? '#25D366' : undefined }}
             >
               {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <MessageCircle className="w-4 h-4" />}
               Guardar + WhatsApp
@@ -414,21 +425,16 @@ export function TaskModal({
             type="button"
             disabled={!canSave || isSaving}
             onClick={() => handleSave(false)}
-            className="w-full h-11 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
+            className="w-full py-3 rounded-xl text-sm font-medium transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             style={{ backgroundColor: '#D4AF37', color: '#000' }}
           >
             {isSaving && <Loader2 className="w-4 h-4 animate-spin" />}
             Guardar
           </button>
-          <button
-            type="button"
-            onClick={onClose}
-            className="w-full py-2 text-sm text-zinc-400 hover:text-zinc-200 transition-colors"
-          >
+          <Button variant="ghost" onClick={onClose} className="w-full text-muted-foreground">
             Cancelar
-          </button>
+          </Button>
         </div>
-
       </SheetContent>
     </Sheet>
   )
