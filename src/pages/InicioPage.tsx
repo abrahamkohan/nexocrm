@@ -783,7 +783,7 @@ export function InicioPage() {
       `}</style>
 
       {/* Header */}
-      <Flex align="start" justify="between" mb="4" wrap="wrap" gap="2">
+      <Flex align="start" justify="between" mb={{ initial: '2', md: '4' }} wrap="wrap" gap="2">
         <Box>
           <Text size="1" color="gray">
             {now.toLocaleDateString('es-PY', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
@@ -791,7 +791,7 @@ export function InicioPage() {
           <Heading size={{ initial: '6', md: '7' }} weight="bold" mt="1">
             {greeting}{config?.nombre ? `, ${config.nombre}` : ''}
           </Heading>
-          <Flex gap="1" mt="3">
+          <Flex gap="1" mt="2">
             {(['tareas', 'dashboard'] as const).map(v => (
               <button key={v} onClick={() => setView(v)}
                 style={{
@@ -807,7 +807,8 @@ export function InicioPage() {
             ))}
           </Flex>
         </Box>
-        <Flex gap="2">
+        {/* Personalizar — solo desktop */}
+        <Flex gap="2" className="hidden md:flex">
           {editMode && (
             <RxButton variant="ghost" color="gray" size="2" onClick={resetLayout}>
               Resetear layout

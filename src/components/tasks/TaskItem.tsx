@@ -3,7 +3,7 @@
 // Swipe derecha = completar, swipe izquierda = reprogramar.
 
 import { useRef, useState } from 'react'
-import { MessageCircle, Video, Check, RotateCcw } from 'lucide-react'
+import { MessageCircle, Video, Check, RotateCcw, Phone } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useWhatsApp } from '@/hooks/useWhatsApp'
 import { urgencyColors } from '@/utils/taskColors'
@@ -99,7 +99,7 @@ export function TaskItem({
   return (
     <div
       className={cn(
-        'relative rounded-xl border bg-card p-4 flex flex-col gap-3 select-none transition-all duration-150',
+        'relative rounded-xl border bg-card p-3 flex flex-col gap-2 select-none transition-all duration-150',
         colors.border,
         isClosed && 'opacity-50',
         swipeHint === 'complete'    && 'translate-x-1 border-green-500/60',
@@ -156,26 +156,37 @@ export function TaskItem({
       {/* ── Botones de acción ── */}
       <div className="flex items-center gap-2 pt-1 border-t border-white/5">
 
-        {/* WhatsApp — CTA principal, solo para leads con teléfono */}
+        {/* WhatsApp */}
         {hasPhone && !isClosed && (
           <button
             type="button"
             onClick={handleWhatsApp}
-            className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-xs font-bold text-white transition-colors"
+            className="flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg text-xs font-bold text-white transition-colors"
             style={{ backgroundColor: '#25D366' }}
           >
-            <MessageCircle className="w-4 h-4" />
+            <MessageCircle className="w-3.5 h-3.5" />
             WhatsApp
           </button>
         )}
 
-        {/* Meet — si type = meeting y tiene link */}
+        {/* Llamar */}
+        {hasPhone && !isClosed && (
+          <a
+            href={`tel:${lead!.phone!.replace(/\s/g, '')}`}
+            className="flex items-center justify-center gap-1 px-3 py-1.5 rounded-lg bg-white/5 text-white/70 text-xs font-semibold hover:bg-white/10 hover:text-white transition-colors"
+          >
+            <Phone className="w-3.5 h-3.5" />
+            Llamar
+          </a>
+        )}
+
+        {/* Meet */}
         {hasMeet && !isClosed && (
           <a
             href={task.meet_link!}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg bg-blue-600/20 text-blue-400 text-xs font-semibold hover:bg-blue-600/30 transition-colors"
+            className="flex items-center justify-center gap-1 px-3 py-1.5 rounded-lg bg-blue-600/20 text-blue-400 text-xs font-semibold hover:bg-blue-600/30 transition-colors"
           >
             <Video className="w-3.5 h-3.5" />
             Meet
@@ -188,7 +199,7 @@ export function TaskItem({
           onClick={() => onComplete(task)}
           disabled={isClosed}
           className={cn(
-            'flex items-center justify-center gap-1 px-3 py-2.5 rounded-lg text-xs font-semibold transition-colors',
+            'flex items-center justify-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors',
             isClosed
               ? 'bg-zinc-800/50 text-zinc-600 cursor-default'
               : 'bg-white/5 text-white/70 hover:bg-white/10 hover:text-white'
@@ -203,7 +214,7 @@ export function TaskItem({
           <button
             type="button"
             onClick={() => onReschedule(task)}
-            className="flex items-center justify-center gap-1 px-3 py-2.5 rounded-lg bg-white/5 text-white/70 text-xs font-semibold hover:bg-white/10 hover:text-white transition-colors"
+            className="flex items-center justify-center gap-1 px-3 py-1.5 rounded-lg bg-white/5 text-white/70 text-xs font-semibold hover:bg-white/10 hover:text-white transition-colors"
           >
             <RotateCcw className="w-3.5 h-3.5" />
             Mover

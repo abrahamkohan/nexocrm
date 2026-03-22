@@ -219,15 +219,7 @@ export function DayView() {
 
   // ── Render ─────────────────────────────────────────────────────────────
   return (
-    <div className="flex flex-col gap-6 px-4 pt-6 pb-28 max-w-xl mx-auto">
-
-      {/* Saludo + fecha */}
-      <div className="flex flex-col gap-0.5">
-        <p className="text-xs text-muted-foreground">{getTodayLabel()}</p>
-        <h1 className="text-2xl font-bold text-foreground">
-          {getGreeting()}{userName ? `, ${userName}` : ''}
-        </h1>
-      </div>
+    <div className="flex flex-col gap-4 px-4 pt-3 pb-28 max-w-xl mx-auto">
 
       {/* Counters */}
       {!loadingTasks && (overdue.length > 0 || today.length > 0) && (
@@ -249,12 +241,9 @@ export function DayView() {
 
       {/* Empty state global */}
       {isEmpty && (
-        <div className="flex flex-col items-center justify-center py-12 gap-3 text-center">
-          <CheckCircle2 className="w-10 h-10 text-emerald-500/60" />
-          <p className="text-base font-semibold text-foreground">Todo al día ✅</p>
-          <p className="text-sm text-muted-foreground">
-            Tus próximas tareas aparecerán acá.
-          </p>
+        <div className="flex items-center gap-2 py-3 px-4 rounded-xl bg-emerald-500/8 border border-emerald-500/20">
+          <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0" />
+          <p className="text-sm text-muted-foreground">Todo al día — sin tareas pendientes.</p>
         </div>
       )}
 
