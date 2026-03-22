@@ -5,7 +5,6 @@ import { MessageCircle, Phone, MapPin, Mail, Video } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useWhatsApp } from '@/hooks/useWhatsApp'
 import { getUrgency } from '@/lib/tasks'
-import { TaskBadge } from './TaskBadge'
 import type { Database } from '@/types/database'
 
 type TaskRow = Database['public']['Tables']['tasks']['Row']
