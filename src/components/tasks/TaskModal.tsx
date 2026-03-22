@@ -209,15 +209,16 @@ export function TaskModal({
     <Sheet open={isOpen} onOpenChange={v => { if (!v) onClose() }}>
       <SheetContent
         side="bottom"
-        className="rounded-t-2xl max-h-[92vh] overflow-y-auto pb-safe"
+        className="rounded-t-2xl max-h-[85vh] flex flex-col p-0"
       >
         {/* Handle */}
-        <div className="mx-auto w-10 h-1 rounded-full bg-muted mb-5" />
+        <div className="mx-auto w-10 h-1 rounded-full bg-muted mt-3 mb-2" />
 
-        <SheetHeader className="mb-5">
+        <SheetHeader className="px-4 mb-4">
           <SheetTitle>{isEdit ? 'Editar tarea' : 'Nueva tarea'}</SheetTitle>
         </SheetHeader>
 
+        <div className="flex-1 overflow-y-auto px-4 pb-4">
         <div className="flex flex-col gap-4">
 
           {/* ── Título ── */}
@@ -406,9 +407,10 @@ export function TaskModal({
             </div>
           )}
         </div>
+        </div>{/* cierre scrollable */}
 
         {/* ── Botones ── */}
-        <div className="flex flex-col gap-2 mt-6">
+        <div className="flex flex-col gap-2 px-4 pt-4 pb-6 border-t">
           {hasLeadPhone && (
             <button
               type="button"
