@@ -214,7 +214,7 @@ export function TaskModal({
   // ── Contenido del formulario (compartido mobile/desktop) ─────────────────
 
   const formContent = (
-    <div className="flex flex-col gap-4 pb-2">
+    <div className="w-full min-w-0 flex flex-col gap-4 pb-2">
 
       {/* ── Título ── */}
       <div>
@@ -241,48 +241,26 @@ export function TaskModal({
         />
       </div>
 
-      {/* ── Tipo (chips 3+2) ── */}
+      {/* ── Tipo (chips wrap) ── */}
       <div>
         <label className={LABEL_CLS}>TIPO</label>
-        <div className="flex flex-col gap-2">
-          {/* Fila 1: 3 chips */}
-          <div className="flex gap-2">
-            {TYPE_CHIPS.slice(0, 3).map(chip => (
-              <button
-                key={chip.value}
-                type="button"
-                onClick={() => set('type', chip.value)}
-                className={cn(
-                  'flex flex-1 min-w-0 items-center justify-center gap-1.5 px-2 py-1.5 rounded-full border text-sm font-medium transition-all',
-                  form.type === chip.value
-                    ? 'border-[#D4AF37] bg-[#D4AF37]/10 text-gray-900'
-                    : 'border-gray-200 text-gray-500 hover:border-gray-400'
-                )}
-              >
-                <chip.icon className="w-3.5 h-3.5" />
-                {chip.label}
-              </button>
-            ))}
-          </div>
-          {/* Fila 2: 2 chips centrados */}
-          <div className="flex gap-2 justify-center">
-            {TYPE_CHIPS.slice(3).map(chip => (
-              <button
-                key={chip.value}
-                type="button"
-                onClick={() => set('type', chip.value)}
-                className={cn(
-                  'flex items-center justify-center gap-1.5 px-4 py-1.5 rounded-full border text-sm font-medium transition-all',
-                  form.type === chip.value
-                    ? 'border-[#D4AF37] bg-[#D4AF37]/10 text-gray-900'
-                    : 'border-gray-200 text-gray-500 hover:border-gray-400'
-                )}
-              >
-                <chip.icon className="w-3.5 h-3.5" />
-                {chip.label}
-              </button>
-            ))}
-          </div>
+        <div className="flex flex-wrap gap-2">
+          {TYPE_CHIPS.map(chip => (
+            <button
+              key={chip.value}
+              type="button"
+              onClick={() => set('type', chip.value)}
+              className={cn(
+                'flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-sm font-medium transition-all',
+                form.type === chip.value
+                  ? 'border-[#D4AF37] bg-[#D4AF37]/10 text-gray-900'
+                  : 'border-gray-200 text-gray-500 hover:border-gray-400'
+              )}
+            >
+              <chip.icon className="w-3.5 h-3.5 flex-shrink-0" />
+              {chip.label}
+            </button>
+          ))}
         </div>
       </div>
 
