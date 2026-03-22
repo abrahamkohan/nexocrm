@@ -12,8 +12,24 @@ interface MobileFormScreenProps {
 export function MobileFormScreen({ open, onClose, title, children }: MobileFormScreenProps) {
   const scrollRef = useRef<HTMLDivElement>(null)
 
+  // Scroll interno al tope al abrir
   useEffect(() => {
     if (open) scrollRef.current?.scrollTo({ top: 0 })
+  }, [open])
+
+  // Fix iOS Safari: bloquear scroll del body al abrir, restaurar al cerrar
+  useEffect(() => {
+    if (!open) return
+    const scrollY = window.scrollY
+    document.body.style.position = 'fixed'
+    document.body.style.top = `-${scrollY}px`
+    document.body.style.width = '100%'
+    return () => {
+      document.body.style.position = ''
+      document.body.style.top = ''
+      document.body.style.width = ''
+      window.scrollTo(0, scrollY)
+    }
   }, [open])
 
   if (!open) return null
