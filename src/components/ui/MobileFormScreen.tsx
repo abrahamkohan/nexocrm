@@ -49,7 +49,7 @@ export function MobileFormScreen({ open, onClose, title, children }: MobileFormS
 
       {/* Scrollable content — overflow-x en el wrapper, overflow-y en el inner (bug iOS Safari) */}
       <div className="flex-1 overflow-x-hidden min-h-0">
-        <div ref={scrollRef} className="h-full overflow-y-auto px-4 pt-4">
+        <div ref={scrollRef} className="h-full w-full overflow-y-auto overflow-x-hidden px-4 pt-4">
           {children}
         </div>
       </div>
