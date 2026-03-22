@@ -214,10 +214,10 @@ export function TaskModal({
   // ── Contenido del formulario (compartido mobile/desktop) ─────────────────
 
   const formContent = (
-    <div className="w-full max-w-full min-w-0 overflow-x-hidden flex flex-col gap-4 pb-2" style={{ boxSizing: 'border-box' }}>
+    <div className="flex flex-col gap-4">
 
       {/* ── Título ── */}
-      <div>
+      <div className="flex flex-col gap-1.5">
         <label className={LABEL_CLS}>TÍTULO *</label>
         <input
           type="text"
@@ -230,7 +230,7 @@ export function TaskModal({
       </div>
 
       {/* ── Fecha ── */}
-      <div>
+      <div className="flex flex-col gap-1.5">
         <label className={LABEL_CLS}>FECHA *</label>
         <input
           type="date"
@@ -242,7 +242,7 @@ export function TaskModal({
       </div>
 
       {/* ── Tipo (chips wrap) ── */}
-      <div className="w-full min-w-0">
+      <div className="flex flex-col gap-1.5">
         <label className={LABEL_CLS}>TIPO</label>
         <div className="w-full flex flex-wrap gap-1.5">
           {TYPE_CHIPS.map(chip => (
@@ -266,7 +266,7 @@ export function TaskModal({
 
       {/* Lead readonly (si viene fijo) */}
       {lockedLeadId && lead && (
-        <div>
+        <div className="flex flex-col gap-1.5">
           <label className={LABEL_CLS}>LEAD</label>
           <div className={INPUT_CLS + ' flex items-center text-gray-500'}>
             {lead.full_name}
@@ -276,7 +276,7 @@ export function TaskModal({
 
       {/* Propiedad readonly (si viene fija) */}
       {lockedPropertyId && !lockedLeadId && (
-        <div>
+        <div className="flex flex-col gap-1.5">
           <label className={LABEL_CLS}>PROPIEDAD</label>
           <div className={INPUT_CLS + ' flex items-center text-gray-500'}>
             {lockedPropertyId}
@@ -286,7 +286,7 @@ export function TaskModal({
 
       {/* Meet link — solo si type = meeting */}
       {form.type === 'meeting' && (
-        <div>
+        <div className="flex flex-col gap-1.5">
           <label className={LABEL_CLS}>LINK REUNIÓN (Meet / Zoom)</label>
           <input
             type="url"
@@ -312,7 +312,7 @@ export function TaskModal({
         <div className="flex flex-col gap-4">
 
           {/* Contexto */}
-          <div>
+          <div className="flex flex-col gap-1.5">
             <label className={LABEL_CLS}>CONTEXTO</label>
             <select
               value={form.context}
@@ -326,7 +326,7 @@ export function TaskModal({
           </div>
 
           {/* Prioridad */}
-          <div>
+          <div className="flex flex-col gap-1.5">
             <label className={LABEL_CLS}>PRIORIDAD</label>
             <div className="flex gap-2">
               {PRIORITY_OPTIONS.map(opt => (
@@ -348,7 +348,7 @@ export function TaskModal({
           </div>
 
           {/* Notas */}
-          <div>
+          <div className="flex flex-col gap-1.5">
             <label className={LABEL_CLS}>NOTAS</label>
             <textarea
               rows={2}
@@ -360,7 +360,7 @@ export function TaskModal({
           </div>
 
           {/* Recurrencia */}
-          <div>
+          <div className="flex flex-col gap-1.5">
             <label className={LABEL_CLS}>REPETICIÓN</label>
             <select
               value={form.recurrence}
@@ -377,19 +377,7 @@ export function TaskModal({
       )}
 
       {/* ── Botones sticky al pie ── */}
-      <div
-        className="flex gap-2 mt-2"
-        style={{
-          position: 'sticky',
-          bottom: 0,
-          width: '100%',
-          background: '#f1f5f9',
-          paddingTop: 8,
-          paddingBottom: 16,
-          borderTop: '1px solid #e5e7eb',
-          marginTop: 8,
-        }}
-      >
+      <div className="flex gap-2" style={{ position: 'sticky', bottom: 0, background: '#f1f5f9', paddingTop: 8, paddingBottom: 16, borderTop: '1px solid #e5e7eb', marginTop: 8 }}>
         <Button
           type="button"
           variant="outline"
