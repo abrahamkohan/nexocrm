@@ -48,15 +48,9 @@ const CONTEXT_LABEL: Record<string, string> = {
 }
 
 const PRIORITY_DOT: Record<string, string> = {
-  high: '●',
-  medium: '●',
-  low: '●',
-}
-
-const PRIORITY_COLORS: Record<string, string> = {
-  high: 'text-red-500',
-  medium: 'text-amber-400',
-  low: 'text-gray-300',
+  high: '🔴',
+  medium: '🟡',
+  low: '⚪',
 }
 
 const PRIORITY_LABEL: Record<string, string> = {
@@ -122,19 +116,14 @@ export function TaskItem({
   const month = date
     .toLocaleDateString('es-PY', { month: 'short' })
     .toUpperCase()
-    .replace('.', '')
 
   return (
     <div
       className={cn(
-        'relative rounded-2xl bg-white p-4 flex flex-col gap-2',
-        // Sombra premium: más cerca, más definida, menos difusa
-        'shadow-[0_2px_8px_rgba(0,0,0,0.06)]',
-        'transition-all duration-200 ease-out',
+        'relative rounded-2xl bg-white p-4 flex flex-col gap-3 transition-all duration-150',
+        'shadow-[0_10px_25px_rgba(0,0,0,0.08)]',
         'active:scale-[0.98]',
-        // Margen inferior para que el FAB no tape el último card
-        'mb-3',
-        isClosed && 'opacity-60 bg-gray-50',
+        isClosed && 'opacity-50',
         swipeHint === 'complete' && 'translate-x-1',
         swipeHint === 'reschedule' && '-translate-x-1'
       )}
@@ -142,70 +131,67 @@ export function TaskItem({
       onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
     >
-      {/* HEADER - más compacto, mejor alineado */}
-      <div className="flex items-center justify-between">
+      {/* HEADER */}
+      <div className="flex items-start justify-between">
         <div className="flex items-center gap-2 text-sm text-gray-500">
-          <div className="w-7 h-7 rounded-lg bg-gray-100 flex items-center justify-center">
-            <TypeIcon className="w-3.5 h-3.5 text-gray-600" />
-          </div>
+          <TypeIcon className="w-4 h-4" />
           <span className="font-medium">{TYPE_LABEL[task.type]}</span>
         </div>
 
-        {/* FECHA - más grande, tipografía mejorada, color marca */}
+        {/* FECHA PRO */}
         <div className="
-          w-16 h-16
+          w-14 h-14
           rounded-xl
           flex flex-col items-center justify-center
-          bg-[#D4AF37]
+          leading-none
+          bg-gradient-to-br from-[#FFB86B] to-[#FF7A7A]
           text-white
-          shadow-[0_4px_12px_rgba(212,175,55,0.3)]
+          shadow-[0_6px_16px_rgba(0,0,0,0.15)]
         ">
-          <span className="text-[11px] font-semibold tracking-wider opacity-90">
+          <span className="text-[10px] font-medium opacity-80">
             {month}
           </span>
-          <span className="text-xl font-bold leading-none mt-0.5">
+          <span className="text-lg font-bold">
             {day}
           </span>
         </div>
       </div>
 
-      {/* LEAD - más cerca del título */}
+      {/* LEAD */}
       {isLead && lead && (
         <button
           onClick={() => onOpenPeek?.(lead.id)}
-          className="text-xs font-semibold text-[#D4AF37] text-left truncate -mt-1"
+          className="text-xs font-semibold text-[#D4AF37] text-left truncate"
         >
           {lead.full_name}
         </button>
       )}
 
-      {/* TÍTULO - más peso, mejor jerarquía */}
+      {/* TITULO */}
       <p
         className={cn(
-          'text-[17px] font-semibold leading-tight tracking-tight',
-          isClosed ? 'text-gray-400 line-through' : 'text-gray-900'
+          'text-base font-semibold leading-tight',
+          isClosed ? 'text-gray-400 line-through' : 'text-black'
         )}
       >
         {task.title}
       </p>
 
-      {/* META - más sutil, sin emojis */}
-      <div className="flex items-center gap-1.5 text-xs text-gray-500">
-        <span className={cn("text-[10px]", PRIORITY_COLORS[task.priority])}>
-          {PRIORITY_DOT[task.priority]}
-        </span>
-        <span className="capitalize">
+      {/* META */}
+      <div className="flex items-center gap-2 text-sm text-gray-500">
+        <span>{PRIORITY_DOT[task.priority]}</span>
+        <span>
           {CONTEXT_LABEL[task.context]} · {PRIORITY_LABEL[task.priority]}
         </span>
       </div>
 
-      {/* ACCIONES - botones más refinados */}
+      {/* ACCIONES */}
       <div className="flex items-center gap-2 pt-1 flex-wrap">
         {hasPhone && !isClosed && (
           <button
             onClick={handleWhatsApp}
-            className="h-9 px-4 rounded-lg text-xs font-semibold text-white
-                       bg-[#25D366] shadow-sm active:scale-95 transition-transform"
+            className="h-8 px-3 rounded-lg text-xs font-semibold text-white shadow-sm"
+            style={{ backgroundColor: '#25D366' }}
           >
             WhatsApp
           </button>
@@ -214,9 +200,7 @@ export function TaskItem({
         {hasPhone && !isClosed && (
           <a
             href={`tel:${lead!.phone!.replace(/\s/g, '')}`}
-            className="h-9 px-4 flex items-center justify-center rounded-lg 
-                       text-xs font-semibold bg-gray-100 text-gray-700
-                       active:bg-gray-200 transition-colors"
+            className="h-8 px-3 flex items-center justify-center rounded-lg text-xs font-semibold bg-gray-100 text-gray-700"
           >
             Llamar
           </a>
@@ -227,9 +211,7 @@ export function TaskItem({
             href={task.meet_link!}
             target="_blank"
             rel="noopener noreferrer"
-            className="h-9 px-4 flex items-center justify-center rounded-lg 
-                       text-xs font-semibold bg-blue-50 text-blue-600
-                       active:bg-blue-100 transition-colors"
+            className="h-8 px-3 flex items-center justify-center rounded-lg text-xs font-semibold bg-blue-100 text-blue-600"
           >
             Meet
           </a>
@@ -239,13 +221,13 @@ export function TaskItem({
           onClick={() => onComplete(task)}
           disabled={isClosed}
           className={cn(
-            'h-9 px-4 rounded-full text-xs font-semibold transition-colors ml-auto',
+            'h-8 px-3 rounded-full text-xs font-semibold transition',
             isClosed
               ? 'bg-gray-200 text-gray-400'
-              : 'bg-[#D4AF37] text-white shadow-[0_2px_8px_rgba(212,175,55,0.3)]'
+              : 'bg-black/5 text-black/70'
           )}
         >
-          {isClosed ? 'Listo' : '✓ Hecho'}
+          {isClosed ? 'Cerrado' : '✓ Hecho'}
         </button>
       </div>
     </div>
