@@ -244,20 +244,20 @@ export function TaskModal({
       {/* ── Tipo (chips wrap) ── */}
       <div className="flex flex-col gap-1.5">
         <label className={LABEL_CLS}>TIPO</label>
-        <div className="w-full flex flex-wrap gap-1.5">
+        <div className="w-full flex flex-wrap gap-2">
           {TYPE_CHIPS.map(chip => (
             <button
               key={chip.value}
               type="button"
               onClick={() => set('type', chip.value)}
               className={cn(
-                'flex items-center gap-1 px-2.5 py-1 rounded-full border text-xs font-medium transition-all',
+                'flex items-center gap-1.5 px-4 py-2.5 rounded-2xl border text-sm font-semibold transition-all',
                 form.type === chip.value
-                  ? 'border-[#D4AF37] bg-[#D4AF37]/10 text-gray-900'
-                  : 'border-gray-200 text-gray-500 hover:border-gray-400'
+                  ? 'border-[#D4AF37] bg-[#D4AF37] text-black shadow-sm'
+                  : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300 hover:bg-gray-100'
               )}
             >
-              <chip.icon className="w-3 h-3 flex-shrink-0" />
+              <chip.icon className="w-4 h-4 flex-shrink-0" />
               {chip.label}
             </button>
           ))}
