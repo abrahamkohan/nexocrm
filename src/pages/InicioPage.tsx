@@ -756,7 +756,7 @@ export function InicioPage() {
       case 'grafico':   return <GraficoWidget stats={stats} isLoading={isLoading} />
       case 'actividad': return <ActividadWidget stats={stats} isLoading={isLoading} />
       case 'proyectos': return <ProyectosWidget stats={stats} isLoading={isLoading} />
-      case 'recursos':  return <RecursosWidget config={config} editMode={editMode} />
+      case 'recursos':  return <RecursosWidget config={config} editMode={false} />
       default: return null
     }
   }
@@ -810,16 +810,6 @@ export function InicioPage() {
       {/* Quick actions */}
       <QuickActionsBar />
 
-      {editMode && (
-        <Card mb="3" style={{ background: 'var(--muted)', border: '1px solid var(--border)', boxShadow: 'none', borderRadius: 12 }}>
-          <Flex align="center" gap="2">
-            <GripVertical size={14} style={{ color: 'var(--muted-foreground)' }} />
-            <Text size="2" color="gray">
-              Arrastrá desde el ícono · Redimensioná desde la esquina inferior derecha · Los cambios se guardan automáticamente.
-            </Text>
-          </Flex>
-        </Card>
-      )}
 
       {/* Responsive Grid */}
       <div id="rgl-container" ref={containerRef}>
@@ -835,13 +825,13 @@ export function InicioPage() {
             onLayoutChange={handleLayoutChange}
             onBreakpointChange={handleBreakpointChange}
             compactor={verticalCompactor}
-            dragConfig={{ enabled: editMode, bounded: false, handle: '.drag-handle', threshold: 3 }}
-            resizeConfig={{ enabled: editMode, handles: ['se'] }}
+            dragConfig={{ enabled: false, bounded: false, handle: '.drag-handle', threshold: 3 }}
+            resizeConfig={{ enabled: false, handles: ['se'] }}
           >
             {WIDGET_IDS.map((id) => (
               <div key={id} className="rgl-item">
                 <div className="widget-inner" style={{ height: '100%' }}>
-                  <WidgetShell label={WIDGET_LABELS[id]} editMode={editMode}>
+                  <WidgetShell label={WIDGET_LABELS[id]} editMode={false}>
                     {renderWidget(id)}
                   </WidgetShell>
                 </div>
