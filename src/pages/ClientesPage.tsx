@@ -164,7 +164,7 @@ export function ClientesPage() {
       )}
 
       {filtered.length > 0 && (
-        <div className="columns-1 sm:columns-2 lg:columns-3 gap-4 [&>*]:mb-4 [&>*]:break-inside-avoid">
+        <div className="grid gap-4 items-start [grid-template-columns:repeat(auto-fill,minmax(300px,1fr))]">
           {filtered.map(c => (
             <ClientCard
               key={c.id}
