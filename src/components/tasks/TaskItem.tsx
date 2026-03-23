@@ -115,7 +115,7 @@ export function TaskItem({
   const day   = date.getDate()
   const month = date.toLocaleDateString('es-PY', { month: 'short' }).toUpperCase()
   const time  = date.toLocaleTimeString('es-PY', { hour: '2-digit', minute: '2-digit' })
-  const shortDate = date.toLocaleDateString('es-PY', { day: '2-digit', month: '2-digit' }) + ' ' + time
+
 
   return (
     <div
@@ -162,6 +162,7 @@ export function TaskItem({
         <div className="flex items-center gap-1 text-[11px] text-gray-400 mt-0.5">
           <span>{PRIORITY_DOT[task.priority]}</span>
           <span>{CONTEXT_LABEL[task.context]} · {PRIORITY_LABEL[task.priority]}</span>
+          <span className="ml-1 opacity-60">· {time}</span>
         </div>
 
         {/* CTA principal + acción secundaria */}
@@ -234,17 +235,10 @@ export function TaskItem({
         )}
       </div>
 
-      {/* FECHA — mobile: formato corto, desktop: protagonista */}
-      {/* Mobile (< md): badge ancho con fecha corta + hora */}
-      <div className="flex md:hidden flex-shrink-0 rounded-xl px-2.5 py-1.5 flex-col items-center justify-center bg-gradient-to-br from-[#FFB86B] to-[#FF7A7A] text-white shadow-[0_4px_10px_rgba(255,120,100,0.4)]">
-        <span className="text-[11px] font-bold leading-none whitespace-nowrap">{shortDate}</span>
-      </div>
-
-      {/* Desktop (≥ md): badge cuadrado protagonista */}
-      <div className="hidden md:flex w-14 h-14 flex-shrink-0 rounded-xl flex-col items-center justify-center leading-none bg-gradient-to-br from-[#FFB86B] to-[#FF7A7A] text-white shadow-[0_4px_10px_rgba(255,120,100,0.4)]">
+      {/* Badge de fecha — solo mes y día, sin hora */}
+      <div className="w-14 h-14 flex-shrink-0 rounded-xl flex flex-col items-center justify-center leading-none bg-gradient-to-br from-[#FFB86B] to-[#FF7A7A] text-white shadow-[0_4px_10px_rgba(255,120,100,0.4)]">
         <span className="text-[10px] font-semibold opacity-90 tracking-wide">{month}</span>
         <span className="text-2xl font-bold leading-none">{day}</span>
-        <span className="text-[9px] font-semibold opacity-80 mt-0.5">{time}</span>
       </div>
     </div>
   )
