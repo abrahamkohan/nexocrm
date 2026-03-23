@@ -68,15 +68,15 @@ export function ClientCard({ client, onEdit, onDelete, onConvert, onChangeEstado
 
   return (
     <>
-      <div className="rounded-xl border bg-card p-4 flex flex-col gap-3">
+      <div className="rounded-2xl border bg-card shadow-[0_2px_10px_rgba(0,0,0,0.06)] flex flex-col overflow-hidden">
 
-        {/* Top row */}
-        <div className="flex items-start justify-between gap-2">
-          <div className="flex flex-col gap-0.5 min-w-0">
+        {/* ── Cuerpo ── */}
+        <div className="p-4 flex flex-col gap-2">
 
-            {/* Name + tipo badge */}
-            <div className="flex items-center gap-2 flex-wrap">
-              <p className="font-semibold truncate">{client.full_name}</p>
+          {/* Fila 1: nombre + tipo | país + estado */}
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex items-center gap-2 min-w-0 flex-wrap">
+              <p className="font-bold text-gray-900 truncate">{client.full_name}</p>
               <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0 ${
                 isLead ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'
               }`}>
@@ -84,77 +84,78 @@ export function ClientCard({ client, onEdit, onDelete, onConvert, onChangeEstado
               </span>
             </div>
 
+            <div className="flex flex-col items-end gap-1 flex-shrink-0">
+              {client.nationality && (
+                <span className="text-[11px] font-semibold text-gray-700 bg-gray-100 border border-gray-200 rounded-md px-2 py-0.5">
+                  {client.nationality}
+                </span>
+              )}
+              {isLead && (
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setShowEstados(v => !v)}
+                    className={`text-[10px] font-semibold px-2 py-0.5 rounded-full cursor-pointer ${ESTADO_CLS[estado] ?? ESTADO_CLS.nuevo}`}
+                  >
+                    {ESTADO_LABEL[estado] ?? estado}
+                  </button>
+                  {showEstados && (
+                    <>
+                      <div className="fixed inset-0 z-40" onClick={() => setShowEstados(false)} />
+                      <div className="absolute right-0 top-full mt-1 z-50 bg-white border border-gray-200 rounded-xl shadow-lg py-1 min-w-[140px]">
+                        {ESTADOS.map(e => (
+                          <button
+                            key={e} type="button"
+                            onClick={() => { onChangeEstado?.(client.id, e); setShowEstados(false) }}
+                            className={`w-full text-left px-3 py-2 text-xs font-medium hover:bg-gray-50 flex items-center gap-2 ${estado === e ? 'opacity-40' : ''}`}
+                          >
+                            <span className={`w-2 h-2 rounded-full ${ESTADO_CLS[e].split(' ')[0]}`} />
+                            {ESTADO_LABEL[e]}
+                          </button>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Datos de contacto */}
+          <div className="flex flex-col gap-0.5">
             {client.apodo && (
-              <p className="text-xs text-muted-foreground italic">"{client.apodo}"</p>
-            )}
-            {client.email && (
-              <p className="text-sm text-muted-foreground truncate">{client.email}</p>
+              <p className="text-xs text-gray-400 italic">"{client.apodo}"</p>
             )}
             {client.phone && (
-              <p className="text-sm text-muted-foreground">{client.phone}</p>
+              <p className="text-sm font-medium text-gray-700">{client.phone}</p>
+            )}
+            {client.email && (
+              <p className="text-xs text-gray-500 truncate">{client.email}</p>
             )}
             {client.fuente && (
-              <p className="text-xs text-muted-foreground">{client.fuente}</p>
+              <p className="text-[11px] text-gray-400">{client.fuente}</p>
             )}
           </div>
 
-          {/* Right: nationality + estado */}
-          <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
-            {client.nationality && (
-              <span className="text-xs text-muted-foreground border rounded px-2 py-0.5">
-                {client.nationality}
-              </span>
-            )}
-
-            {/* Estado badge — click to change (leads only) */}
-            {isLead && (
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => setShowEstados(v => !v)}
-                  className={`text-[10px] font-semibold px-2 py-0.5 rounded-full cursor-pointer ${ESTADO_CLS[estado] ?? ESTADO_CLS.nuevo}`}
-                >
-                  {ESTADO_LABEL[estado] ?? estado}
-                </button>
-                {showEstados && (
-                  <>
-                    <div className="fixed inset-0 z-40" onClick={() => setShowEstados(false)} />
-                    <div className="absolute right-0 top-full mt-1 z-50 bg-white border border-gray-200 rounded-xl shadow-lg py-1 min-w-[140px]">
-                      {ESTADOS.map(e => (
-                        <button
-                          key={e} type="button"
-                          onClick={() => { onChangeEstado?.(client.id, e); setShowEstados(false) }}
-                          className={`w-full text-left px-3 py-2 text-xs font-medium hover:bg-gray-50 flex items-center gap-2 ${estado === e ? 'opacity-40' : ''}`}
-                        >
-                          <span className={`w-2 h-2 rounded-full ${ESTADO_CLS[e].split(' ')[0]}`} />
-                          {ESTADO_LABEL[e]}
-                        </button>
-                      ))}
-                    </div>
-                  </>
-                )}
-              </div>
-            )}
-          </div>
+          {client.notes && (
+            <p className="text-xs text-gray-400 line-clamp-2 mt-0.5">{client.notes}</p>
+          )}
         </div>
 
-        {client.notes && (
-          <p className="text-xs text-muted-foreground line-clamp-2">{client.notes}</p>
-        )}
-
-        {/* Quick actions (phone-based) */}
+        {/* ── CTAs de comunicación ── */}
         {(waUrl || telUrl) && (
-          <div className="flex gap-2">
+          <div className="flex gap-2 px-4 pb-3">
             {waUrl && (
               <a href={waUrl} target="_blank" rel="noopener noreferrer"
-                className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-emerald-50 text-emerald-700 text-xs font-semibold hover:bg-emerald-100 transition-colors"
+                className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-bold text-white transition-opacity hover:opacity-90"
+                style={{ backgroundColor: '#397746' }}
               >
                 <MessageCircle className="w-3.5 h-3.5" /> WhatsApp
               </a>
             )}
             {telUrl && (
               <a href={telUrl}
-                className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-blue-50 text-blue-700 text-xs font-semibold hover:bg-blue-100 transition-colors"
+                className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl bg-blue-500 text-white text-xs font-bold hover:opacity-90 transition-opacity"
               >
                 <Phone className="w-3.5 h-3.5" /> Llamar
               </a>
@@ -162,35 +163,38 @@ export function ClientCard({ client, onEdit, onDelete, onConvert, onChangeEstado
           </div>
         )}
 
-        {/* Bottom actions */}
-        <div className="flex gap-1.5 pt-1 border-t">
-          <Button variant="outline" size="sm" className="text-xs flex-1"
-            onClick={() => setHistoryOpen(true)}>
-            <History className="h-3 w-3 mr-1" /> Historial
-          </Button>
+        {/* ── Acciones de gestión ── */}
+        <div className="flex items-center gap-1.5 px-4 py-2.5 border-t bg-gray-50/60">
+          {/* Primarias */}
+          <button onClick={() => setHistoryOpen(true)}
+            className="flex items-center gap-1 h-7 px-2.5 rounded-lg text-xs font-semibold bg-white border border-gray-200 text-gray-600 hover:border-gray-300 transition-colors">
+            <History className="h-3 w-3" /> Historial
+          </button>
 
-          <Button size="sm"
-            className="text-xs text-white"
-            style={{ backgroundColor: '#D4AF37' }}
-            onClick={() => setTaskOpen(true)}>
-            <Plus className="h-3 w-3 mr-1" /> Tarea
-          </Button>
+          <button onClick={() => setTaskOpen(true)}
+            className="flex items-center gap-1 h-7 px-2.5 rounded-lg text-xs font-bold text-white transition-opacity hover:opacity-90"
+            style={{ backgroundColor: '#D4AF37' }}>
+            <Plus className="h-3 w-3" /> Tarea
+          </button>
 
           {isLead && onConvert && (
-            <Button size="sm"
-              className="text-xs bg-gray-900 text-white hover:bg-gray-700"
-              onClick={() => onConvert(client.id)}>
-              <UserCheck className="h-3 w-3 mr-1" /> Convertir
-            </Button>
+            <button onClick={() => onConvert(client.id)}
+              className="flex items-center gap-1 h-7 px-2.5 rounded-lg text-xs font-bold bg-gray-900 text-white hover:bg-gray-700 transition-colors">
+              <UserCheck className="h-3 w-3" /> Convertir
+            </button>
           )}
 
-          <Button variant="outline" size="sm" className="text-xs" onClick={() => onEdit(client)}>
-            <Pencil className="h-3 w-3 mr-1" /> Editar
-          </Button>
-          <Button variant="ghost" size="sm" className="text-xs text-destructive hover:text-destructive"
-            onClick={handleDelete}>
-            <Trash2 className="h-3 w-3" />
-          </Button>
+          {/* Secundarias — icono solo */}
+          <div className="ml-auto flex items-center gap-1">
+            <button onClick={() => onEdit(client)}
+              className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors">
+              <Pencil className="h-3.5 w-3.5" />
+            </button>
+            <button onClick={handleDelete}
+              className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors">
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
+          </div>
         </div>
       </div>
 
