@@ -164,7 +164,7 @@ export function ClientesPage() {
       )}
 
       {filtered.length > 0 && (
-        <div className="flex flex-col gap-3 max-w-[720px] mx-auto w-full">
+        <div className="grid gap-4 justify-center [grid-template-columns:repeat(auto-fit,minmax(320px,380px))]">
           {filtered.map(c => (
             <ClientCard
               key={c.id}

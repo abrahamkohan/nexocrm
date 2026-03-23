@@ -68,7 +68,7 @@ export function ClientCard({ client, onEdit, onDelete, onConvert, onChangeEstado
 
   return (
     <>
-      <div className="rounded-2xl border bg-card shadow-[0_2px_10px_rgba(0,0,0,0.06)] flex flex-col overflow-hidden">
+      <div className="w-full max-w-[380px] rounded-2xl border bg-card shadow-[0_2px_10px_rgba(0,0,0,0.06)] flex flex-col overflow-hidden">
 
         {/* ── Cuerpo ── */}
         <div className="p-4 flex flex-col gap-2">
