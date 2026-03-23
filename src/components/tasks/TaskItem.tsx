@@ -162,7 +162,6 @@ export function TaskItem({
         <div className="flex items-center gap-1 text-[11px] text-gray-400 mt-0.5">
           <span>{PRIORITY_DOT[task.priority]}</span>
           <span>{CONTEXT_LABEL[task.context]} · {PRIORITY_LABEL[task.priority]}</span>
-          <span className="ml-1 opacity-60">· {time}</span>
         </div>
 
         {/* CTA principal + acción secundaria */}
@@ -235,10 +234,11 @@ export function TaskItem({
         )}
       </div>
 
-      {/* Badge de fecha — solo mes y día, sin hora */}
-      <div className="w-14 h-14 flex-shrink-0 rounded-xl flex flex-col items-center justify-center leading-none bg-gradient-to-br from-[#FFB86B] to-[#FF7A7A] text-white shadow-[0_4px_10px_rgba(255,120,100,0.4)]">
+      {/* Badge de fecha — mes, día y hora */}
+      <div className="w-14 flex-shrink-0 rounded-xl flex flex-col items-center justify-center py-2 leading-none bg-gradient-to-br from-[#FFB86B] to-[#FF7A7A] text-white shadow-[0_4px_10px_rgba(255,120,100,0.4)]">
         <span className="text-[10px] font-semibold opacity-90 tracking-wide">{month}</span>
         <span className="text-2xl font-bold leading-none">{day}</span>
+        <span className="text-[9px] font-semibold opacity-80 mt-1">{time}</span>
       </div>
     </div>
   )
