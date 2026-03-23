@@ -164,7 +164,7 @@ export function ClientesPage() {
       )}
 
       {filtered.length > 0 && (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 items-start">
+        <div className="columns-1 sm:columns-2 lg:columns-3 gap-4 [&>*]:mb-4 [&>*]:break-inside-avoid">
           {filtered.map(c => (
             <ClientCard
               key={c.id}
