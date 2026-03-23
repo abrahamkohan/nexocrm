@@ -1,7 +1,7 @@
 // src/components/clients/ClientCard.tsx
 import { useState } from 'react'
 import { Pencil, Trash2, History, Phone, MessageCircle, UserCheck, Plus } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+
 import { ClientHistorySheet } from './ClientHistorySheet'
 import { TaskModal } from '@/components/tasks/TaskModal'
 import type { Database } from '@/types/database'
