@@ -6,7 +6,8 @@ import { Input } from '@/components/ui/input'
 import { Modal } from '@/components/ui/modal'
 import { MobileFormScreen } from '@/components/ui/MobileFormScreen'
 import { toast } from 'sonner'
-import { ClientCard } from '@/components/clients/ClientCard'
+import { ClientTableDesktop } from '@/components/clients/ClientTableDesktop'
+import { ClientCardMobile }   from '@/components/clients/ClientCardMobile'
 import { ClientForm, type ClientFormValues } from '@/components/clients/ClientForm'
 import {
   useClients,
@@ -164,18 +165,31 @@ export function ClientesPage() {
       )}
 
       {filtered.length > 0 && (
-        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {filtered.map(c => (
-            <ClientCard
-              key={c.id}
-              client={c}
+        <>
+          {/* Desktop: tabla */}
+          <div className="hidden md:block">
+            <ClientTableDesktop
+              clients={filtered}
               onEdit={openEdit}
               onDelete={handleDelete}
               onConvert={handleConvert}
               onChangeEstado={handleChangeEstado}
             />
-          ))}
-        </div>
+          </div>
+          {/* Mobile: cards compactas */}
+          <div className="flex flex-col gap-3 md:hidden">
+            {filtered.map(c => (
+              <ClientCardMobile
+                key={c.id}
+                client={c}
+                onEdit={openEdit}
+                onDelete={handleDelete}
+                onConvert={handleConvert}
+                onChangeEstado={handleChangeEstado}
+              />
+            ))}
+          </div>
+        </>
       )}
 
       {/* Mobile: full-screen */}
