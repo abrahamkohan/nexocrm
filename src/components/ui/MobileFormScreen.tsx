@@ -20,7 +20,7 @@ export function MobileFormScreen({ open, onClose, title, children }: MobileFormS
   if (!open) return null
 
   return (
-    <div className="md:hidden fixed inset-0 z-50 flex flex-col w-screen max-w-full overflow-x-hidden bg-slate-100">
+    <div className="md:hidden fixed inset-0 z-50 flex flex-col w-screen max-w-full overflow-x-hidden bg-white">
 
       {/* HEADER */}
       <div className="flex-shrink-0 flex items-center justify-between px-3 h-12 bg-white border-b">

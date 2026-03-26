@@ -72,8 +72,8 @@ function fromInputValue(val: string): string {
 
 // ── Estilos compartidos (mismo patrón que ClientForm) ─────────────────────
 
-const INPUT_CLS = 'w-full h-12 px-3 border border-gray-200 bg-gray-50 rounded-xl text-base placeholder:text-gray-400 focus:outline-none focus:bg-white focus:border-gray-900 transition-colors'
-const LABEL_CLS = 'text-xs font-medium text-gray-500 mb-1.5 block'
+const INPUT_CLS = 'w-full h-11 px-3.5 border border-gray-200 bg-white rounded-lg text-[15px] placeholder:text-gray-400 focus:outline-none focus:border-gray-500 transition-colors'
+const LABEL_CLS = 'text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5 block'
 
 // ── Props ─────────────────────────────────────────────────────────────────
 
@@ -271,10 +271,10 @@ export function TaskModal({
               type="button"
               onClick={() => set('type', chip.value)}
               className={cn(
-                'flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-sm font-medium transition-all',
+                'flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-[13px] font-medium transition-all',
                 form.type === chip.value
-                  ? 'border-[#D4AF37] bg-[#D4AF37] text-black shadow-sm'
-                  : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300 hover:bg-gray-100'
+                  ? 'border-gray-900 bg-gray-900 text-white shadow-sm'
+                  : 'border-gray-200 bg-white text-gray-600 hover:border-gray-400 hover:bg-gray-50'
               )}
             >
               <chip.icon className="w-4 h-4 flex-shrink-0" />
@@ -337,7 +337,7 @@ export function TaskModal({
             <select
               value={form.context}
               onChange={e => set('context', e.target.value as Context)}
-              className={INPUT_CLS + ' bg-gray-50'}
+              className={INPUT_CLS}
             >
               {CONTEXT_OPTIONS.map(opt => (
                 <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -355,10 +355,10 @@ export function TaskModal({
                   type="button"
                   onClick={() => set('priority', opt.value)}
                   className={cn(
-                    'flex-1 h-10 rounded-xl border text-sm font-medium transition-all',
+                    'flex-1 h-10 rounded-full border text-[13px] font-medium transition-all',
                     form.priority === opt.value
-                      ? 'border-[#D4AF37] bg-[#D4AF37]/10 text-gray-900'
-                      : 'border-gray-200 text-gray-500 hover:border-gray-400'
+                      ? 'border-gray-900 bg-gray-900 text-white'
+                      : 'border-gray-200 bg-white text-gray-500 hover:border-gray-400'
                   )}
                 >
                   {opt.label}
@@ -375,7 +375,7 @@ export function TaskModal({
               placeholder="Contexto adicional..."
               value={form.notes}
               onChange={e => set('notes', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-200 bg-gray-50 rounded-xl text-sm placeholder:text-gray-400 focus:outline-none focus:bg-white focus:border-gray-900 transition-colors resize-none"
+              className="w-full px-3.5 py-2.5 border border-gray-200 bg-white rounded-lg text-[14px] placeholder:text-gray-400 focus:outline-none focus:border-gray-500 transition-colors resize-none"
             />
           </div>
 
@@ -385,7 +385,7 @@ export function TaskModal({
             <select
               value={form.recurrence}
               onChange={e => set('recurrence', e.target.value as Recurrence)}
-              className={INPUT_CLS + ' bg-gray-50'}
+              className={INPUT_CLS}
             >
               {RECURRENCE_OPTIONS.map(opt => (
                 <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -397,32 +397,31 @@ export function TaskModal({
       )}
 
       {/* ── Botones sticky al pie ── */}
-      <div className="flex gap-2" style={{ position: 'sticky', bottom: 0, background: '#f1f5f9', paddingTop: 8, paddingBottom: 16, borderTop: '1px solid #e5e7eb', marginTop: 8 }}>
-        <Button
+      <div className="flex items-center gap-2 pt-4 border-t border-gray-100 mt-2" style={{ position: 'sticky', bottom: 0, background: '#fff', paddingBottom: 4 }}>
+        <button
           type="button"
-          variant="outline"
           onClick={onClose}
           disabled={isSaving}
-          className="h-11 px-4"
+          className="px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-800 transition-colors"
         >
           Cancelar
-        </Button>
+        </button>
         <Button
           type="button"
           disabled={!canSave || isSaving}
           onClick={() => handleSave(false)}
-          className="flex-1 h-11"
-          style={{ backgroundColor: '#D4AF37', color: '#000', borderColor: '#D4AF37' }}
+          className="flex-1 h-10 rounded-full text-[14px] font-semibold"
+          style={{ backgroundColor: '#0f172a', color: '#fff', borderColor: '#0f172a' }}
         >
           {isSaving && !hasLeadPhone ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
-          Guardar
+          {isEdit ? 'Guardar cambios' : 'Agregar tarea'}
         </Button>
         {hasLeadPhone && (
           <Button
             type="button"
             disabled={!canSave || isSaving}
             onClick={() => handleSave(true)}
-            className="flex-[2] h-11 bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-center gap-1.5"
+            className="flex-[2] h-10 rounded-full text-[13px] font-semibold bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-center gap-1.5"
           >
             {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <MessageCircle className="w-4 h-4" />}
             Guardar + WhatsApp
