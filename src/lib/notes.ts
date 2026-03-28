@@ -63,3 +63,13 @@ export async function deleteNote(id: string): Promise<void> {
   const { error } = await supabase.from('notes').delete().eq('id', id)
   if (error) throw error
 }
+
+export async function getNotesByClient(clientId: string): Promise<NoteRow[]> {
+  const { data, error } = await supabase
+    .from('notes')
+    .select('*')
+    .eq('client_id', clientId)
+    .order('updated_at', { ascending: false })
+  if (error) throw error
+  return data as NoteRow[]
+}

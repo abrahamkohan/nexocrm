@@ -36,9 +36,10 @@ interface Props {
   onDelete: (id: string) => void
   onConvert?: (id: string) => void
   onChangeEstado?: (id: string, estado: string) => void
+  onView?: (c: ClientRow) => void
 }
 
-export function ClientCardMobile({ client, onEdit, onDelete, onConvert, onChangeEstado }: Props) {
+export function ClientCardMobile({ client, onEdit, onDelete, onConvert, onChangeEstado, onView }: Props) {
   const [historyOpen, setHistoryOpen] = useState(false)
   const [taskOpen,    setTaskOpen]    = useState(false)
   const [showEstados, setShowEstados] = useState(false)
@@ -59,12 +60,15 @@ export function ClientCardMobile({ client, onEdit, onDelete, onConvert, onChange
 
         {/* Fila 1: nombre + chips */}
         <div className="flex items-start justify-between gap-2">
-          <div className="flex flex-col gap-0.5 min-w-0">
-            <span className="font-semibold text-gray-900 text-sm leading-tight truncate">{client.full_name}</span>
+          <button
+            onClick={() => onView?.(client)}
+            className="flex flex-col gap-0.5 min-w-0 text-left"
+          >
+            <span className="font-semibold text-gray-900 text-sm leading-tight truncate hover:underline">{client.full_name}</span>
             {client.apodo && (
               <span className="text-xs text-gray-400 italic">"{client.apodo}"</span>
             )}
-          </div>
+          </button>
           <div className="flex flex-col items-end gap-1 flex-shrink-0">
             <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
               isLead ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'

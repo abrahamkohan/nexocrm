@@ -40,11 +40,12 @@ interface Props {
   onDelete: (id: string) => void
   onConvert?: (id: string) => void
   onChangeEstado?: (id: string, estado: string) => void
+  onView?: (c: ClientRow) => void
 }
 
 // ─── Fila individual ──────────────────────────────────────────────────────────
 
-function ClientRow({ client, onEdit, onDelete, onConvert, onChangeEstado }: Omit<Props, 'clients'> & { client: ClientRow }) {
+function ClientRow({ client, onEdit, onDelete, onConvert, onChangeEstado, onView }: Omit<Props, 'clients'> & { client: ClientRow }) {
   const [historyOpen, setHistoryOpen] = useState(false)
   const [taskOpen,    setTaskOpen]    = useState(false)
   const [showEstados, setShowEstados] = useState(false)
@@ -65,12 +66,12 @@ function ClientRow({ client, onEdit, onDelete, onConvert, onChangeEstado }: Omit
 
         {/* Nombre + apodo */}
         <td className="px-4 py-3">
-          <div className="flex flex-col gap-0.5">
-            <span className="font-semibold text-foreground leading-tight">{client.full_name}</span>
+          <button onClick={() => onView?.(client)} className="flex flex-col gap-0.5 text-left">
+            <span className="font-semibold text-foreground leading-tight hover:underline cursor-pointer">{client.full_name}</span>
             {client.apodo && (
               <span className="text-xs text-muted-foreground italic">"{client.apodo}"</span>
             )}
-          </div>
+          </button>
         </td>
 
         {/* Tipo + Estado */}
@@ -190,7 +191,7 @@ function ClientRow({ client, onEdit, onDelete, onConvert, onChangeEstado }: Omit
 
 // ─── Tabla ────────────────────────────────────────────────────────────────────
 
-export function ClientTableDesktop({ clients, onEdit, onDelete, onConvert, onChangeEstado }: Props) {
+export function ClientTableDesktop({ clients, onEdit, onDelete, onConvert, onChangeEstado, onView }: Props) {
   return (
     <div className="rounded-xl border border-border overflow-hidden">
       <table className="w-full text-sm">
@@ -212,6 +213,7 @@ export function ClientTableDesktop({ clients, onEdit, onDelete, onConvert, onCha
               onDelete={onDelete}
               onConvert={onConvert}
               onChangeEstado={onChangeEstado}
+              onView={onView}
             />
           ))}
           {clients.length === 0 && (

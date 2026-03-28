@@ -21,6 +21,7 @@ import { AuthCallbackPage } from '@/pages/AuthCallbackPage'
 import { ResetPasswordPage } from '@/pages/ResetPasswordPage'
 import { TareasPage } from '@/pages/TareasPage'
 import { NotasPage }  from '@/pages/NotasPage'
+import { ClientDetailPage } from '@/pages/ClientDetailPage'
 import { RequireAuth } from '@/components/auth/RequireAuth'
 
 export const router = createBrowserRouter([
@@ -34,6 +35,7 @@ export const router = createBrowserRouter([
       { path: 'proyectos/nueva',        element: <ProyectoFormPage /> },
       { path: 'proyectos/:id/editar',   element: <ProyectoFormPage /> },
       { path: 'clientes', element: <ClientesPage /> },
+      { path: 'clientes/:id', element: <ClientDetailPage /> },
       { path: 'simulador', element: <SimuladorPage /> },
       { path: 'informes', element: <InformesPage /> },
       { path: 'presupuestos', element: <PresupuestosPage /> },

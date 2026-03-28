@@ -1,6 +1,6 @@
 // src/hooks/useNotes.ts
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { getNotes, createNote, updateNote, deleteNote } from '@/lib/notes'
+import { getNotes, getNotesByClient, createNote, updateNote, deleteNote } from '@/lib/notes'
 import type { Database } from '@/types/database'
 
 type NoteInsert = Database['public']['Tables']['notes']['Insert']
@@ -12,6 +12,14 @@ export function useNotes(location?: string) {
   return useQuery({
     queryKey: [...KEY, location ?? 'all'],
     queryFn: () => getNotes(location),
+  })
+}
+
+export function useNotesByClient(clientId: string) {
+  return useQuery({
+    queryKey: [...KEY, 'client', clientId],
+    queryFn: () => getNotesByClient(clientId),
+    enabled: !!clientId,
   })
 }
 

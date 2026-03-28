@@ -1,5 +1,6 @@
 // src/pages/ClientesPage.tsx
 import { useState, useMemo } from 'react'
+import { useNavigate } from 'react-router'
 import { Plus, Search } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -23,6 +24,7 @@ type ClientRow = Database['public']['Tables']['clients']['Row']
 type Tab = 'leads' | 'clientes' | 'todos'
 
 export function ClientesPage() {
+  const navigate = useNavigate()
   const { data: clients = [], isLoading } = useClients()
   const createClient  = useCreateClient()
   const updateClient  = useUpdateClient()
@@ -174,6 +176,7 @@ export function ClientesPage() {
               onDelete={handleDelete}
               onConvert={handleConvert}
               onChangeEstado={handleChangeEstado}
+              onView={c => navigate(`/clientes/${c.id}`)}
             />
           </div>
           {/* Mobile: cards compactas */}
@@ -186,6 +189,7 @@ export function ClientesPage() {
                 onDelete={handleDelete}
                 onConvert={handleConvert}
                 onChangeEstado={handleChangeEstado}
+                onView={c => navigate(`/clientes/${c.id}`)}
               />
             ))}
           </div>
