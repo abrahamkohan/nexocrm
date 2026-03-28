@@ -54,6 +54,16 @@ export async function deletePresupuesto(id: string): Promise<void> {
   if (error) throw error
 }
 
+export async function getPresupuestosByClient(clientId: string): Promise<PRow[]> {
+  const { data, error } = await supabase
+    .from('presupuestos')
+    .select('*')
+    .eq('client_id', clientId)
+    .order('created_at', { ascending: false })
+  if (error) throw error
+  return data as unknown as PRow[]
+}
+
 export async function duplicatePresupuesto(id: string): Promise<PRow> {
   const { data: original, error: fetchError } = await supabase
     .from('presupuestos')

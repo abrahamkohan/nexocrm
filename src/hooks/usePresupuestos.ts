@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   getAllPresupuestos,
   getPresupuestoById,
+  getPresupuestosByClient,
   createPresupuesto,
   updatePresupuesto,
   deletePresupuesto,
@@ -14,6 +15,14 @@ const QK = 'presupuestos'
 
 export function usePresupuestos() {
   return useQuery({ queryKey: [QK], queryFn: getAllPresupuestos })
+}
+
+export function usePresupuestosByClient(clientId: string) {
+  return useQuery({
+    queryKey: [QK, 'client', clientId],
+    queryFn: () => getPresupuestosByClient(clientId),
+    enabled: !!clientId,
+  })
 }
 
 export function usePresupuestoById(id: string) {
