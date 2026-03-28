@@ -640,6 +640,81 @@ export interface Database {
         }
         Relationships: []
       }
+      commissions: {
+        Row: {
+          id: string
+          proyecto_vendido: string
+          fecha_cierre: string | null
+          importe_comision: number
+          facturada: boolean
+          numero_factura: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          proyecto_vendido: string
+          importe_comision: number
+          fecha_cierre?: string | null
+          facturada?: boolean
+          numero_factura?: string | null
+        }
+        Update: {
+          proyecto_vendido?: string
+          fecha_cierre?: string | null
+          importe_comision?: number
+          facturada?: boolean
+          numero_factura?: string | null
+        }
+        Relationships: []
+      }
+      commission_clients: {
+        Row: {
+          id: string
+          commission_id: string
+          client_id: string
+          tipo: 'vendedor' | 'comprador' | null
+          created_at: string
+        }
+        Insert: {
+          commission_id: string
+          client_id: string
+          tipo?: 'vendedor' | 'comprador' | null
+        }
+        Update: {
+          tipo?: 'vendedor' | 'comprador' | null
+        }
+        Relationships: [
+          { foreignKeyName: "commission_clients_commission_id_fkey"; columns: ["commission_id"]; referencedRelation: "commissions"; referencedColumns: ["id"] },
+          { foreignKeyName: "commission_clients_client_id_fkey"; columns: ["client_id"]; referencedRelation: "clients"; referencedColumns: ["id"] }
+        ]
+      }
+      commission_incomes: {
+        Row: {
+          id: string
+          commission_id: string
+          titulo: string
+          fecha_ingreso: string
+          monto_ingresado: number
+          medio_pago: 'transferencia' | 'efectivo' | null
+          created_at: string
+        }
+        Insert: {
+          commission_id: string
+          titulo: string
+          fecha_ingreso: string
+          monto_ingresado: number
+          medio_pago?: 'transferencia' | 'efectivo' | null
+        }
+        Update: {
+          titulo?: string
+          fecha_ingreso?: string
+          monto_ingresado?: number
+          medio_pago?: 'transferencia' | 'efectivo' | null
+        }
+        Relationships: [
+          { foreignKeyName: "commission_incomes_commission_id_fkey"; columns: ["commission_id"]; referencedRelation: "commissions"; referencedColumns: ["id"] }
+        ]
+      }
     }
     Views: Record<string, never>
     Functions: Record<string, never>

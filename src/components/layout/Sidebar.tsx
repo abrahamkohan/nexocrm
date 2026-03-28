@@ -1,6 +1,6 @@
 // src/components/layout/Sidebar.tsx
 import { NavLink } from 'react-router'
-import { Home, Building2, Users, Calculator, FileText, Settings, BookMarked, LogOut, X, Receipt, MapPin, ClipboardList, NotebookPen } from 'lucide-react'
+import { Home, Building2, Users, Calculator, FileText, Settings, BookMarked, LogOut, X, Receipt, MapPin, ClipboardList, NotebookPen, HandCoins } from 'lucide-react'
 import { useConsultoraConfig } from '@/hooks/useConsultora'
 import { supabase } from '@/lib/supabase'
 import { useTasks } from '@/hooks/useTasks'
@@ -19,6 +19,7 @@ const NAV_MAIN = [
 
 const NAV_RECURSOS = [
   { to: '/presupuestos', label: 'Presupuestos', icon: Receipt },
+  { to: '/comisiones',   label: 'Comisiones',   icon: HandCoins },
   { to: '/recursos',     label: 'Recursos',     icon: BookMarked },
   { to: '/propiedades',  label: 'Propiedades',  icon: MapPin },
 ] as const
