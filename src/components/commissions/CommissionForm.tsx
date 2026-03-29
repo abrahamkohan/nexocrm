@@ -57,16 +57,27 @@ export function CommissionForm({
     setForm(prev => ({ ...prev, [key]: val }))
   }
 
-  // Cálculo bidireccional — solo necesitás 2 de los 3 campos
+  // ── Cálculo bidireccional ────────────────────────────────────────────────────
+  // Venta:   importe = valor × (pct / 100)   |  pct = (importe / valor) × 100
+  // Alquiler: importe = valor × meses         |  meses = importe / valor
+  const isAlquiler = form.tipo === 'alquiler'
+
+  function calcImporte(valor: number, pct: number): string {
+    return isAlquiler ? (valor * pct).toFixed(2) : ((valor * pct) / 100).toFixed(2)
+  }
+  function calcPct(valor: number, importe: number): string {
+    return isAlquiler ? (importe / valor).toFixed(4) : ((importe / valor) * 100).toFixed(4)
+  }
+
   function handleValorChange(raw: string) {
     setForm(prev => {
       const v = parseFloat(raw)
       const p = parseFloat(prev.porcentaje_comision)
       const i = parseFloat(prev.importe_comision)
-      let next = { ...prev, valor_venta: raw }
+      const next = { ...prev, valor_venta: raw }
       if (!isNaN(v) && v > 0) {
-        if (!isNaN(p) && p > 0) next.importe_comision = ((v * p) / 100).toFixed(2)
-        else if (!isNaN(i) && i > 0) next.porcentaje_comision = ((i / v) * 100).toFixed(4)
+        if (!isNaN(p) && p > 0) next.importe_comision = calcImporte(v, p)
+        else if (!isNaN(i) && i > 0) next.porcentaje_comision = calcPct(v, i)
       }
       return next
     })
@@ -76,10 +87,8 @@ export function CommissionForm({
     setForm(prev => {
       const p = parseFloat(raw)
       const v = parseFloat(prev.valor_venta)
-      let next = { ...prev, porcentaje_comision: raw }
-      if (!isNaN(p) && p > 0 && !isNaN(v) && v > 0) {
-        next.importe_comision = ((v * p) / 100).toFixed(2)
-      }
+      const next = { ...prev, porcentaje_comision: raw }
+      if (!isNaN(p) && p > 0 && !isNaN(v) && v > 0) next.importe_comision = calcImporte(v, p)
       return next
     })
   }
@@ -88,20 +97,18 @@ export function CommissionForm({
     setForm(prev => {
       const i = parseFloat(raw)
       const v = parseFloat(prev.valor_venta)
-      let next = { ...prev, importe_comision: raw }
-      if (!isNaN(i) && i > 0 && !isNaN(v) && v > 0) {
-        next.porcentaje_comision = ((i / v) * 100).toFixed(4)
-      }
+      const next = { ...prev, importe_comision: raw }
+      if (!isNaN(i) && i > 0 && !isNaN(v) && v > 0) next.porcentaje_comision = calcPct(v, i)
       return next
     })
   }
 
-  // Cuál campo se está calculando automáticamente
+  // Indicadores de qué campo se calcula automáticamente
   const v = parseFloat(form.valor_venta)
   const p = parseFloat(form.porcentaje_comision)
   const i = parseFloat(form.importe_comision)
   const autoImporte    = !isNaN(v) && v > 0 && !isNaN(p) && p > 0
-  const autoPorcentaje = !isNaN(v) && v > 0 && !isNaN(i) && i > 0 && !(autoImporte)
+  const autoPorcentaje = !isNaN(v) && v > 0 && !isNaN(i) && i > 0 && !autoImporte
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -111,11 +118,14 @@ export function CommissionForm({
 
   const canSubmit = form.proyecto_vendido.trim().length > 0 && parseFloat(form.importe_comision) > 0
 
-  // Preview splits — si hay co-broker, la comisión neta se divide al 50%
-  const importeNum     = parseFloat(form.importe_comision) || 0
-  const importeNeto    = form.co_broker ? importeNum * 0.5 : importeNum
+  // Preview splits
+  const comisionTotal  = parseFloat(form.importe_comision) || 0
+  const miComision     = form.co_broker ? comisionTotal * 0.5 : comisionTotal
   const agentesActivos = agentes.filter(a => a.activo)
   const totalPct       = agentesActivos.reduce((s, a) => s + a.porcentaje_comision, 0)
+
+  const fmt = (n: number) =>
+    new Intl.NumberFormat('es-PY', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n)
 
   return (
     <form id={formId} onSubmit={handleSubmit} className="flex flex-col gap-5">
@@ -294,34 +304,55 @@ export function CommissionForm({
       </div>
 
       {/* ── Preview de splits ── */}
-      {importeNum > 0 && agentesActivos.length > 0 && (
-        <div className="p-4 bg-blue-50 border border-blue-100 rounded-xl">
-          <p className="text-[11px] font-semibold text-blue-700 uppercase tracking-wider mb-1">
-            Reparto automático{' '}
-            {Math.abs(totalPct - 100) > 0.01 && (
-              <span className="text-amber-600 ml-1">(⚠ suma {totalPct}% — configurá agentes)</span>
+      {comisionTotal > 0 && (
+        <div className="p-4 bg-blue-50 border border-blue-100 rounded-xl flex flex-col gap-3">
+
+          {/* Resumen comision_total / mi_comision */}
+          <div className="flex items-center gap-3">
+            <div className="flex-1 bg-white/70 rounded-lg px-3 py-2 text-center">
+              <p className="text-[10px] font-semibold text-blue-400 uppercase tracking-wider">Comisión total</p>
+              <p className="text-base font-bold text-blue-900 mt-0.5">{fmt(comisionTotal)}</p>
+            </div>
+            {form.co_broker && (
+              <>
+                <span className="text-blue-300 font-bold">÷ 2</span>
+                <div className="flex-1 bg-white/70 rounded-lg px-3 py-2 text-center">
+                  <p className="text-[10px] font-semibold text-emerald-500 uppercase tracking-wider">Mi comisión</p>
+                  <p className="text-base font-bold text-emerald-700 mt-0.5">{fmt(miComision)}</p>
+                </div>
+                <div className="flex-1 bg-white/70 rounded-lg px-3 py-2 text-center">
+                  <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">{form.co_broker_nombre || 'Co-broker'}</p>
+                  <p className="text-base font-bold text-gray-600 mt-0.5">{fmt(comisionTotal * 0.5)}</p>
+                </div>
+              </>
             )}
-          </p>
-          {form.co_broker && (
-            <p className="text-[11px] text-blue-500 mb-2">
-              50% neto para la consultora = {new Intl.NumberFormat('es-PY', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(importeNeto)}
-            </p>
-          )}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
-            {agentesActivos.map(a => (
-              <div key={a.id} className="flex items-center justify-between text-sm bg-white/60 rounded-lg px-3 py-1.5">
-                <span className="text-blue-800">
-                  {a.nombre}{' '}
-                  <span className="text-blue-400 text-xs">({a.porcentaje_comision}%)</span>
-                </span>
-                <span className="font-semibold text-blue-900">
-                  {new Intl.NumberFormat('es-PY', {
-                    style: 'currency', currency: 'USD', maximumFractionDigits: 0,
-                  }).format(importeNeto * a.porcentaje_comision / 100)}
-                </span>
-              </div>
-            ))}
           </div>
+
+          {/* Reparto interno entre agentes */}
+          {agentesActivos.length > 0 && (
+            <>
+              <p className="text-[11px] font-semibold text-blue-700 uppercase tracking-wider">
+                Reparto interno{' '}
+                {Math.abs(totalPct - 100) > 0.01 && (
+                  <span className="text-amber-600 ml-1">(⚠ suma {totalPct}% — configurá agentes)</span>
+                )}
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                {agentesActivos.map(a => (
+                  <div key={a.id} className="flex items-center justify-between text-sm bg-white/60 rounded-lg px-3 py-1.5">
+                    <span className="text-blue-800">
+                      {a.nombre}{' '}
+                      <span className="text-blue-400 text-xs">({a.porcentaje_comision}%)</span>
+                    </span>
+                    <span className="font-semibold text-blue-900">
+                      {fmt(miComision * a.porcentaje_comision / 100)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+
         </div>
       )}
 
