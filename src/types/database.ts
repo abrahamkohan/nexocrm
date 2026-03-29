@@ -687,6 +687,10 @@ export interface Database {
           porcentaje_comision: number | null
           importe_comision: number
           fecha_cierre: string | null
+          tipo: 'venta' | 'alquiler'
+          co_broker: boolean
+          co_broker_nombre: string | null
+          propietario: string | null
           created_at: string
           updated_at: string
         }
@@ -697,6 +701,10 @@ export interface Database {
           valor_venta?: number | null
           porcentaje_comision?: number | null
           fecha_cierre?: string | null
+          tipo?: 'venta' | 'alquiler'
+          co_broker?: boolean
+          co_broker_nombre?: string | null
+          propietario?: string | null
         }
         Update: {
           proyecto_vendido?: string
@@ -705,6 +713,10 @@ export interface Database {
           porcentaje_comision?: number | null
           importe_comision?: number
           fecha_cierre?: string | null
+          tipo?: 'venta' | 'alquiler'
+          co_broker?: boolean
+          co_broker_nombre?: string | null
+          propietario?: string | null
         }
         Relationships: [
           { foreignKeyName: "commissions_project_id_fkey"; columns: ["project_id"]; referencedRelation: "projects"; referencedColumns: ["id"] }

@@ -30,6 +30,10 @@ export function VentaFormPage() {
       porcentaje_comision: values.porcentaje_comision ? parseFloat(values.porcentaje_comision) : null,
       importe_comision:    parseFloat(values.importe_comision),
       fecha_cierre:        values.fecha_cierre || null,
+      tipo:                values.tipo,
+      co_broker:           values.co_broker,
+      co_broker_nombre:    values.co_broker_nombre || null,
+      propietario:         values.propietario || null,
     }
     try {
       if (isEdit && id) {
