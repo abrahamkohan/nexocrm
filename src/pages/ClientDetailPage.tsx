@@ -16,9 +16,7 @@ import { usePresupuestosByClient } from '@/hooks/usePresupuestos'
 import { NoteEditor } from '@/components/notes/NoteEditor'
 import { useProjects } from '@/hooks/useProjects'
 import { TaskModal } from '@/components/tasks/TaskModal'
-import { ClientForm, type ClientFormValues } from '@/components/clients/ClientForm'
-import { Modal } from '@/components/ui/modal'
-import { MobileFormScreen } from '@/components/ui/MobileFormScreen'
+
 import { extractTitle } from '@/lib/notes'
 import { getUrgency } from '@/lib/tasks'
 import { getReportUrl } from '@/lib/pdfService'
@@ -527,7 +525,7 @@ export function ClientDetailPage() {
   const navigate    = useNavigate()
 
   const [tab,      setTab]      = useState<Tab>('actividad')
-  const [editOpen, setEditOpen] = useState(false)
+  // editOpen no longer needed - using separate page for editing
   const [taskOpen, setTaskOpen] = useState(false)
   const [editNote, setEditNote] = useState<NoteRow | null>(null)
 
@@ -575,27 +573,7 @@ export function ClientDetailPage() {
     setTimeout(() => scrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' }), 100)
   }
 
-  async function handleEditClient(values: ClientFormValues) {
-    try {
-      await updateClient.mutateAsync({
-        id,
-        input: {
-          full_name:   values.full_name,
-          email:       values.email  || null,
-          phone:       values.phone  || null,
-          nationality: values.nationality || null,
-          notes:       values.notes  || null,
-          tipo:        values.tipo,
-          fuente:      values.fuente || null,
-          apodo:       values.apodo  || null,
-        },
-      })
-      toast.success('Guardado')
-      setEditOpen(false)
-    } catch {
-      toast.error('Error al guardar')
-    }
-  }
+  // handleEditClient removed - editing now handled in separate page
 
   // ── Loading ───────────────────────────────────────────────────────────────
   if (isLoading || !client) return (
@@ -658,7 +636,7 @@ export function ClientDetailPage() {
                   )}
                 </div>
                 <button
-                  onClick={() => setEditOpen(true)}
+                  onClick={() => navigate(`/clientes/${id}/editar`)}
                   className="flex-shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 text-xs font-medium text-gray-600 transition-colors"
                 >
                   <Edit2 className="w-3.5 h-3.5" />
@@ -808,17 +786,7 @@ export function ClientDetailPage() {
         />
       )}
 
-      <MobileFormScreen open={editOpen} onClose={() => setEditOpen(false)} title="Editar cliente">
-        <ClientForm key={client.id} defaultValues={client} onSubmit={handleEditClient}
-          onCancel={() => setEditOpen(false)} isSubmitting={updateClient.isPending} mode="full" stickyButtons />
-      </MobileFormScreen>
-
-      <div className="hidden md:block">
-        <Modal open={editOpen} onClose={() => setEditOpen(false)} title="Editar cliente" size="lg">
-          <ClientForm key={client.id} defaultValues={client} onSubmit={handleEditClient}
-            onCancel={() => setEditOpen(false)} isSubmitting={updateClient.isPending} mode="full" />
-        </Modal>
-      </div>
+      {/* Editing now handled in separate page: /clientes/:id/editar */}
     </div>
   )
 }

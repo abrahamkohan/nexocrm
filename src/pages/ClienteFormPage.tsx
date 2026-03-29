@@ -1,0 +1,149 @@
+// src/pages/ClienteFormPage.tsx
+// Página para crear y editar clientes (sidebar visible, barra flotante inferior)
+import { useState, useEffect } from 'react'
+import { useNavigate, useParams } from 'react-router'
+import { X } from 'lucide-react'
+import { useClient, useCreateClient, useUpdateClient } from '@/hooks/useClients'
+import { ClientFormNew, type ClientFormValues } from '@/components/clients/ClientFormNew'
+import { toast } from 'sonner'
+import type { Database } from '@/types/database'
+
+type ClientRow = Database['public']['Tables']['clients']['Row']
+
+export function ClienteFormPage() {
+  const navigate = useNavigate()
+  const { id } = useParams<{ id: string }>()
+  const isEdit = Boolean(id)
+  
+  // Data
+  const { data: client, isLoading } = useClient(id ?? '')
+  const createClient = useCreateClient()
+  const updateClient = useUpdateClient()
+  
+  // Form state
+  const [formValues, setFormValues] = useState<Partial<ClientRow>>({})
+  
+  // Cargar datos iniciales si es edición
+  useEffect(() => {
+    if (client) {
+      setFormValues(client)
+    }
+  }, [client])
+  
+  // Handlers
+  async function handleSubmit(values: ClientFormValues) {
+    try {
+      const payload = {
+        full_name: values.full_name,
+        email: values.email || null,
+        phone: values.phone || null,
+        nationality: values.nationality || null,
+        notes: values.notes || null,
+        tipo: values.tipo,
+        fuente: values.fuente || null,
+        dni: values.dni || null,
+        fecha_nacimiento: values.fecha_nacimiento || null,
+        campos_extra: Object.keys(values.campos_extra).length > 0 ? values.campos_extra : null,
+        apodo: values.apodo || null,
+      }
+      
+      if (isEdit && id) {
+        await updateClient.mutateAsync({ id, input: payload })
+        toast.success('Cliente actualizado')
+        navigate(`/clientes/${id}`)
+      } else {
+        const newClient = await createClient.mutateAsync(payload)
+        toast.success(values.tipo === 'lead' ? 'Lead creado' : 'Cliente creado')
+        navigate(`/clientes/${newClient.id}`)
+      }
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Error al guardar')
+    }
+  }
+  
+  function handleCancel() {
+    if (isEdit && id) {
+      navigate(`/clientes/${id}`)
+    } else {
+      navigate('/clientes')
+    }
+  }
+  
+  // Loading state
+  if (isEdit && isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <p className="text-sm text-gray-400">Cargando cliente...</p>
+      </div>
+    )
+  }
+  
+  // Si es edición pero no hay cliente
+  if (isEdit && !client) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <p className="text-sm text-gray-400">Cliente no encontrado</p>
+      </div>
+    )
+  }
+  
+  const isPending = createClient.isPending || updateClient.isPending
+  
+  return (
+    <div className="min-h-screen bg-gray-50 pb-24">
+      
+      {/* ── Header ─────────────────────────────────────────────────────────── */}
+      <header className="sticky top-0 z-30 bg-white/90 backdrop-blur border-b border-gray-100 px-6 py-4 flex items-center justify-between gap-4">
+        <div className="flex-1 min-w-0">
+          <button onClick={handleCancel} className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-700 transition-colors mb-0.5">
+            ← Volver a {isEdit ? 'cliente' : 'clientes'}
+          </button>
+          <h1 className="text-sm font-semibold text-gray-900">
+            {isEdit ? 'Editar cliente' : 'Nuevo contacto'}
+          </h1>
+        </div>
+        <button onClick={handleCancel} className="p-2 rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-700 transition-colors flex-shrink-0">
+          <X className="w-5 h-5" />
+        </button>
+      </header>
+      
+      {/* ── Formulario ──────────────────────────────────────────────────────── */}
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+          <ClientFormNew
+            key={id ?? 'new'}
+            defaultValues={formValues}
+            onSubmit={handleSubmit}
+            onCancel={handleCancel}
+            isSubmitting={isPending}
+          />
+        </div>
+      </div>
+      
+      {/* ── Barra flotante inferior ──────────────────────────────────────────── */}
+      <div className="fixed bottom-6 right-6 z-30 w-[280px] bg-gray-900 rounded-2xl shadow-[0_8px_40px_rgba(0,0,0,0.35)] p-4 flex flex-col gap-2">
+        <button
+          type="button"
+          onClick={() => {
+            // Simular submit del formulario
+            const form = document.querySelector('form')
+            if (form) form.requestSubmit()
+          }}
+          disabled={isPending}
+          className="w-full py-3 rounded-xl text-sm font-semibold bg-white text-gray-900 hover:bg-gray-100 transition-colors disabled:opacity-50"
+        >
+          {isPending ? 'Guardando...' : isEdit ? 'Guardar cambios' : 'Crear contacto'}
+        </button>
+        <button
+          type="button"
+          onClick={handleCancel}
+          disabled={isPending}
+          className="w-full py-2.5 rounded-xl text-sm font-medium text-white/50 hover:text-white/80 transition-colors"
+        >
+          Cancelar
+        </button>
+      </div>
+      
+    </div>
+  )
+}

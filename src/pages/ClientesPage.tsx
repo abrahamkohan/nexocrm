@@ -4,12 +4,9 @@ import { useNavigate } from 'react-router'
 import { Plus, Search } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Modal } from '@/components/ui/modal'
-import { MobileFormScreen } from '@/components/ui/MobileFormScreen'
 import { toast } from 'sonner'
 import { ClientTableDesktop } from '@/components/clients/ClientTableDesktop'
 import { ClientCardMobile }   from '@/components/clients/ClientCardMobile'
-import { ClientForm, type ClientFormValues } from '@/components/clients/ClientForm'
 import {
   useClients,
   useCreateClient,
@@ -32,8 +29,7 @@ export function ClientesPage() {
   const convertLead   = useConvertToCliente()
   const changeEstado  = useChangeEstado()
 
-  const [sheetOpen, setSheetOpen] = useState(false)
-  const [editing, setEditing]     = useState<ClientRow | null>(null)
+  // No longer using modal for form - using separate pages instead
   const [search, setSearch]       = useState('')
   const [tab, setTab]             = useState<Tab>('leads')
 
@@ -57,8 +53,8 @@ export function ClientesPage() {
 
   // ─── Handlers ─────────────────────────────────────────────────────────────
 
-  function openCreate() { setEditing(null); setSheetOpen(true) }
-  function openEdit(c: ClientRow) { setEditing(c); setSheetOpen(true) }
+  function openCreate() { navigate('/clientes/nuevo') }
+  function openEdit(c: ClientRow) { navigate(`/clientes/${c.id}/editar`) }
 
   function handleDelete(id: string) { deleteClient.mutate(id) }
 
@@ -74,36 +70,9 @@ export function ClientesPage() {
     changeEstado.mutate({ id, estado })
   }
 
-  async function handleSubmit(values: ClientFormValues) {
-    try {
-      const payload = {
-        full_name:        values.full_name,
-        email:            values.email || null,
-        phone:            values.phone || null,
-        nationality:      values.nationality || null,
-        notes:            values.notes || null,
-        tipo:             values.tipo,
-        fuente:           values.fuente || null,
-        dni:              values.dni || null,
-        fecha_nacimiento: values.fecha_nacimiento || null,
-        campos_extra:     Object.keys(values.campos_extra).length > 0 ? values.campos_extra : null,
-        apodo:            values.apodo || null,
-      }
-      if (editing) {
-        await updateClient.mutateAsync({ id: editing.id, input: payload })
-        toast.success('Guardado')
-      } else {
-        await createClient.mutateAsync(payload)
-        toast.success(values.tipo === 'lead' ? 'Lead creado' : 'Cliente creado')
-      }
-      setSheetOpen(false)
-      setEditing(null)
-    } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : 'Error al guardar')
-    }
-  }
+  // Form submission now handled in separate pages (ClienteFormPage)
 
-  const isPending = createClient.isPending || updateClient.isPending
+  // isPending no longer needed here
 
   // ─── Render ───────────────────────────────────────────────────────────────
 
@@ -196,23 +165,6 @@ export function ClientesPage() {
         </>
       )}
 
-      {/* Mobile: full-screen */}
-      <MobileFormScreen open={sheetOpen} onClose={() => setSheetOpen(false)}
-        title={editing ? 'Editar' : 'Nuevo lead'}>
-        <ClientForm key={editing?.id ?? 'new'} defaultValues={editing ?? undefined}
-          onSubmit={handleSubmit} onCancel={() => setSheetOpen(false)}
-          isSubmitting={isPending} stickyButtons mode={editing ? 'full' : 'quick'} />
-      </MobileFormScreen>
-
-      {/* Desktop: modal */}
-      <div className="hidden md:block">
-        <Modal open={sheetOpen} onClose={() => setSheetOpen(false)}
-          title={editing ? 'Editar' : 'Nuevo lead'}>
-          <ClientForm key={editing?.id ?? 'new'} defaultValues={editing ?? undefined}
-            onSubmit={handleSubmit} onCancel={() => setSheetOpen(false)}
-            isSubmitting={isPending} mode={editing ? 'full' : 'quick'} />
-        </Modal>
-      </div>
     </div>
   )
 }

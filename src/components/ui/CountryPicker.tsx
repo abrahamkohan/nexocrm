@@ -81,12 +81,25 @@ export function CountryPicker({ value, onChange, mode = 'dial', className = '' }
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
   const searchRef = useRef<HTMLInputElement>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (open) {
       setQuery('')
       setTimeout(() => searchRef.current?.focus(), 80)
     }
+  }, [open])
+
+  // Close on click outside
+  useEffect(() => {
+    if (!open) return
+    const handleClick = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
   }, [open])
 
   const filtered = useMemo(() => {
@@ -106,76 +119,65 @@ export function CountryPicker({ value, onChange, mode = 'dial', className = '' }
     : mode === 'dial' ? '🌎 +---' : '🌎 País'
 
   return (
-    <>
+    <div ref={containerRef} className={`relative inline-block ${className}`}>
       <button
         type="button"
-        onClick={() => setOpen(true)}
-        className={`flex items-center gap-1 h-12 px-3 border border-gray-200 bg-gray-50 rounded-xl text-base focus:outline-none focus:bg-white focus:border-gray-900 transition-colors whitespace-nowrap ${className}`}
+        onClick={() => setOpen(!open)}
+        className="flex items-center gap-1 h-12 px-3 border border-gray-200 bg-gray-50 rounded-xl text-base focus:outline-none focus:bg-white focus:border-gray-900 transition-colors whitespace-nowrap w-full"
       >
         <span>{label}</span>
         <ChevronDown className="w-3.5 h-3.5 text-gray-400 ml-auto" />
       </button>
 
-      {/* Bottom sheet */}
+      {/* Dropdown */}
       {open && (
-        <div className="fixed inset-0 z-[60] flex flex-col justify-end">
-          {/* Backdrop */}
-          <div className="absolute inset-0 bg-black/40" onClick={() => setOpen(false)} />
+        <div className="absolute z-[60] mt-1 left-0 right-0 sm:left-auto sm:right-auto sm:w-80 bg-white border border-gray-200 rounded-xl shadow-xl overflow-hidden">
+          {/* Header */}
+          <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+            <p className="font-semibold text-gray-900 text-sm">
+              {mode === 'dial' ? 'Código de país' : 'Nacionalidad'}
+            </p>
+            <button type="button" onClick={() => setOpen(false)} className="p-1 text-gray-400 hover:text-gray-600">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
 
-          {/* Sheet */}
-          <div className="relative bg-white rounded-t-2xl flex flex-col" style={{ maxHeight: '75vh' }}>
-            {/* Handle */}
-            <div className="flex justify-center pt-3 pb-1">
-              <div className="w-10 h-1 bg-gray-200 rounded-full" />
+          {/* Search */}
+          <div className="px-3 py-2 border-b border-gray-100">
+            <div className="flex items-center gap-2 px-3 h-9 bg-gray-100 rounded-lg">
+              <Search className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+              <input
+                ref={searchRef}
+                value={query}
+                onChange={e => setQuery(e.target.value)}
+                placeholder="Buscar país..."
+                className="flex-1 bg-transparent text-sm outline-none placeholder:text-gray-400"
+              />
             </div>
+          </div>
 
-            {/* Header */}
-            <div className="flex items-center justify-between px-4 pb-3 pt-1">
-              <p className="font-semibold text-gray-900">
-                {mode === 'dial' ? 'Código de país' : 'Nacionalidad'}
-              </p>
-              <button type="button" onClick={() => setOpen(false)} className="p-1 text-gray-400">
-                <X className="w-5 h-5" />
+          {/* List */}
+          <div className="max-h-60 overflow-y-auto">
+            {filtered.map(c => (
+              <button
+                key={c.code}
+                type="button"
+                onClick={() => { onChange(c); setOpen(false) }}
+                className={`w-full flex items-center gap-3 px-4 py-2.5 text-left hover:bg-gray-50 transition-colors ${
+                  value?.code === c.code ? 'bg-gray-50' : ''
+                }`}
+              >
+                <span className="text-lg">{c.flag}</span>
+                <span className="flex-1 text-sm text-gray-900">{c.name}</span>
+                <span className="text-xs text-gray-400">{c.dial}</span>
               </button>
-            </div>
-
-            {/* Search */}
-            <div className="px-4 pb-3">
-              <div className="flex items-center gap-2 px-3 h-11 bg-gray-100 rounded-xl">
-                <Search className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                <input
-                  ref={searchRef}
-                  value={query}
-                  onChange={e => setQuery(e.target.value)}
-                  placeholder="Buscar país..."
-                  className="flex-1 bg-transparent text-base outline-none placeholder:text-gray-400"
-                />
-              </div>
-            </div>
-
-            {/* List */}
-            <div className="overflow-y-auto flex-1 pb-safe">
-              {filtered.map(c => (
-                <button
-                  key={c.code}
-                  type="button"
-                  onClick={() => { onChange(c); setOpen(false) }}
-                  className={`w-full flex items-center gap-3 px-4 py-3 text-left active:bg-gray-50 transition-colors ${
-                    value?.code === c.code ? 'bg-gray-50' : ''
-                  }`}
-                >
-                  <span className="text-xl">{c.flag}</span>
-                  <span className="flex-1 text-base text-gray-900">{c.name}</span>
-                  <span className="text-sm text-gray-400">{c.dial}</span>
-                </button>
-              ))}
-              {filtered.length === 0 && (
-                <p className="text-center text-sm text-gray-400 py-8">Sin resultados</p>
-              )}
-            </div>
+            ))}
+            {filtered.length === 0 && (
+              <p className="text-center text-sm text-gray-400 py-6">Sin resultados</p>
+            )}
           </div>
         </div>
       )}
-    </>
+    </div>
   )
 }

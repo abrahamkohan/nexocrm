@@ -15,6 +15,7 @@ import { PropiedadDetallePage } from '@/pages/PropiedadDetallePage'
 import { PropiedadNuevaPage } from '@/pages/PropiedadNuevaPage'
 import { PropiedadEditarPage } from '@/pages/PropiedadEditarPage'
 import { ProyectoFormPage } from '@/pages/ProyectoFormPage'
+import { ClienteFormPage } from '@/pages/ClienteFormPage'
 import { LeadQuickPage } from '@/pages/LeadQuickPage'
 import { LeadShortLinkPage } from '@/pages/LeadShortLinkPage'
 import { AuthCallbackPage } from '@/pages/AuthCallbackPage'
@@ -36,7 +37,9 @@ export const router = createBrowserRouter([
       { path: 'proyectos/nueva',        element: <ProyectoFormPage /> },
       { path: 'proyectos/:id/editar',   element: <ProyectoFormPage /> },
       { path: 'clientes', element: <ClientesPage /> },
+      { path: 'clientes/nuevo', element: <ClienteFormPage /> },
       { path: 'clientes/:id', element: <ClientDetailPage /> },
+      { path: 'clientes/:id/editar', element: <ClienteFormPage /> },
       { path: 'simulador', element: <SimuladorPage /> },
       { path: 'informes', element: <InformesPage /> },
       { path: 'presupuestos', element: <PresupuestosPage /> },
