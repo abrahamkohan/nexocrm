@@ -8,7 +8,7 @@ import {
   FileText, Download, Loader2, Plus, Send, User,
   Star,
 } from 'lucide-react'
-import { useClient, useUpdateClient } from '@/hooks/useClients'
+import { useClient } from '@/hooks/useClients'
 import { useNotesByClient, useDeleteNote, useCreateNote } from '@/hooks/useNotes'
 import { useTasksByLead } from '@/hooks/useTasks'
 import { useSimulationsByClient, useDeleteSimulation, useGenerateReport } from '@/hooks/useSimulations'
