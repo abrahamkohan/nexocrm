@@ -1,73 +1,110 @@
-# React + TypeScript + Vite
+# Sistema Kohan & Campos — CRM Inmobiliario
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+CRM inmobiliario completo para gestión de clientes, propiedades, proyectos, comisiones y simulaciones de inversión.
 
-Currently, two official plugins are available:
+**URL producción:** https://sistema.kohancampos.com.py
+**Stack:** Vite + React + TypeScript + React Router v7 + Supabase + TanStack Query + Tailwind
+**Deploy:** GitHub → Vercel (auto-deploy en push a `main`)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+---
 
-## React Compiler
+## Módulos
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### CRM
+- **Clientes** — gestión de leads y clientes con estados, fuente, nacionalidad, fecha de nacimiento, apodo, referido. Formulario en página separada (no modal). Toggle "Todos / Míos" para admins.
+- **Tareas** — sistema completo con tipos (WhatsApp, llamada, reunión, email, visita), prioridades, recurrencia, escalado. Vista "Mi día" con tareas vencidas/pendientes/hoy/mañana.
+- **Notas** — notas libres vinculadas a clientes o proyectos, con inbox, banderas y recordatorios.
 
-## Expanding the ESLint configuration
+### Inventario
+- **Propiedades** — propiedades propias en venta/alquiler con fotos, amenities, precio, estado.
+- **Proyectos** — proyectos inmobiliarios con tipologías, planos, financiación, análisis de inversión. Pueden marcarse como `publicado_en_web = true` para aparecer en el simulador público.
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+### Ventas
+- **Comisiones** — registro de ventas con cálculo bidireccional (valor+% → importe), toggle venta/alquiler, co-broker, propietario, splits por agente, ingresos parciales y facturación.
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+### Análisis
+- **Simulador** (privado) — simulación de inversión con 4 escenarios: Airbnb/STR, alquiler tradicional, plusvalía y flip. Guarda simulaciones vinculadas a clientes.
+- **Simulador público** — accesible sin login en `/simulador`. Muestra proyectos públicos, calcula los 3 escenarios principales y tiene CTA de contacto → `/lead-quick`.
+- **Presupuestos** — generación de presupuestos de proyectos con PDF descargable.
+- **Informes** — historial de simulaciones + reporte por agente (leads, clientes, tareas pendientes/vencidas por miembro del equipo).
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+### Sistema (solo admin)
+- **Recursos** — biblioteca de documentos y materiales.
+- **Configuración** — datos de consultora (nombre, logo, contacto, redes), links cortos para referidos, agentes/socios con % de comisión, gestión de equipo (invitar, cambiar rol, eliminar acceso).
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+---
+
+## Roles y acceso
+
+| Rol | Acceso |
+|-----|--------|
+| `admin` | Todo el sistema |
+| `agente` | CRM + Inventario + Análisis. Sin Ventas ni Sistema. Dashboard simplificado. |
+
+- Los admins ven todos los registros. Los agentes solo ven los asignados a ellos (`assigned_to`).
+- La sección Sistema (Recursos + Configuración) está protegida con `RequireRole role="admin"`.
+- Las Ventas (Comisiones) están protegidas con `RequireRole role="admin"`.
+
+### Dashboard por rol
+- **Admin:** dashboard con widgets arrastrables (KPIs, mercado, actividad, proyectos, gráficos, recursos).
+- **Agente:** dashboard simplificado con sus stats (leads, clientes, tareas pendientes/vencidas) + vista "Mi día".
+
+---
+
+## Seguridad (RLS)
+
+Políticas activas en Supabase:
+
+| Tabla | Política |
+|-------|----------|
+| `clients` | Admin ve todo. Agente solo ve `assigned_to = uid()`. |
+| `properties` | Admin ve todo. Agente solo ve `assigned_to = uid()`. |
+| `tasks` | Admin ve todo. Agente solo ve `assigned_to = uid()`. |
+| `commissions` | Admin ve todo. Agente solo ve `assigned_to = uid()`. |
+| `projects` | Lectura anónima si `publicado_en_web = true`. |
+| `typologies` | Lectura anónima si proyecto es público. |
+
+La función `is_admin()` en Supabase verifica el rol del usuario autenticado.
+
+---
+
+## Realtime
+
+Supabase Realtime activo en tabla `tasks`. El hook `useRealtimeTasks` (montado en `AppShell`) invalida el cache automáticamente y muestra un toast cuando aparece una tarea vencida.
+
+---
+
+## Rutas públicas (sin login)
+
+| Ruta | Descripción |
+|------|-------------|
+| `/simulador` | Simulador público de inversión |
+| `/lead-quick` | Formulario rápido de carga de lead |
+| `/l/:ref` | Link corto para referidos |
+| `/informes/:id` | Reporte HTML de simulación |
+| `/presupuestos/:id/pdf` | PDF de presupuesto |
+
+---
+
+## Equipo actual
+
+- **Abraham Kohan** — admin (`abrahamkohan.py@gmail.com`)
+- **Arturo** — admin (`artcamp96@gmail.com`)
+
+---
+
+## Comandos
+
+```bash
+npm run dev          # Servidor local
+npm run build        # Build de producción (no correr manualmente)
+git push             # Deploy automático a Vercel
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Variables de entorno
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```
+VITE_SUPABASE_URL=...
+VITE_SUPABASE_ANON_KEY=...
+VITE_APP_URL=https://sistema.kohancampos.com.py
 ```
