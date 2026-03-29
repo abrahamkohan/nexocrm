@@ -1,5 +1,6 @@
 // src/components/search/GlobalSearch.tsx
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router'
 import { Search, X, Users, ClipboardList, MapPin, Loader2 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
@@ -113,8 +114,8 @@ export function GlobalSearch() {
       </button>
 
       {/* Modal */}
-      {open && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center md:pt-16 md:px-4">
+      {open && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-start justify-center md:pt-16 md:px-4">
           {/* Backdrop */}
           <div className="absolute inset-0 bg-black/40" onClick={() => setOpen(false)} />
 
@@ -179,7 +180,8 @@ export function GlobalSearch() {
               </div>
             )}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   )
