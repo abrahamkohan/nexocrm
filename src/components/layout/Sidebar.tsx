@@ -1,6 +1,10 @@
 // src/components/layout/Sidebar.tsx
 import { NavLink } from 'react-router'
-import { Home, Building2, Users, Calculator, FileText, Settings, BookMarked, LogOut, X, Receipt, MapPin, ClipboardList, NotebookPen, HandCoins } from 'lucide-react'
+import {
+  Home, Building2, Users, Calculator, FileText, Settings,
+  BookMarked, LogOut, X, Receipt, MapPin, ClipboardList,
+  NotebookPen, HandCoins,
+} from 'lucide-react'
 import { useConsultoraConfig } from '@/hooks/useConsultora'
 import { supabase } from '@/lib/supabase'
 import { useTasks } from '@/hooks/useTasks'
@@ -8,24 +12,34 @@ import { getUrgency } from '@/lib/tasks'
 import { useNotes } from '@/hooks/useNotes'
 import { useIsAdmin } from '@/hooks/useUserRole'
 
-const NAV_MAIN = [
-  { to: '/inicio',    label: 'Inicio',    icon: Home },
-  { to: '/tareas',    label: 'Tareas',    icon: ClipboardList },
-  { to: '/proyectos', label: 'Proyectos', icon: Building2 },
-  { to: '/clientes',  label: 'Clientes',  icon: Users },
-  { to: '/notas',     label: 'Notas',     icon: NotebookPen },
-  { to: '/simulador', label: 'Simulador', icon: Calculator },
-  { to: '/informes',  label: 'Informes',  icon: FileText },
-] as const
-
-const NAV_RECURSOS_BASE = [
-  { to: '/presupuestos', label: 'Presupuestos', icon: Receipt },
-  { to: '/recursos',     label: 'Recursos',     icon: BookMarked },
-  { to: '/propiedades',  label: 'Propiedades',  icon: MapPin },
-] as const
-
-const NAV_CONFIG = [
-  { to: '/configuracion', label: 'Configuración', icon: Settings },
+// ── Grupos de navegación (orden = flujo inmobiliario real) ──────────────────
+const NAV_GRUPOS = [
+  // 1. Punto de entrada
+  [
+    { to: '/inicio', label: 'Inicio', icon: Home },
+  ],
+  // 2. Captás y trabajás el cliente
+  [
+    { to: '/clientes',  label: 'Clientes', icon: Users },
+    { to: '/tareas',    label: 'Tareas',   icon: ClipboardList },
+    { to: '/notas',     label: 'Notas',    icon: NotebookPen },
+  ],
+  // 3. Trabajás la propiedad
+  [
+    { to: '/propiedades', label: 'Propiedades', icon: MapPin },
+    { to: '/proyectos',   label: 'Proyectos',   icon: Building2 },
+    // Ventas (admin) se agrega dinámicamente abajo
+  ],
+  // 4. Analizás y cerrás
+  [
+    { to: '/simulador',   label: 'Simulador',   icon: Calculator },
+    { to: '/presupuestos', label: 'Presupuestos', icon: Receipt },
+    { to: '/informes',    label: 'Informes',    icon: FileText },
+  ],
+  // 5. Recursos de apoyo
+  [
+    { to: '/recursos', label: 'Recursos', icon: BookMarked },
+  ],
 ] as const
 
 function NavItem({
@@ -66,13 +80,23 @@ export function Sidebar({ onClose }: SidebarProps) {
   const { data: tasks = [] } = useTasks()
   const { data: notes = [] } = useNotes()
   const isAdmin = useIsAdmin()
+
   const overdueCount = tasks.filter(t => getUrgency(t) === 'overdue').length
-  const inboxCount = notes.filter(n => n.location === 'inbox').length
+  const inboxCount   = notes.filter(n => n.location === 'inbox').length
+
   const nombre  = consultora?.nombre  ?? 'Consultora Inmobiliaria'
   const logoUrl = consultora?.logo_url ?? null
 
+  // Badges por ruta
+  function badge(to: string) {
+    if (to === '/tareas') return overdueCount
+    if (to === '/notas')  return inboxCount
+    return undefined
+  }
+
   return (
     <aside className="w-56 flex-shrink-0 border-r border-sidebar-border bg-sidebar flex flex-col h-full">
+
       {/* Brand */}
       <div className="px-5 py-4 border-b border-sidebar-border flex items-center justify-between" style={{ minHeight: 64 }}>
         <NavLink
@@ -92,7 +116,6 @@ export function Sidebar({ onClose }: SidebarProps) {
             </div>
           )}
         </NavLink>
-        {/* Botón cerrar — solo en mobile */}
         {onClose && (
           <button
             onClick={onClose}
@@ -104,28 +127,25 @@ export function Sidebar({ onClose }: SidebarProps) {
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 px-3 py-4 flex flex-col gap-2 overflow-y-auto">
-        <div className="flex flex-col gap-2">
-          {NAV_MAIN.map(({ to, label, icon }) => (
-            <NavItem key={to} to={to} label={label} icon={icon} onClick={onClose}
-              badge={to === '/tareas' ? overdueCount : to === '/notas' ? inboxCount : undefined} />
-          ))}
+      <nav className="flex-1 px-3 py-4 flex flex-col gap-1 overflow-y-auto">
+
+        {NAV_GRUPOS.map((grupo, gi) => (
+          <div key={gi} className={`flex flex-col gap-0.5 ${gi > 0 ? 'border-t border-white/10 pt-2 mt-1' : ''}`}>
+            {grupo.map(({ to, label, icon }) => (
+              <NavItem key={to} to={to} label={label} icon={icon} onClick={onClose} badge={badge(to)} />
+            ))}
+            {/* Ventas se inserta al final del grupo 3 (índice 2), solo para admin */}
+            {gi === 2 && isAdmin && (
+              <NavItem to="/comisiones" label="Ventas" icon={HandCoins} onClick={onClose} />
+            )}
+          </div>
+        ))}
+
+        {/* Configuración */}
+        <div className="flex flex-col gap-0.5 border-t border-white/10 pt-2 mt-1">
+          <NavItem to="/configuracion" label="Configuración" icon={Settings} onClick={onClose} />
         </div>
 
-        <div className="flex flex-col gap-2 border-t border-white/10 pt-2">
-          {NAV_RECURSOS_BASE.map(({ to, label, icon }) => (
-            <NavItem key={to} to={to} label={label} icon={icon} onClick={onClose} />
-          ))}
-          {isAdmin && (
-            <NavItem to="/comisiones" label="Ventas" icon={HandCoins} onClick={onClose} />
-          )}
-        </div>
-
-        <div className="flex flex-col gap-2 border-t border-white/10 pt-2">
-          {NAV_CONFIG.map(({ to, label, icon }) => (
-            <NavItem key={to} to={to} label={label} icon={icon} onClick={onClose} />
-          ))}
-        </div>
       </nav>
 
       {/* Logout */}
@@ -138,6 +158,7 @@ export function Sidebar({ onClose }: SidebarProps) {
           Cerrar sesión
         </button>
       </div>
+
     </aside>
   )
 }
