@@ -20,14 +20,17 @@ export async function getTeam(): Promise<TeamMember[]> {
 
   const roleMap = Object.fromEntries((roles ?? []).map(r => [r.user_id, r.role]))
 
-  return (profiles ?? []).map(p => ({
-    id:         p.id,
-    full_name:  p.full_name,
-    phone:      p.phone,
-    avatar_url: p.avatar_url,
-    created_at: p.created_at,
-    role:       (roleMap[p.id] as 'admin' | 'agente') ?? null,
-  }))
+  return (profiles ?? []).map(p => {
+    const row = p as { id: string; full_name: string | null; phone: string | null; avatar_url: string | null; created_at: string }
+    return {
+      id:         row.id,
+      full_name:  row.full_name,
+      phone:      row.phone,
+      avatar_url: row.avatar_url,
+      created_at: row.created_at,
+      role:       (roleMap[row.id] as 'admin' | 'agente') ?? null,
+    }
+  })
 }
 
 export async function setRole(userId: string, role: 'admin' | 'agente'): Promise<void> {
