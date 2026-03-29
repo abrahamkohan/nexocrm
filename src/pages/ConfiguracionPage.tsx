@@ -240,6 +240,16 @@ export function ConfiguracionPage() {
               </div>
             )}
           </div>
+          <div className="grid gap-1.5 pt-1 border-t border-gray-100">
+            <Field label="Ícono de app (PWA)" icon={Image} value={form.pwa_icon_url} onChange={setF('pwa_icon_url')} placeholder="https://sistema.kohancampos.com.py/pwa_icon_url.png" />
+            <p className="text-xs text-muted-foreground">Cuadrado · mínimo 512×512px · PNG recomendado</p>
+            {form.pwa_icon_url && (
+              <div className="mt-1 p-2 border rounded-md bg-muted flex items-center gap-3">
+                <img src={form.pwa_icon_url} alt="Ícono PWA" className="w-12 h-12 object-cover rounded-xl border" />
+                <p className="text-xs text-muted-foreground">Vista previa del ícono instalado</p>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Contacto */}
@@ -274,19 +284,6 @@ export function ConfiguracionPage() {
             </button>
           </div>
 
-          <div className="flex flex-col gap-2 pt-1 border-t border-gray-100">
-            <div>
-              <p className="text-sm font-medium text-gray-700">Ícono de app (PWA)</p>
-              <p className="text-xs text-muted-foreground mt-0.5">Cuadrado · mínimo 512×512px · PNG recomendado</p>
-            </div>
-            <Field label="URL del ícono" icon={Image} value={form.pwa_icon_url} onChange={setF('pwa_icon_url')} placeholder="https://..." />
-            {form.pwa_icon_url && (
-              <div className="flex items-center gap-3 p-2 border rounded-md bg-muted">
-                <img src={form.pwa_icon_url} alt="PWA icon preview" className="w-12 h-12 object-cover rounded-lg" />
-                <p className="text-xs text-muted-foreground">Vista previa del ícono de app</p>
-              </div>
-            )}
-          </div>
         </div>
 
       </div>
