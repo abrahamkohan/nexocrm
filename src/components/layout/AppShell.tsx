@@ -45,13 +45,22 @@ export function AppShell() {
       <div className="flex-1 flex flex-col overflow-hidden">
 
         {/* Top bar mobile */}
-        <header className="md:hidden flex items-center justify-between px-4 border-b bg-sidebar" style={{ minHeight: 56 }}>
+        <header className="md:hidden flex items-center px-2 border-b bg-sidebar" style={{ minHeight: 56 }}>
+          {/* Hamburguesa — izquierda */}
+          <button
+            onClick={() => setMobileOpen(true)}
+            className="p-2 rounded-md text-sidebar-foreground hover:bg-sidebar-accent transition-colors flex-shrink-0"
+          >
+            <Menu className="h-5 w-5" />
+          </button>
+
+          {/* Marca — centro */}
           <button
             onClick={() => {
               navigate('/inicio')
               mainRef.current?.scrollTo({ top: 0, behavior: 'instant' })
             }}
-            className="flex items-center gap-3"
+            className="flex-1 flex items-center justify-center"
             style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
           >
             {consultora?.logo_url ? (
@@ -62,12 +71,9 @@ export function AppShell() {
               </span>
             )}
           </button>
-          <button
-            onClick={() => setMobileOpen(true)}
-            className="p-2 rounded-md text-sidebar-foreground hover:bg-sidebar-accent transition-colors"
-          >
-            <Menu className="h-5 w-5" />
-          </button>
+
+          {/* Spacer para centrar la marca visualmente */}
+          <div className="w-9 flex-shrink-0" />
         </header>
 
         <main ref={mainRef} className="flex-1 overflow-y-auto overflow-x-hidden">
