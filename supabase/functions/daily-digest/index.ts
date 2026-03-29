@@ -125,6 +125,27 @@ serve(async (req) => {
           },
           body: JSON.stringify({ from: FROM, to: email, subject, html }),
         })
+
+        // Telegram — mensaje personal al usuario
+        const TELEGRAM_TOKEN = Deno.env.get('TELEGRAM_BOT_TOKEN')
+        const TELEGRAM_CHATS = Deno.env.get('TELEGRAM_CHAT_IDS')
+        if (TELEGRAM_TOKEN && TELEGRAM_CHATS) {
+          const chatIds = TELEGRAM_CHATS.split(',').map(s => s.trim()).filter(Boolean)
+          const lines = [`📅 *Resumen de hoy — ${today}*`]
+          if (overdue.length)    lines.push(`\n⚠️ *Vencidas (${overdue.length})*\n` + overdue.map(t => `• ${t.title}`).join('\n'))
+          if (dueToday.length)   lines.push(`\n📌 *Hoy (${dueToday.length})*\n` + dueToday.map(t => `• ${t.title}`).join('\n'))
+          if (dueTomorrow.length) lines.push(`\n📆 *Mañana (${dueTomorrow.length})*\n` + dueTomorrow.map(t => `• ${t.title}`).join('\n'))
+
+          await Promise.allSettled(
+            chatIds.map(chatId =>
+              fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ chat_id: chatId, text: lines.join('\n'), parse_mode: 'Markdown' }),
+              })
+            )
+          )
+        }
       })
     )
 

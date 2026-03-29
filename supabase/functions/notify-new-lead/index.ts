@@ -107,6 +107,30 @@ serve(async (req) => {
       )
     )
 
+    // Telegram
+    const TELEGRAM_TOKEN = Deno.env.get('TELEGRAM_BOT_TOKEN')
+    const TELEGRAM_CHATS = Deno.env.get('TELEGRAM_CHAT_IDS')
+    if (TELEGRAM_TOKEN && TELEGRAM_CHATS) {
+      const chatIds = TELEGRAM_CHATS.split(',').map(s => s.trim()).filter(Boolean)
+      const text = [
+        `📋 *Nuevo lead: ${record.full_name}*`,
+        record.phone       ? `📞 ${record.phone}`        : null,
+        record.fuente      ? `📌 Fuente: ${record.fuente}` : null,
+        record.nationality ? `🌍 ${record.nationality}`   : null,
+        record.notes       ? `💬 ${record.notes}`         : null,
+      ].filter(Boolean).join('\n')
+
+      await Promise.allSettled(
+        chatIds.map(chatId =>
+          fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ chat_id: chatId, text, parse_mode: 'Markdown' }),
+          })
+        )
+      )
+    }
+
     const sent = results.filter(r => r.status === 'fulfilled').length
 
     return new Response(JSON.stringify({ ok: true, sent, total: emails.length }), {
