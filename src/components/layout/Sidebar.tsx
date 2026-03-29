@@ -19,6 +19,7 @@ const NAV_GRUPOS: {
   items: { to: string; label: string; icon: React.ElementType }[]
 }[] = [
   {
+    label: 'General',
     items: [
       { to: '/inicio', label: 'Inicio', icon: Home },
     ],
@@ -27,8 +28,8 @@ const NAV_GRUPOS: {
     label: 'CRM',
     items: [
       { to: '/clientes', label: 'Clientes', icon: Users },
-      { to: '/notas',    label: 'Notas',    icon: NotebookPen },
       { to: '/tareas',   label: 'Tareas',   icon: ClipboardList },
+      { to: '/notas',    label: 'Notas',    icon: NotebookPen },
     ],
   },
   {
