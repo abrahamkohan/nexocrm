@@ -1,5 +1,5 @@
 // src/components/commissions/CommissionForm.tsx
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useProjects } from '@/hooks/useProjects'
 import { useAgentes } from '@/hooks/useAgentes'
 import { INPUT_CLS, LABEL_CLS } from '@/styles/design-system'
@@ -57,16 +57,51 @@ export function CommissionForm({
     setForm(prev => ({ ...prev, [key]: val }))
   }
 
-  // Auto-calcular importe
-  // - Venta: valor × porcentaje / 100
-  // - Alquiler: valor (1 mes de renta) × porcentaje / 100  (misma lógica, el user carga el alquiler mensual como valor)
-  useEffect(() => {
-    const v = parseFloat(form.valor_venta)
-    const p = parseFloat(form.porcentaje_comision)
-    if (!isNaN(v) && !isNaN(p) && v > 0 && p > 0) {
-      set('importe_comision', ((v * p) / 100).toFixed(2))
-    }
-  }, [form.valor_venta, form.porcentaje_comision])
+  // Cálculo bidireccional — solo necesitás 2 de los 3 campos
+  function handleValorChange(raw: string) {
+    setForm(prev => {
+      const v = parseFloat(raw)
+      const p = parseFloat(prev.porcentaje_comision)
+      const i = parseFloat(prev.importe_comision)
+      let next = { ...prev, valor_venta: raw }
+      if (!isNaN(v) && v > 0) {
+        if (!isNaN(p) && p > 0) next.importe_comision = ((v * p) / 100).toFixed(2)
+        else if (!isNaN(i) && i > 0) next.porcentaje_comision = ((i / v) * 100).toFixed(4)
+      }
+      return next
+    })
+  }
+
+  function handlePorcentajeChange(raw: string) {
+    setForm(prev => {
+      const p = parseFloat(raw)
+      const v = parseFloat(prev.valor_venta)
+      let next = { ...prev, porcentaje_comision: raw }
+      if (!isNaN(p) && p > 0 && !isNaN(v) && v > 0) {
+        next.importe_comision = ((v * p) / 100).toFixed(2)
+      }
+      return next
+    })
+  }
+
+  function handleImporteChange(raw: string) {
+    setForm(prev => {
+      const i = parseFloat(raw)
+      const v = parseFloat(prev.valor_venta)
+      let next = { ...prev, importe_comision: raw }
+      if (!isNaN(i) && i > 0 && !isNaN(v) && v > 0) {
+        next.porcentaje_comision = ((i / v) * 100).toFixed(4)
+      }
+      return next
+    })
+  }
+
+  // Cuál campo se está calculando automáticamente
+  const v = parseFloat(form.valor_venta)
+  const p = parseFloat(form.porcentaje_comision)
+  const i = parseFloat(form.importe_comision)
+  const autoImporte    = !isNaN(v) && v > 0 && !isNaN(p) && p > 0
+  const autoPorcentaje = !isNaN(v) && v > 0 && !isNaN(i) && i > 0 && !(autoImporte)
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -170,7 +205,7 @@ export function CommissionForm({
             min="0"
             step="0.01"
             value={form.valor_venta}
-            onChange={e => set('valor_venta', e.target.value)}
+            onChange={e => handleValorChange(e.target.value)}
             className={INPUT_CLS}
           />
         </div>
@@ -185,11 +220,14 @@ export function CommissionForm({
             step="0.01"
             max={form.tipo === 'alquiler' ? undefined : '100'}
             value={form.porcentaje_comision}
-            onChange={e => set('porcentaje_comision', e.target.value)}
+            onChange={e => handlePorcentajeChange(e.target.value)}
             className={INPUT_CLS}
           />
-          {form.tipo === 'alquiler' && (
+          {form.tipo === 'alquiler' && !autoPorcentaje && (
             <p className="text-[11px] text-gray-400 mt-1">Ej: 1 mes = 100%</p>
+          )}
+          {autoPorcentaje && (
+            <p className="text-[11px] text-blue-400 mt-1">Se calcula automáticamente</p>
           )}
         </div>
         <div>
@@ -200,10 +238,12 @@ export function CommissionForm({
             min="0"
             step="0.01"
             value={form.importe_comision}
-            onChange={e => set('importe_comision', e.target.value)}
+            onChange={e => handleImporteChange(e.target.value)}
             className={INPUT_CLS}
           />
-          <p className="text-[11px] text-gray-400 mt-1">Se calcula automáticamente</p>
+          {autoImporte && (
+            <p className="text-[11px] text-blue-400 mt-1">Se calcula automáticamente</p>
+          )}
         </div>
       </div>
 
