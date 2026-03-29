@@ -2,7 +2,8 @@
 // Speed-dial FAB: Nueva tarea + Nueva nota
 
 import { useState } from 'react'
-import { Plus, X, ClipboardList, NotebookPen } from 'lucide-react'
+import { useNavigate } from 'react-router'
+import { Plus, X, ClipboardList, NotebookPen, UserPlus } from 'lucide-react'
 import { TaskModal } from './TaskModal'
 import { NoteEditor } from '@/components/notes/NoteEditor'
 import { useCreateNote } from '@/hooks/useNotes'
@@ -20,13 +21,19 @@ interface TaskFABProps {
 }
 
 export function TaskFAB({ defaultContext, defaultLeadId, defaultPropertyId }: TaskFABProps) {
-  const [open,        setOpen]        = useState(false)    // task modal
-  const [expanded,    setExpanded]    = useState(false)    // speed-dial
+  const navigate = useNavigate()
+  const [open,        setOpen]        = useState(false)
+  const [expanded,    setExpanded]    = useState(false)
   const [editingNote, setEditingNote] = useState<NoteRow | null>(null)
 
   const createNote = useCreateNote()
   const { data: clients  = [] } = useClients()
   const { data: projects = [] } = useProjects()
+
+  function handleNewLead() {
+    setExpanded(false)
+    navigate('/clientes/nuevo')
+  }
 
   async function handleNewNote() {
     setExpanded(false)
@@ -61,17 +68,16 @@ export function TaskFAB({ defaultContext, defaultLeadId, defaultPropertyId }: Ta
             pointerEvents: expanded ? 'auto' : 'none',
           }}
         >
-          {/* Nueva nota */}
+          {/* Nuevo lead */}
           <button
-            onClick={handleNewNote}
-            disabled={createNote.isPending}
+            onClick={handleNewLead}
             className="flex items-center gap-2.5 pl-3 pr-4 py-2 rounded-full shadow-lg text-white text-sm font-semibold transition-transform active:scale-95 hover:scale-105"
-            style={{ background: 'linear-gradient(135deg, #7c3aed, #a855f7)' }}
+            style={{ background: 'linear-gradient(135deg, #1e40af, #3b82f6)' }}
           >
             <span className="flex items-center justify-center w-6 h-6 rounded-full bg-white/20">
-              <NotebookPen className="w-3.5 h-3.5" />
+              <UserPlus className="w-3.5 h-3.5" />
             </span>
-            Nueva nota
+            Nuevo lead
           </button>
 
           {/* Nueva tarea */}
@@ -84,6 +90,19 @@ export function TaskFAB({ defaultContext, defaultLeadId, defaultPropertyId }: Ta
               <ClipboardList className="w-3.5 h-3.5" />
             </span>
             Nueva tarea
+          </button>
+
+          {/* Nueva nota */}
+          <button
+            onClick={handleNewNote}
+            disabled={createNote.isPending}
+            className="flex items-center gap-2.5 pl-3 pr-4 py-2 rounded-full shadow-lg text-white text-sm font-semibold transition-transform active:scale-95 hover:scale-105"
+            style={{ background: 'linear-gradient(135deg, #7c3aed, #a855f7)' }}
+          >
+            <span className="flex items-center justify-center w-6 h-6 rounded-full bg-white/20">
+              <NotebookPen className="w-3.5 h-3.5" />
+            </span>
+            Nueva nota
           </button>
         </div>
 
