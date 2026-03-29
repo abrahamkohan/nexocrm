@@ -11,19 +11,22 @@ export type TeamMember = {
 }
 
 export async function getTeam(): Promise<TeamMember[]> {
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('*, user_roles(role)')
-    .order('created_at', { ascending: true })
-  if (error) throw error
+  const [{ data: profiles, error: e1 }, { data: roles, error: e2 }] = await Promise.all([
+    supabase.from('profiles').select('*').order('created_at', { ascending: true }),
+    supabase.from('user_roles').select('user_id, role'),
+  ])
+  if (e1) throw e1
+  if (e2) throw e2
 
-  return (data ?? []).map((p: any) => ({
+  const roleMap = Object.fromEntries((roles ?? []).map(r => [r.user_id, r.role]))
+
+  return (profiles ?? []).map(p => ({
     id:         p.id,
     full_name:  p.full_name,
     phone:      p.phone,
     avatar_url: p.avatar_url,
     created_at: p.created_at,
-    role:       p.user_roles?.role ?? null,
+    role:       (roleMap[p.id] as 'admin' | 'agente') ?? null,
   }))
 }
 
