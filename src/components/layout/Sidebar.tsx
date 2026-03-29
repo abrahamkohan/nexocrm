@@ -12,48 +12,63 @@ import { getUrgency } from '@/lib/tasks'
 import { useNotes } from '@/hooks/useNotes'
 import { useIsAdmin } from '@/hooks/useUserRole'
 
-// ── Grupos de navegación (orden = flujo inmobiliario real) ──────────────────
-const NAV_GRUPOS = [
-  // 1. Punto de entrada
-  [
-    { to: '/inicio', label: 'Inicio', icon: Home },
-  ],
-  // 2. Captás y trabajás el cliente
-  [
-    { to: '/clientes',  label: 'Clientes', icon: Users },
-    { to: '/tareas',    label: 'Tareas',   icon: ClipboardList },
-    { to: '/notas',     label: 'Notas',    icon: NotebookPen },
-  ],
-  // 3. Trabajás la propiedad
-  [
-    { to: '/propiedades', label: 'Propiedades', icon: MapPin },
-    { to: '/proyectos',   label: 'Proyectos',   icon: Building2 },
-    // Ventas (admin) se agrega dinámicamente abajo
-  ],
-  // 4. Analizás y cerrás
-  [
-    { to: '/simulador',   label: 'Simulador',   icon: Calculator },
-    { to: '/presupuestos', label: 'Presupuestos', icon: Receipt },
-    { to: '/informes',    label: 'Informes',    icon: FileText },
-  ],
-  // 5. Recursos de apoyo
-  [
-    { to: '/recursos', label: 'Recursos', icon: BookMarked },
-  ],
-] as const
+// ── Estructura de menú ────────────────────────────────────────────────────────
+
+const NAV_GRUPOS: {
+  label?: string
+  items: { to: string; label: string; icon: React.ElementType }[]
+}[] = [
+  {
+    items: [
+      { to: '/inicio', label: 'Inicio', icon: Home },
+    ],
+  },
+  {
+    label: 'CRM',
+    items: [
+      { to: '/clientes', label: 'Clientes', icon: Users },
+      { to: '/notas',    label: 'Notas',    icon: NotebookPen },
+      { to: '/tareas',   label: 'Tareas',   icon: ClipboardList },
+    ],
+  },
+  {
+    label: 'Inventario',
+    items: [
+      { to: '/propiedades', label: 'Propiedades', icon: MapPin },
+      { to: '/proyectos',   label: 'Proyectos',   icon: Building2 },
+      // Ventas se agrega dinámicamente (solo admin)
+    ],
+  },
+  {
+    label: 'Análisis',
+    items: [
+      { to: '/simulador',    label: 'Simulador',    icon: Calculator },
+      { to: '/presupuestos', label: 'Presupuestos', icon: Receipt },
+      { to: '/informes',     label: 'Informes',     icon: FileText },
+    ],
+  },
+  {
+    label: 'Sistema',
+    items: [
+      { to: '/recursos',     label: 'Recursos',     icon: BookMarked },
+      { to: '/configuracion', label: 'Configuración', icon: Settings },
+    ],
+  },
+]
+
+// ── NavItem ───────────────────────────────────────────────────────────────────
 
 function NavItem({
-  to, label, icon: Icon, end, onClick, badge,
+  to, label, icon: Icon, onClick, badge,
 }: {
-  to: string; label: string; icon: React.ElementType; end?: boolean; onClick?: () => void; badge?: number
+  to: string; label: string; icon: React.ElementType; onClick?: () => void; badge?: number
 }) {
   return (
     <NavLink
       to={to}
-      end={end}
       onClick={onClick}
       className={({ isActive }) =>
-        `flex items-center gap-2.5 px-3 py-2.5 rounded-md text-sm transition-colors ${
+        `flex items-center gap-2.5 px-3 py-2 rounded-md text-sm transition-colors ${
           isActive
             ? 'bg-sidebar-accent text-sidebar-primary font-medium'
             : 'text-sidebar-foreground hover:text-sidebar-accent-foreground hover:bg-sidebar-accent'
@@ -71,6 +86,8 @@ function NavItem({
   )
 }
 
+// ── Sidebar ───────────────────────────────────────────────────────────────────
+
 interface SidebarProps {
   onClose?: () => void
 }
@@ -87,7 +104,6 @@ export function Sidebar({ onClose }: SidebarProps) {
   const nombre  = consultora?.nombre  ?? 'Consultora Inmobiliaria'
   const logoUrl = consultora?.logo_url ?? null
 
-  // Badges por ruta
   function badge(to: string) {
     if (to === '/tareas') return overdueCount
     if (to === '/notas')  return inboxCount
@@ -97,7 +113,7 @@ export function Sidebar({ onClose }: SidebarProps) {
   return (
     <aside className="w-56 flex-shrink-0 border-r border-sidebar-border bg-sidebar flex flex-col h-full">
 
-      {/* Brand */}
+      {/* ── Brand ── */}
       <div className="px-5 py-4 border-b border-sidebar-border flex items-center justify-between" style={{ minHeight: 64 }}>
         <NavLink
           to="/inicio"
@@ -126,33 +142,31 @@ export function Sidebar({ onClose }: SidebarProps) {
         )}
       </div>
 
-      {/* Nav */}
-      <nav className="flex-1 px-3 py-4 flex flex-col gap-1 overflow-y-auto">
-
+      {/* ── Nav ── */}
+      <nav className="flex-1 px-3 py-3 flex flex-col gap-4 overflow-y-auto">
         {NAV_GRUPOS.map((grupo, gi) => (
-          <div key={gi} className={`flex flex-col gap-0.5 ${gi > 0 ? 'border-t border-white/10 pt-2 mt-1' : ''}`}>
-            {grupo.map(({ to, label, icon }) => (
+          <div key={gi} className="flex flex-col gap-0.5">
+            {grupo.label && (
+              <p className="text-[10px] font-semibold text-sidebar-foreground/40 uppercase tracking-wider px-3 mb-1">
+                {grupo.label}
+              </p>
+            )}
+            {grupo.items.map(({ to, label, icon }) => (
               <NavItem key={to} to={to} label={label} icon={icon} onClick={onClose} badge={badge(to)} />
             ))}
-            {/* Ventas se inserta al final del grupo 3 (índice 2), solo para admin */}
+            {/* Ventas: solo admin, al final de Inventario */}
             {gi === 2 && isAdmin && (
               <NavItem to="/comisiones" label="Ventas" icon={HandCoins} onClick={onClose} />
             )}
           </div>
         ))}
-
-        {/* Configuración */}
-        <div className="flex flex-col gap-0.5 border-t border-white/10 pt-2 mt-1">
-          <NavItem to="/configuracion" label="Configuración" icon={Settings} onClick={onClose} />
-        </div>
-
       </nav>
 
-      {/* Logout */}
+      {/* ── Cerrar sesión (separado del flujo) ── */}
       <div className="px-3 pb-4 border-t border-sidebar-border pt-3">
         <button
           onClick={() => { supabase.auth.signOut(); onClose?.() }}
-          className="flex items-center gap-2.5 px-3 py-2.5 rounded-md text-sm text-sidebar-foreground hover:bg-sidebar-accent transition-colors w-full"
+          className="flex items-center gap-2.5 px-3 py-2 rounded-md text-sm text-sidebar-foreground hover:bg-sidebar-accent transition-colors w-full"
         >
           <LogOut className="h-4 w-4 flex-shrink-0" />
           Cerrar sesión
