@@ -1,6 +1,7 @@
 // src/pages/NotasPage.tsx
 import { useState, useMemo, useEffect } from 'react'
-import { Plus, Search } from 'lucide-react'
+import { Plus, Search, NotebookPen, Star, Archive, FileText } from 'lucide-react'
+import { EmptyState } from '@/components/ui/EmptyState'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input }  from '@/components/ui/input'
@@ -141,24 +142,36 @@ export function NotasPage() {
 
       {/* Empty state */}
       {!isLoading && filtered.length === 0 && (
-        <div className="flex flex-col items-center justify-center py-16 gap-3 text-center">
-          <p className="text-muted-foreground text-sm">
-            {search
-              ? `Sin resultados para "${search}"`
-              : tab === 'inbox'
-              ? 'Tu inbox está limpio 🎉'
-              : tab === 'flagged'
-              ? 'Marcá notas con ⭐ para verlas aquí'
+        search
+          ? <EmptyState
+              icon={Search}
+              title={`Sin resultados para "${search}"`}
+              description="Probá con otras palabras."
+            />
+          : tab === 'inbox'
+            ? <EmptyState
+                icon={NotebookPen}
+                title="Inbox vacío"
+                description="Creá una nota rápida para capturar ideas o recordatorios."
+                action={{ label: 'Nueva nota', onClick: handleNew }}
+              />
+            : tab === 'flagged'
+              ? <EmptyState
+                  icon={Star}
+                  title="Sin notas destacadas"
+                  description="Marcá notas con estrella para encontrarlas fácil acá."
+                />
               : tab === 'archive'
-              ? 'No hay notas archivadas'
-              : 'No hay notas todavía'}
-          </p>
-          {!search && tab === 'inbox' && (
-            <Button variant="outline" size="sm" onClick={handleNew}>
-              Crear primera nota
-            </Button>
-          )}
-        </div>
+                ? <EmptyState
+                    icon={Archive}
+                    title="Archivo vacío"
+                    description="Las notas que archivés aparecerán aquí."
+                  />
+                : <EmptyState
+                    icon={FileText}
+                    title="Sin notas todavía"
+                    description="Empezá a capturar ideas con el botón +."
+                  />
       )}
 
       {/* Lista */}

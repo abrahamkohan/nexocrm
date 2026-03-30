@@ -1,9 +1,10 @@
 import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router'
-import { Search, Plus, Home } from 'lucide-react'
+import { Search, Plus, Home, Building2 } from 'lucide-react'
 import { useProperties } from '@/hooks/useProperties'
 import { useConsultoraConfig } from '@/hooks/useConsultora'
 import { PropertyCard } from '@/components/properties/PropertyCard'
+import { EmptyState } from '@/components/ui/EmptyState'
 import type { PropertyRow } from '@/lib/properties'
 
 const TIPO_LABEL: Record<string, string> = {
@@ -119,20 +120,21 @@ export function PropiedadesPage() {
 
       {/* Empty state */}
       {!isLoading && properties.length === 0 && (
-        <div className="flex flex-col items-center justify-center py-20 text-center">
-          <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mb-4">
-            <Home className="w-8 h-8 text-gray-300" />
-          </div>
-          <p className="text-gray-500 font-medium">Sin propiedades</p>
-          <p className="text-sm text-gray-400 mt-1">La carga de propiedades estará disponible próximamente</p>
-        </div>
+        <EmptyState
+          icon={Building2}
+          title="Sin propiedades"
+          description="Cargá tu primera propiedad para empezar a gestionarla."
+          action={{ label: 'Nueva propiedad', onClick: () => navigate('/propiedades/nueva') }}
+        />
       )}
 
       {/* No results */}
       {!isLoading && properties.length > 0 && filtered.length === 0 && (
-        <div className="py-12 text-center text-gray-400 text-sm">
-          Sin resultados para la búsqueda actual
-        </div>
+        <EmptyState
+          icon={Search}
+          title="Sin resultados"
+          description="No hay propiedades que coincidan con los filtros actuales."
+        />
       )}
 
       {/* Grid */}

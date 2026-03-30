@@ -1,8 +1,9 @@
 // src/pages/ComisionesPage.tsx
 import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router'
-import { Plus } from 'lucide-react'
+import { Plus, TrendingUp, CheckCircle2, Clock } from 'lucide-react'
 import { toast } from 'sonner'
+import { EmptyState } from '@/components/ui/EmptyState'
 import { CommissionTable } from '@/components/commissions/CommissionTable'
 import { CommissionCard } from '@/components/commissions/CommissionCard'
 import { CommissionDetailSheet } from '@/components/commissions/CommissionDetailSheet'
@@ -89,21 +90,24 @@ export function ComisionesPage() {
 
       {/* Empty state */}
       {!isLoading && filtered.length === 0 && (
-        <div className="flex flex-col items-center justify-center py-16 gap-3">
-          <p className="text-muted-foreground">
-            {tab === 'todas'         ? 'No hay ventas todavía.' :
-             tab === 'sin_facturar'  ? 'Todos los splits están facturados.' :
-             'No hay ventas con saldo pendiente.'}
-          </p>
-          {tab === 'todas' && (
-            <button
-              onClick={() => navigate('/comisiones/nueva')}
-              className="px-4 py-2 rounded-xl border border-gray-200 text-sm text-gray-600 hover:bg-gray-50 transition-colors"
-            >
-              Crear la primera
-            </button>
-          )}
-        </div>
+        tab === 'todas'
+          ? <EmptyState
+              icon={TrendingUp}
+              title="Sin ventas todavía"
+              description="Registrá tu primera venta para empezar a hacer seguimiento de comisiones."
+              action={{ label: 'Registrar venta', onClick: () => navigate('/comisiones/nueva') }}
+            />
+          : tab === 'sin_facturar'
+            ? <EmptyState
+                icon={CheckCircle2}
+                title="Todo facturado"
+                description="Todos los splits de comisión están marcados como facturados."
+              />
+            : <EmptyState
+                icon={Clock}
+                title="Sin saldos pendientes"
+                description="No hay ventas con pagos pendientes de cobrar."
+              />
       )}
 
       {/* Lista */}

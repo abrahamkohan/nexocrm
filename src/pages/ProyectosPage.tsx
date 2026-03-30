@@ -2,8 +2,9 @@
 // Toda la lógica de datos, estado y filtros vive aquí.
 import { useState } from 'react'
 import { useNavigate } from 'react-router'
-import { Plus } from 'lucide-react'
+import { Plus, FolderOpen } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { EmptyState } from '@/components/ui/EmptyState'
 import { ProjectList } from '@/components/projects/ProjectList'
 import { type FilterState } from '@/components/projects/ProyectoFilters'
 import { toast } from 'sonner'
@@ -52,10 +53,12 @@ export function ProyectosPage() {
       )}
 
       {!isLoading && projects.length === 0 && (
-        <div className="flex flex-col items-center justify-center py-16 gap-3">
-          <p className="text-muted-foreground">No hay proyectos todavía.</p>
-          <Button variant="outline" onClick={() => navigate('/proyectos/nueva')}>Crear el primero</Button>
-        </div>
+        <EmptyState
+          icon={FolderOpen}
+          title="Sin proyectos todavía"
+          description="Cargá un proyecto para gestionar sus unidades y avances."
+          action={{ label: 'Crear el primero', onClick: () => navigate('/proyectos/nueva') }}
+        />
       )}
 
       {!isLoading && projects.length > 0 && (

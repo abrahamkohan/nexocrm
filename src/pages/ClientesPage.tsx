@@ -1,10 +1,11 @@
 // src/pages/ClientesPage.tsx
 import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router'
-import { Plus, Search } from 'lucide-react'
+import { Plus, Search, UserPlus, Users } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { toast } from 'sonner'
+import { EmptyState } from '@/components/ui/EmptyState'
 import { ClientTableDesktop } from '@/components/clients/ClientTableDesktop'
 import { ClientCardMobile }   from '@/components/clients/ClientCardMobile'
 import {
@@ -152,12 +153,18 @@ export function ClientesPage() {
       )}
 
       {!isLoading && filtered.length === 0 && (
-        <div className="flex flex-col items-center justify-center py-16 gap-3">
-          <p className="text-muted-foreground">
-            {search ? `Sin resultados para "${search}"` : tab === 'leads' ? 'No hay leads todavía.' : 'No hay clientes todavía.'}
-          </p>
-          {!search && <Button variant="outline" onClick={openCreate}>Agregar el primero</Button>}
-        </div>
+        search
+          ? <EmptyState
+              icon={Search}
+              title={`Sin resultados para "${search}"`}
+              description="Probá con otro nombre, teléfono o apodo."
+            />
+          : <EmptyState
+              icon={tab === 'clientes' ? Users : UserPlus}
+              title={tab === 'leads' ? 'Sin leads todavía' : tab === 'clientes' ? 'Sin clientes todavía' : 'Sin contactos todavía'}
+              description={tab === 'leads' ? 'Agregá tu primer lead y empezá a hacer seguimiento.' : 'Los clientes aparecen acá cuando convertís un lead.'}
+              action={tab !== 'clientes' ? { label: 'Agregar el primero', onClick: openCreate } : undefined}
+            />
       )}
 
       {filtered.length > 0 && (
