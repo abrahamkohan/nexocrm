@@ -5,11 +5,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
-function paraguayToday(): string {
-  const d = new Date()
-  d.setUTCHours(d.getUTCHours() - 4)
-  return d.toISOString().split('T')[0]
-}
 
 serve(async (req) => {
   const token = req.headers.get('x-digest-token')
@@ -23,13 +18,13 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     )
 
-    const today = paraguayToday()
+    const now = new Date().toISOString()
 
-    // Tareas vencidas que aún no fueron notificadas
+    // Tareas cuya fecha/hora de vencimiento ya pasó y aún no fueron notificadas
     const { data: tasks, error } = await supabase
       .from('tasks')
       .select('id, title, type, priority, due_date, assigned_to')
-      .lt('due_date', today)
+      .lt('due_date', now)
       .not('status', 'eq', 'closed')
       .eq('overdue_notified', false)
 
