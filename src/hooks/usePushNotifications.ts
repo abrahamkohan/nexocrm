@@ -28,8 +28,30 @@ export function usePushNotifications() {
 
   useEffect(() => {
     if (!supported) return
-    navigator.serviceWorker.ready.then((reg) => {
-      reg.pushManager.getSubscription().then((sub) => setSubscribed(!!sub))
+    navigator.serviceWorker.ready.then(async (reg) => {
+      const sub = await reg.pushManager.getSubscription()
+      if (sub) {
+        setSubscribed(true)
+        return
+      }
+      // Permiso ya otorgado pero sin suscripción (e.g. build anterior falló)
+      // → re-suscribir silenciosamente
+      if (Notification.permission === 'granted') {
+        try {
+          const { data: { user } } = await supabase.auth.getUser()
+          if (!user) return
+          const newSub = await reg.pushManager.subscribe({
+            userVisibleOnly:      true,
+            applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY).buffer as ArrayBuffer,
+          })
+          const json = newSub.toJSON()
+          const { error } = await supabase.from('push_subscriptions').upsert(
+            { user_id: user.id, endpoint: json.endpoint!, p256dh: json.keys!.p256dh, auth_key: json.keys!.auth },
+            { onConflict: 'user_id,endpoint' }
+          )
+          if (!error) setSubscribed(true)
+        } catch { /* silencioso */ }
+      }
     })
   }, [supported])
 
