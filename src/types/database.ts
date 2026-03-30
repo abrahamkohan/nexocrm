@@ -1,6 +1,44 @@
 export interface Database {
   public: {
     Tables: {
+      flip_calculations: {
+        Row: {
+          id: string
+          label: string
+          precio_lista: number
+          entrega: number
+          cantidad_cuotas: number
+          valor_cuota: number
+          rentabilidad_anual_percent: number
+          comision_percent: number
+          notas: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          label?: string
+          precio_lista?: number
+          entrega?: number
+          cantidad_cuotas?: number
+          valor_cuota?: number
+          rentabilidad_anual_percent?: number
+          comision_percent?: number
+          notas?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          label?: string
+          precio_lista?: number
+          entrega?: number
+          cantidad_cuotas?: number
+          valor_cuota?: number
+          rentabilidad_anual_percent?: number
+          comision_percent?: number
+          notas?: string | null
+          created_at?: string
+        }
+      }
       projects: {
         Row: {
           id: string
