@@ -72,7 +72,7 @@ function fromInputValue(val: string): string {
 
 // ── Estilos compartidos (mismo patrón que ClientForm) ─────────────────────
 
-const INPUT_CLS = 'w-full h-11 px-3.5 border border-gray-200 bg-white rounded-lg text-[15px] placeholder:text-gray-400 focus:outline-none focus:border-gray-500 transition-colors'
+const INPUT_CLS = 'w-full h-11 px-3.5 border border-gray-200 bg-white rounded-lg text-base placeholder:text-gray-400 focus:outline-none focus:border-gray-500 transition-colors'
 const LABEL_CLS = 'text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5 block'
 
 // ── Props ─────────────────────────────────────────────────────────────────

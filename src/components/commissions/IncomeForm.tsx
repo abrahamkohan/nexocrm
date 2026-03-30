@@ -2,7 +2,7 @@
 import { useState } from 'react'
 import { cn } from '@/lib/utils'
 
-const INPUT_CLS = 'w-full h-11 px-3 border border-gray-200 bg-gray-50 rounded-xl text-[15px] placeholder:text-gray-400 focus:outline-none focus:bg-white focus:border-gray-900 transition-colors'
+const INPUT_CLS = 'w-full h-11 px-3 border border-gray-200 bg-gray-50 rounded-xl text-base placeholder:text-gray-400 focus:outline-none focus:bg-white focus:border-gray-900 transition-colors'
 const LABEL_CLS = 'text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5 block'
 
 interface IncomeFormValues {
