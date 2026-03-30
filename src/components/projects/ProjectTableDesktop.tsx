@@ -1,7 +1,9 @@
 // src/components/projects/ProjectTableDesktop.tsx
 // Tabla desktop-only. Solo recibe datos por props — sin fetches.
+import { useState } from 'react'
 import { useNavigate } from 'react-router'
 import { Trash2, Pencil, FileText } from 'lucide-react'
+import { DeleteConfirmDialog } from '@/components/ui/DeleteConfirmDialog'
 import type { Database } from '@/types/database'
 
 type ProjectRow = Database['public']['Tables']['projects']['Row']
@@ -13,11 +15,11 @@ interface ProjectTableDesktopProps {
 
 export function ProjectTableDesktop({ projects, onDelete }: ProjectTableDesktopProps) {
   const navigate = useNavigate()
+  const [pendingDelete, setPendingDelete] = useState<{ id: string; name: string } | null>(null)
 
   function handleDelete(e: React.MouseEvent, id: string, name: string) {
     e.stopPropagation()
-    if (!confirm(`¿Eliminar "${name}"? Esta acción no se puede deshacer.`)) return
-    onDelete(id)
+    setPendingDelete({ id, name })
   }
 
   return (
@@ -107,5 +109,13 @@ export function ProjectTableDesktop({ projects, onDelete }: ProjectTableDesktopP
         </tbody>
       </table>
     </div>
+
+    <DeleteConfirmDialog
+      open={!!pendingDelete}
+      mode="keyword"
+      entityName={pendingDelete?.name}
+      onConfirm={() => { if (pendingDelete) { onDelete(pendingDelete.id); setPendingDelete(null) } }}
+      onCancel={() => setPendingDelete(null)}
+    />
   )
 }

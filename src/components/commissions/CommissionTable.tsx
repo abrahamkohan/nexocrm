@@ -1,6 +1,8 @@
 // src/components/commissions/CommissionTable.tsx
+import { useState } from 'react'
 import { Eye, Pencil, Trash2, Link2 } from 'lucide-react'
 import { calcTotals, fmtCurrency, getFacturacionStatus } from '@/lib/commissions'
+import { DeleteConfirmDialog } from '@/components/ui/DeleteConfirmDialog'
 import type { CommissionFull } from '@/lib/commissions'
 
 interface Props {
@@ -13,15 +15,13 @@ interface Props {
 function Row({ c, onView, onEdit, onDelete }: { c: CommissionFull } & Omit<Props, 'commissions'>) {
   const { totalCobrado, saldoPendiente, estado } = calcTotals(c)
   const { status } = getFacturacionStatus(c)
+  const [deleteOpen, setDeleteOpen] = useState(false)
 
   const dateStr = c.fecha_cierre
     ? new Date(c.fecha_cierre + 'T00:00:00').toLocaleDateString('es-PY', { day: '2-digit', month: 'short', year: 'numeric' })
     : '—'
 
-  function handleDelete() {
-    if (!confirm(`¿Eliminar venta "${c.proyecto_vendido}"?`)) return
-    onDelete(c.id)
-  }
+  function handleDelete() { setDeleteOpen(true) }
 
   const facturacionBadge = {
     completo:     <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700">✓ Completo</span>,
@@ -108,6 +108,14 @@ function Row({ c, onView, onEdit, onDelete }: { c: CommissionFull } & Omit<Props
         </div>
       </td>
     </tr>
+
+    <DeleteConfirmDialog
+      open={deleteOpen}
+      mode="keyword"
+      entityName={c.proyecto_vendido}
+      onConfirm={() => { onDelete(c.id); setDeleteOpen(false) }}
+      onCancel={() => setDeleteOpen(false)}
+    />
   )
 }
 

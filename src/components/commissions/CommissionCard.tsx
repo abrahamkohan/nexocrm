@@ -1,6 +1,8 @@
 // src/components/commissions/CommissionCard.tsx
+import { useState } from 'react'
 import { Pencil, Trash2 } from 'lucide-react'
 import { calcTotals, fmtCurrency, getFacturacionStatus } from '@/lib/commissions'
+import { DeleteConfirmDialog } from '@/components/ui/DeleteConfirmDialog'
 import type { CommissionFull } from '@/lib/commissions'
 
 interface Props {
@@ -18,10 +20,11 @@ export function CommissionCard({ commission: c, onView, onEdit, onDelete }: Prop
     ? new Date(c.fecha_cierre + 'T00:00:00').toLocaleDateString('es-PY', { day: 'numeric', month: 'short', year: 'numeric' })
     : null
 
+  const [deleteOpen, setDeleteOpen] = useState(false)
+
   function handleDelete(e: React.MouseEvent) {
     e.stopPropagation()
-    if (!confirm(`¿Eliminar venta "${c.proyecto_vendido}"?`)) return
-    onDelete(c.id)
+    setDeleteOpen(true)
   }
 
   return (
@@ -87,5 +90,13 @@ export function CommissionCard({ commission: c, onView, onEdit, onDelete }: Prop
         ))}
       </div>
     </div>
+
+    <DeleteConfirmDialog
+      open={deleteOpen}
+      mode="keyword"
+      entityName={c.proyecto_vendido}
+      onConfirm={() => { onDelete(c.id); setDeleteOpen(false) }}
+      onCancel={() => setDeleteOpen(false)}
+    />
   )
 }

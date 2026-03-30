@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router'
 import { Bed, Bath, Maximize2, MapPin, Globe, GlobeLock, Trash2 } from 'lucide-react'
 import { useUpdateProperty, useDeleteProperty } from '@/hooks/useProperties'
 import { getPhotoUrl, formatPrice } from '@/lib/properties'
+import { DeleteConfirmDialog } from '@/components/ui/DeleteConfirmDialog'
 import type { PropertyRow } from '@/lib/properties'
 
 const TIPO_LABEL: Record<string, string> = {
@@ -27,7 +28,6 @@ export function PropertyCard({ property, onConsultar }: Props) {
   const updateProperty = useUpdateProperty()
   const deleteProperty = useDeleteProperty()
   const [showDeleteModal, setShowDeleteModal] = useState(false)
-  const [confirmText, setConfirmText] = useState('')
 
   const coverUrl = property.foto_portada
     ? getPhotoUrl(property.foto_portada)
@@ -48,7 +48,6 @@ export function PropertyCard({ property, onConsultar }: Props) {
 
   function handleDeleteClick(e: React.MouseEvent) {
     e.stopPropagation()
-    setConfirmText('')
     setShowDeleteModal(true)
   }
 
@@ -170,57 +169,14 @@ export function PropertyCard({ property, onConsultar }: Props) {
       </div>
     </div>
 
-    {/* Modal de confirmación de borrado */}
-    {showDeleteModal && (
-      <div
-        className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4"
-        onClick={e => { e.stopPropagation(); setShowDeleteModal(false) }}
-      >
-        <div
-          className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl"
-          onClick={e => e.stopPropagation()}
-        >
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
-              <Trash2 className="w-5 h-5 text-red-600" />
-            </div>
-            <div>
-              <p className="font-semibold text-gray-900 text-sm">Eliminar propiedad</p>
-              <p className="text-xs text-gray-400 mt-0.5 line-clamp-1">{title}</p>
-            </div>
-          </div>
-
-          <p className="text-sm text-gray-600 mb-4">
-            Esta acción es irreversible. Escribí <span className="font-mono font-semibold text-red-600">borrar</span> para confirmar.
-          </p>
-
-          <input
-            type="text"
-            value={confirmText}
-            onChange={e => setConfirmText(e.target.value)}
-            placeholder="borrar"
-            autoFocus
-            className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-400 mb-3"
-          />
-
-          <div className="flex gap-2">
-            <button
-              onClick={() => setShowDeleteModal(false)}
-              className="flex-1 py-2 rounded-xl text-sm border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors"
-            >
-              Cancelar
-            </button>
-            <button
-              onClick={handleConfirmDelete}
-              disabled={confirmText !== 'borrar' || deleteProperty.isPending}
-              className="flex-1 py-2 rounded-xl text-sm font-semibold bg-red-600 text-white hover:bg-red-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              {deleteProperty.isPending ? 'Eliminando…' : 'Eliminar'}
-            </button>
-          </div>
-        </div>
-      </div>
-    )}
+    <DeleteConfirmDialog
+      open={showDeleteModal}
+      mode="keyword"
+      entityName={title}
+      isPending={deleteProperty.isPending}
+      onConfirm={handleConfirmDelete}
+      onCancel={() => setShowDeleteModal(false)}
+    />
     </>
   )
 }

@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { Pencil, Trash2, History, Phone, MessageCircle, UserCheck, Plus } from 'lucide-react'
 import { ClientHistorySheet } from './ClientHistorySheet'
 import { TaskModal } from '@/components/tasks/TaskModal'
+import { DeleteConfirmDialog } from '@/components/ui/DeleteConfirmDialog'
 import type { Database } from '@/types/database'
 
 type ClientRow = Database['public']['Tables']['clients']['Row']
@@ -55,10 +56,9 @@ function ClientRow({ client, onEdit, onDelete, onConvert, onChangeEstado, onView
   const waUrl   = client.phone ? buildWhatsAppUrl(client.phone, client.full_name) : null
   const telUrl  = client.phone ? `tel:${client.phone.replace(/\s/g, '')}` : null
 
-  function handleDelete() {
-    if (!confirm(`¿Eliminar a "${client.full_name}"?`)) return
-    onDelete(client.id)
-  }
+  const [deleteOpen, setDeleteOpen] = useState(false)
+
+  function handleDelete() { setDeleteOpen(true) }
 
   return (
     <>
@@ -185,6 +185,13 @@ function ClientRow({ client, onEdit, onDelete, onConvert, onChangeEstado, onView
       <ClientHistorySheet client={client} open={historyOpen} onOpenChange={setHistoryOpen} />
       <TaskModal isOpen={taskOpen} onClose={() => setTaskOpen(false)}
         defaultValues={{ context: 'lead', lead_id: client.id }} />
+      <DeleteConfirmDialog
+        open={deleteOpen}
+        mode="name"
+        entityName={client.full_name}
+        onConfirm={() => { onDelete(client.id); setDeleteOpen(false) }}
+        onCancel={() => setDeleteOpen(false)}
+      />
     </>
   )
 }
