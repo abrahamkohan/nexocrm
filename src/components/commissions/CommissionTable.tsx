@@ -30,6 +30,7 @@ function Row({ c, onView, onEdit, onDelete }: { c: CommissionFull } & Omit<Props
   }[status]
 
   return (
+    <>
     <tr className="border-b border-border/40 hover:bg-muted/30 transition-colors group">
       {/* Estado */}
       <td className="px-4 py-3 text-xl text-center w-10">{estado}</td>
@@ -116,6 +117,7 @@ function Row({ c, onView, onEdit, onDelete }: { c: CommissionFull } & Omit<Props
       onConfirm={() => { onDelete(c.id); setDeleteOpen(false) }}
       onCancel={() => setDeleteOpen(false)}
     />
+    </>
   )
 }
 

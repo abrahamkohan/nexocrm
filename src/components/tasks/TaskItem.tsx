@@ -1,10 +1,10 @@
 // src/components/tasks/TaskItem.tsx
 
-import { useRef, useState } from 'react'
-import { MessageCircle, Phone, MapPin, Mail, Video, Trash2 } from 'lucide-react'
+import { CheckCircle2, MessageCircle, Phone, MapPin, Mail, Video, Trash2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useWhatsApp } from '@/hooks/useWhatsApp'
 import { getUrgency } from '@/lib/tasks'
+import { SwipeableRow } from '@/components/ui/SwipeableRow'
 import type { Database } from '@/types/database'
 
 type TaskRow = Database['public']['Tables']['tasks']['Row']
@@ -88,30 +88,6 @@ export function TaskItem({
   const TypeIcon  = TYPE_ICON[task.type]  ?? MessageCircle
   const typeColor = TYPE_COLOR[task.type] ?? '#9ca3af'
 
-  const touchStartX = useRef<number | null>(null)
-  const [swipeHint, setSwipeHint] = useState<'complete' | 'reschedule' | null>(null)
-
-  function onTouchStart(e: React.TouchEvent) {
-    touchStartX.current = e.touches[0].clientX
-  }
-
-  function onTouchMove(e: React.TouchEvent) {
-    if (touchStartX.current === null) return
-    const diff = e.touches[0].clientX - touchStartX.current
-    if (diff > 40) setSwipeHint('complete')
-    else if (diff < -40) setSwipeHint('reschedule')
-    else setSwipeHint(null)
-  }
-
-  function onTouchEnd(e: React.TouchEvent) {
-    if (touchStartX.current === null) return
-    const diff = e.changedTouches[0].clientX - touchStartX.current
-    if (diff > 60) onComplete(task)
-    else if (diff < -60) onReschedule(task)
-    touchStartX.current = null
-    setSwipeHint(null)
-  }
-
   function handleWhatsApp() {
     if (!lead?.phone) return
     const message = getTemplate(task.title, {
@@ -129,18 +105,27 @@ export function TaskItem({
 
 
   return (
+    <SwipeableRow
+      className="rounded-2xl"
+      leftAction={!isClosed ? {
+        icon: <CheckCircle2 className="w-6 h-6" />,
+        label: 'Hecho',
+        color: 'bg-emerald-500',
+        onTrigger: () => onComplete(task),
+      } : undefined}
+      rightAction={onDelete ? {
+        icon: <Trash2 className="w-6 h-6" />,
+        label: 'Eliminar',
+        color: 'bg-red-500',
+        onTrigger: () => onDelete(task.id),
+      } : undefined}
+    >
     <div
       className={cn(
         'group relative rounded-2xl bg-white px-3 py-2.5 flex items-center gap-3 transition-all duration-150',
         'shadow-[0_4px_14px_rgba(0,0,0,0.07)]',
-        'active:scale-[0.98]',
         isClosed && 'opacity-50',
-        swipeHint === 'complete' && 'translate-x-1',
-        swipeHint === 'reschedule' && '-translate-x-1'
       )}
-      onTouchStart={onTouchStart}
-      onTouchMove={onTouchMove}
-      onTouchEnd={onTouchEnd}
     >
       {/* COLUMNA IZQUIERDA: todo el contenido */}
       <div className="flex flex-col gap-0.5 flex-1 min-w-0">
@@ -245,17 +230,6 @@ export function TaskItem({
         )}
       </div>
 
-      {/* Botón eliminar — solo hover */}
-      {onDelete && (
-        <button
-          onClick={e => { e.stopPropagation(); if (confirm(`¿Eliminar "${task.title}"?`)) onDelete(task.id) }}
-          className="absolute top-2 right-[84px] opacity-0 group-hover:opacity-100 w-6 h-6 flex items-center justify-center rounded-lg text-gray-300 hover:text-red-500 hover:bg-red-50 transition-all"
-          title="Eliminar tarea"
-        >
-          <Trash2 className="w-3.5 h-3.5" />
-        </button>
-      )}
-
       {/* Badge estilo calendario — cuadrado fijo 72×72 */}
       <div className="w-[72px] h-[72px] flex-shrink-0 rounded-2xl overflow-hidden shadow-[0_3px_10px_rgba(0,0,0,0.12)] border border-gray-100 flex flex-col">
         <div className="bg-[#D4AF37] flex items-center justify-center py-1">
@@ -267,5 +241,6 @@ export function TaskItem({
         </div>
       </div>
     </div>
+    </SwipeableRow>
   )
 }

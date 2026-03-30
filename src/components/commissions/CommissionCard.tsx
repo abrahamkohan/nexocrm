@@ -28,6 +28,7 @@ export function CommissionCard({ commission: c, onView, onEdit, onDelete }: Prop
   }
 
   return (
+    <>
     <div
       onClick={() => onView(c)}
       className="bg-white rounded-2xl border border-gray-100 shadow-sm px-4 py-3.5 flex flex-col gap-2.5 cursor-pointer active:scale-[0.99] transition-transform"
@@ -98,5 +99,6 @@ export function CommissionCard({ commission: c, onView, onEdit, onDelete }: Prop
       onConfirm={() => { onDelete(c.id); setDeleteOpen(false) }}
       onCancel={() => setDeleteOpen(false)}
     />
+    </>
   )
 }

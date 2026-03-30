@@ -39,8 +39,9 @@ export function NoteEditor({ note, clients, projects, onClose }: NoteEditorProps
   const [reminder,  setReminder]  = useState(note.reminder_date ?? '')
   const [clientId,  setClientId]  = useState(note.client_id ?? '')
   const [projectId, setProjectId] = useState(note.project_id ?? '')
-  const [showMeta,  setShowMeta]  = useState(false)
-  const [showCal,   setShowCal]   = useState(false)
+  const [showMeta,    setShowMeta]    = useState(false)
+  const [showCal,     setShowCal]     = useState(false)
+  const [confirmExit, setConfirmExit] = useState(false)
 
   const updateNote  = useUpdateNote()
   const deleteNote  = useDeleteNote()
@@ -70,12 +71,8 @@ export function NoteEditor({ note, clients, projects, onClose }: NoteEditorProps
 
   function handleClose() {
     if (!content.trim()) { deleteNote.mutate(note.id, { onSuccess: onClose }); return }
-    if (isDirty()) {
-      updateNote.mutate(
-        { id: note.id, input: { content, tags, reminder_date: reminder || null, client_id: clientId || null, project_id: projectId || null } },
-        { onSuccess: onClose }
-      )
-    } else { onClose() }
+    if (isDirty()) { setConfirmExit(true); return }
+    onClose()
   }
 
   function handleCancel() {
@@ -163,6 +160,42 @@ export function NoteEditor({ note, clients, projects, onClose }: NoteEditorProps
       </div>
     </div>
   )
+
+  // ── Dialog: cambios sin guardar ─────────────────────────────────────────────
+  if (confirmExit) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center" style={{ background: 'rgba(0,0,0,0.45)' }}>
+        <div className="bg-white w-full md:max-w-sm rounded-t-2xl md:rounded-2xl p-6 flex flex-col gap-4"
+          style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 24px)' }}>
+          <div>
+            <p className="text-base font-bold text-gray-900">Cambios sin guardar</p>
+            <p className="text-sm text-gray-500 mt-1">¿Querés guardar antes de cerrar?</p>
+          </div>
+          <div className="flex flex-col gap-2">
+            <button
+              onClick={handleSaveAndClose}
+              disabled={updateNote.isPending}
+              className="h-12 rounded-xl text-sm font-semibold bg-gray-900 text-white disabled:opacity-30"
+            >
+              Guardar y cerrar
+            </button>
+            <button
+              onClick={onClose}
+              className="h-12 rounded-xl text-sm font-semibold bg-red-50 text-red-600"
+            >
+              Salir sin guardar
+            </button>
+            <button
+              onClick={() => setConfirmExit(false)}
+              className="h-10 rounded-xl text-sm text-gray-400"
+            >
+              Volver
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="fixed inset-0 z-50" onClick={handleClose}>
@@ -283,7 +316,7 @@ export function NoteEditor({ note, clients, projects, onClose }: NoteEditorProps
           </div>
 
           {/* ── Footer guardar ── */}
-          <div className="flex items-center gap-2 px-4 pt-2" style={{ paddingBottom: 'max(20px, env(safe-area-inset-bottom))' }}>
+          <div className="flex items-center gap-2 px-4 pt-2" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 20px)' }}>
             <button
               type="button"
               onClick={handleCancel}

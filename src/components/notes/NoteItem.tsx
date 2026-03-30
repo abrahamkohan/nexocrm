@@ -2,6 +2,7 @@
 import { Star, Pencil, Archive, Trash2, Bell, Link } from 'lucide-react'
 import { useNavigate } from 'react-router'
 import { extractTitle, extractSnippet } from '@/lib/notes'
+import { SwipeableRow } from '@/components/ui/SwipeableRow'
 import type { Database } from '@/types/database'
 
 type NoteRow = Database['public']['Tables']['notes']['Row']
@@ -83,9 +84,23 @@ export function NoteItem({ note, clientName, clientId, projectName, onOpen, onAr
   }
 
   return (
+    <SwipeableRow
+      leftAction={{
+        icon: <Archive className="w-5 h-5" />,
+        label: note.location === 'inbox' ? 'Archivar' : 'Inbox',
+        color: 'bg-gray-500',
+        onTrigger: () => onArchive(note.id),
+      }}
+      rightAction={{
+        icon: <Trash2 className="w-5 h-5" />,
+        label: 'Eliminar',
+        color: 'bg-red-500',
+        onTrigger: () => onDelete(note.id),
+      }}
+    >
     <div
       onClick={() => onOpen(note)}
-      className="group flex items-start gap-3 px-4 py-3 border-b border-gray-100 hover:bg-gray-50/80 cursor-pointer transition-colors"
+      className="group flex items-start gap-3 px-4 py-3 border-b border-gray-100 hover:bg-gray-50/80 cursor-pointer transition-colors bg-white"
     >
       {/* Flag button */}
       <button
@@ -174,5 +189,6 @@ export function NoteItem({ note, clientName, clientId, projectName, onOpen, onAr
         </button>
       </div>
     </div>
+    </SwipeableRow>
   )
 }

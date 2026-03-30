@@ -23,6 +23,7 @@ export function ProjectTableDesktop({ projects, onDelete }: ProjectTableDesktopP
   }
 
   return (
+    <>
     <div className="rounded-xl border border-border overflow-hidden">
       <table className="w-full text-sm">
         <thead>
@@ -117,5 +118,6 @@ export function ProjectTableDesktop({ projects, onDelete }: ProjectTableDesktopP
       onConfirm={() => { if (pendingDelete) { onDelete(pendingDelete.id); setPendingDelete(null) } }}
       onCancel={() => setPendingDelete(null)}
     />
+    </>
   )
 }
