@@ -34,7 +34,8 @@ export function ReporteAgentes() {
         <div className="flex-1 border-t border-gray-200" />
       </div>
 
-      <div className="rounded-xl border overflow-hidden">
+      {/* Desktop: tabla */}
+      <div className="hidden md:block rounded-xl border overflow-hidden">
         <table className="w-full text-sm">
           <thead>
             <tr className="bg-gray-50 border-b">
@@ -76,6 +77,42 @@ export function ReporteAgentes() {
             ))}
           </tbody>
         </table>
+      </div>
+
+      {/* Mobile: cards */}
+      <div className="flex flex-col gap-2 md:hidden">
+        {rows.map(r => (
+          <div key={r.id} className="bg-white rounded-xl border px-4 py-3 flex flex-col gap-2.5">
+            {/* Nombre + rol */}
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-8 h-8 rounded-full bg-gray-900 text-white flex items-center justify-center text-xs font-bold flex-shrink-0">
+                  {(r.full_name ?? r.id)[0].toUpperCase()}
+                </div>
+                <span className="font-semibold text-sm text-gray-900 truncate">{r.full_name ?? r.email ?? '—'}</span>
+              </div>
+              <span className={`flex-shrink-0 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                r.role === 'admin' ? 'bg-violet-50 text-violet-700' : 'bg-blue-50 text-blue-700'
+              }`}>
+                {r.role ?? 'Sin rol'}
+              </span>
+            </div>
+            {/* Stats */}
+            <div className="grid grid-cols-4 gap-1 border-t border-gray-50 pt-2">
+              {[
+                { label: 'Leads',    value: r.leads,   cls: 'text-amber-600' },
+                { label: 'Clientes', value: r.clientes, cls: 'text-emerald-600' },
+                { label: 'Tareas',   value: r.pending,  cls: 'text-indigo-600' },
+                { label: 'Vencidas', value: r.overdue,  cls: r.overdue > 0 ? 'text-red-600' : 'text-gray-400' },
+              ].map(({ label, value, cls }) => (
+                <div key={label} className="flex flex-col items-center gap-0.5">
+                  <span className={`text-base font-bold ${cls}`}>{value}</span>
+                  <span className="text-[10px] text-gray-400">{label}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   )
