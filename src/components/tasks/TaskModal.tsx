@@ -3,7 +3,7 @@
 // Patrón idéntico a "Nuevo lead" (MobileFormScreen + Modal desktop).
 
 import { useState, useEffect, useRef } from 'react'
-import { ChevronDown, ChevronUp, MessageCircle, Loader2, Phone, MapPin, Mail, Video, Calendar, Flag, MoreHorizontal } from 'lucide-react'
+import { ChevronDown, ChevronUp, MessageCircle, Loader2, Phone, MapPin, Mail, Video } from 'lucide-react'
 import { MobileFormScreen } from '@/components/ui/MobileFormScreen'
 import { Modal } from '@/components/ui/modal'
 import { Button } from '@/components/ui/button'
@@ -503,80 +503,46 @@ export function TaskModal({
 
   // ── Footer mobile — fijo fuera del scroll, siempre visible ───────────────
   const mobileFooter = (
-    <div className="flex items-center px-4 gap-3" style={{ height: 64 }}>
+    <div className="flex items-center gap-2 px-4 py-3">
+      <button
+        type="button"
+        onClick={onClose}
+        disabled={isSaving}
+        className="h-11 px-4 rounded-xl border border-gray-200 text-sm font-medium text-gray-500 bg-white active:bg-gray-50 transition-colors disabled:opacity-40"
+      >
+        Cancelar
+      </button>
 
-      {/* Acciones rápidas izquierda */}
-      <div className="flex items-center gap-1 flex-1">
-        {/* Fecha */}
-        <button
-          type="button"
-          title="Fecha y hora"
-          onClick={() => {
-            dateInputRef.current?.focus()
-            try { dateInputRef.current?.showPicker() } catch { /* no-op */ }
-          }}
-          className="flex flex-col items-center gap-0.5 p-2.5 rounded-xl text-gray-400 active:bg-gray-100 transition-colors"
-        >
-          <Calendar className="w-6 h-6" />
-        </button>
-
-        {/* Prioridad */}
-        <button
-          type="button"
-          title="Prioridad"
-          onClick={() => setMoreOpen(true)}
-          className={`flex flex-col items-center gap-0.5 p-2.5 rounded-xl transition-colors ${
-            form.priority !== 'medium'
-              ? 'text-[#D4AF37]'
-              : 'text-gray-400 active:bg-gray-100'
-          }`}
-        >
-          <Flag className="w-6 h-6" />
-        </button>
-
-        {/* Más opciones */}
-        <button
-          type="button"
-          title="Más opciones"
-          onClick={() => setMoreOpen(v => !v)}
-          className={`flex flex-col items-center gap-0.5 p-2.5 rounded-xl transition-colors ${
-            moreOpen ? 'text-gray-900 bg-gray-100' : 'text-gray-400 active:bg-gray-100'
-          }`}
-        >
-          <MoreHorizontal className="w-6 h-6" />
-        </button>
-      </div>
-
-      {/* Botón guardar derecha */}
       {hasLeadPhone ? (
-        <div className="flex items-center gap-2">
+        <>
           <button
             type="button"
             disabled={!canSave || isSaving}
             onClick={() => handleSave(false)}
-            className="h-10 px-4 rounded-full text-[13px] font-semibold bg-gray-900 text-white disabled:opacity-30 transition-opacity"
+            className="flex-1 h-11 rounded-xl text-sm font-semibold bg-gray-900 text-white disabled:opacity-30 transition-opacity flex items-center justify-center gap-2"
           >
-            {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : (isEdit ? 'Guardar' : 'Agregar')}
+            {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+            {isEdit ? 'Guardar' : 'Agregar tarea'}
           </button>
           <button
             type="button"
             disabled={!canSave || isSaving}
             onClick={() => handleSave(true)}
-            className="h-10 px-4 rounded-full text-[13px] font-semibold bg-emerald-600 text-white flex items-center gap-1.5 disabled:opacity-30 transition-opacity"
+            className="flex-1 h-11 rounded-xl text-sm font-semibold bg-emerald-600 text-white flex items-center justify-center gap-1.5 disabled:opacity-30 transition-opacity"
           >
             <MessageCircle className="w-4 h-4" />
-            WA
+            {isEdit ? 'Guardar + WA' : 'Agregar + WA'}
           </button>
-        </div>
+        </>
       ) : (
         <button
           type="button"
           disabled={!canSave || isSaving}
           onClick={() => handleSave(false)}
-          className="h-10 px-6 rounded-full text-[14px] font-semibold bg-gray-900 text-white disabled:opacity-30 transition-opacity flex items-center gap-2"
+          className="flex-1 h-11 rounded-xl text-sm font-semibold bg-gray-900 text-white disabled:opacity-30 transition-opacity flex items-center justify-center gap-2"
         >
           {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-          {isEdit ? 'Guardar' : 'Agregar tarea'}
+          {isEdit ? 'Guardar cambios' : 'Agregar tarea'}
         </button>
       )}
     </div>
