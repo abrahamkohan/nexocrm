@@ -89,7 +89,7 @@ export function ReporteAgentes() {
                 <div className="w-8 h-8 rounded-full bg-gray-900 text-white flex items-center justify-center text-xs font-bold flex-shrink-0">
                   {(r.full_name ?? r.id)[0].toUpperCase()}
                 </div>
-                <span className="font-semibold text-sm text-gray-900 truncate">{r.full_name ?? r.email ?? '—'}</span>
+                <span className="font-semibold text-sm text-gray-900 truncate">{r.full_name ?? '—'}</span>
               </div>
               <span className={`flex-shrink-0 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
                 r.role === 'admin' ? 'bg-violet-50 text-violet-700' : 'bg-blue-50 text-blue-700'
