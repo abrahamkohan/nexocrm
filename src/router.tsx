@@ -29,6 +29,8 @@ import { ClientDetailPage } from '@/pages/ClientDetailPage'
 import { ComisionesPage } from '@/pages/ComisionesPage'
 import { VentaFormPage } from '@/pages/VentaFormPage'
 import { FlipPage } from '@/pages/FlipPage'
+import { FlipFormPage } from '@/pages/FlipFormPage'
+import { FlipPrintPage } from '@/pages/FlipPrintPage'
 import { RequireAuth } from '@/components/auth/RequireAuth'
 import { RequireRole } from '@/components/auth/RequireRole'
 
@@ -48,7 +50,9 @@ export const router = createBrowserRouter([
       { path: 'clientes/:id', element: <ClientDetailPage /> },
       { path: 'clientes/:id/editar', element: <ClienteFormPage /> },
       { path: 'simulador', element: <SimuladorPage /> },
-      { path: 'flip',      element: <FlipPage /> },
+      { path: 'flip',              element: <FlipPage /> },
+      { path: 'flip/nuevo',        element: <FlipFormPage /> },
+      { path: 'flip/:id/editar',   element: <FlipFormPage /> },
       { path: 'informes', element: <InformesPage /> },
       { path: 'presupuestos',             element: <PresupuestosPage /> },
       { path: 'presupuestos/nuevo',       element: <PresupuestoFormPage /> },
@@ -72,6 +76,7 @@ export const router = createBrowserRouter([
   { path: 'l/:ref',     element: <LeadShortLinkPage /> },
   { path: 'informes/:id',      element: <ReporteHtmlPage /> },
   { path: 'presupuestos/:id/pdf', element: <PresupuestoPdfPage /> },
+  { path: 'flip/:id/imprimir',   element: <FlipPrintPage /> },
   { path: 'auth/callback', element: <AuthCallbackPage /> },
   { path: 'reset-password', element: <ResetPasswordPage /> },
 ])
