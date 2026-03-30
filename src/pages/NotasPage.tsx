@@ -1,6 +1,6 @@
 // src/pages/NotasPage.tsx
 import { useState, useMemo, useEffect } from 'react'
-import { Plus, Search, NotebookPen, Star, Archive, FileText } from 'lucide-react'
+import { Plus, Search, NotebookPen, Star, Archive, FileText, X } from 'lucide-react'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -24,31 +24,44 @@ export function NotasPage() {
   const updateNote = useUpdateNote()
   const deleteNote = useDeleteNote()
 
-  const [tab,      setTab]      = useState<Tab>('inbox')
-  const [search,   setSearch]   = useState('')
-  const [editing,  setEditing]  = useState<NoteRow | null>(null)
+  const [tab,         setTab]         = useState<Tab>('inbox')
+  const [search,      setSearch]      = useState('')
+  const [clientFilter,  setClientFilter]  = useState('')
+  const [projectFilter, setProjectFilter] = useState('')
+  const [editing,     setEditing]     = useState<NoteRow | null>(null)
 
   // ─── Filtrado ──────────────────────────────────────────────────────────────
 
   const filtered = useMemo(() => {
     let base: NoteRow[]
-    if (tab === 'inbox')   base = notes.filter(n => n.location === 'inbox')
+    if (tab === 'inbox')        base = notes.filter(n => n.location === 'inbox')
     else if (tab === 'flagged') base = notes.filter(n => n.is_flagged)
     else if (tab === 'archive') base = notes.filter(n => n.location === 'archive')
-    else base = notes
+    else                        base = notes
+
+    if (clientFilter)  base = base.filter(n => n.client_id  === clientFilter)
+    if (projectFilter) base = base.filter(n => n.project_id === projectFilter)
 
     const q = search.toLowerCase().trim()
     if (!q) return base
     return base.filter(n => n.content.toLowerCase().includes(q))
-  }, [notes, tab, search])
+  }, [notes, tab, search, clientFilter, projectFilter])
 
   const inboxCount   = notes.filter(n => n.location === 'inbox').length
   const flaggedCount = notes.filter(n => n.is_flagged).length
+
+  // Solo mostrar clientes/proyectos que tienen al menos una nota
+  const linkedClientIds  = useMemo(() => new Set(notes.map(n => n.client_id).filter(Boolean)),  [notes])
+  const linkedProjectIds = useMemo(() => new Set(notes.map(n => n.project_id).filter(Boolean)), [notes])
+  const linkedClients    = useMemo(() => clients.filter(c  => linkedClientIds.has(c.id)),        [clients, linkedClientIds])
+  const linkedProjects   = useMemo(() => projects.filter(p => linkedProjectIds.has(p.id)),       [projects, linkedProjectIds])
 
   // ─── Helpers de nombre ─────────────────────────────────────────────────────
 
   const clientMap  = useMemo(() => Object.fromEntries(clients.map(c  => [c.id,  c.full_name])), [clients])
   const projectMap = useMemo(() => Object.fromEntries(projects.map(p => [p.id, p.name])),       [projects])
+
+  const hasActiveFilter = !!(clientFilter || projectFilter)
 
   // ─── Handlers ──────────────────────────────────────────────────────────────
 
@@ -122,16 +135,59 @@ export function NotasPage() {
         </button>
       </div>
 
-      {/* Buscador */}
+      {/* Buscador + filtros */}
       {notes.length > 0 && (
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Buscar en notas..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            className="pl-9"
-          />
+        <div className="flex flex-col gap-2">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Buscar en notas..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+
+          {/* Filtros por cliente / proyecto — solo si hay notas vinculadas */}
+          {(linkedClients.length > 0 || linkedProjects.length > 0) && (
+            <div className="flex items-center gap-2 flex-wrap">
+              {linkedClients.length > 0 && (
+                <select
+                  value={clientFilter}
+                  onChange={e => { setClientFilter(e.target.value); setProjectFilter('') }}
+                  className="text-sm border border-gray-200 rounded-lg px-2 py-1.5 bg-white focus:outline-none focus:ring-1 focus:ring-gray-300 text-gray-700"
+                >
+                  <option value="">Todos los clientes</option>
+                  {linkedClients.map(c => (
+                    <option key={c.id} value={c.id}>{c.full_name}</option>
+                  ))}
+                </select>
+              )}
+
+              {linkedProjects.length > 0 && (
+                <select
+                  value={projectFilter}
+                  onChange={e => { setProjectFilter(e.target.value); setClientFilter('') }}
+                  className="text-sm border border-gray-200 rounded-lg px-2 py-1.5 bg-white focus:outline-none focus:ring-1 focus:ring-gray-300 text-gray-700"
+                >
+                  <option value="">Todos los proyectos</option>
+                  {linkedProjects.map(p => (
+                    <option key={p.id} value={p.id}>{p.name}</option>
+                  ))}
+                </select>
+              )}
+
+              {hasActiveFilter && (
+                <button
+                  onClick={() => { setClientFilter(''); setProjectFilter('') }}
+                  className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-700 transition-colors"
+                >
+                  <X className="w-3 h-3" />
+                  Limpiar filtro
+                </button>
+              )}
+            </div>
+          )}
         </div>
       )}
 
@@ -142,11 +198,11 @@ export function NotasPage() {
 
       {/* Empty state */}
       {!isLoading && filtered.length === 0 && (
-        search
+        search || hasActiveFilter
           ? <EmptyState
               icon={Search}
-              title={`Sin resultados para "${search}"`}
-              description="Probá con otras palabras."
+              title="Sin resultados"
+              description={search ? `Nada para "${search}"` : 'No hay notas vinculadas a este filtro.'}
             />
           : tab === 'inbox'
             ? <EmptyState
