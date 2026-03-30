@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router'
-import { Search, Plus, Home, Building2 } from 'lucide-react'
+import { Search, Plus, Building2 } from 'lucide-react'
 import { useProperties } from '@/hooks/useProperties'
 import { useConsultoraConfig } from '@/hooks/useConsultora'
 import { PropertyCard } from '@/components/properties/PropertyCard'
