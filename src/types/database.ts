@@ -38,6 +38,112 @@ export interface Database {
           notas?: string | null
           created_at?: string
         }
+        Relationships: []
+      }
+      property_photos: {
+        Row: {
+          id: string
+          property_id: string
+          storage_path: string
+          sort_order: number
+          es_portada: boolean
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          property_id: string
+          storage_path: string
+          sort_order?: number
+          es_portada?: boolean
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          property_id?: string
+          storage_path?: string
+          sort_order?: number
+          es_portada?: boolean
+          created_at?: string
+        }
+        Relationships: []
+      }
+      project_photos: {
+        Row: {
+          id: string
+          project_id: string
+          storage_path: string
+          sort_order: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          project_id: string
+          storage_path: string
+          sort_order?: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          project_id?: string
+          storage_path?: string
+          sort_order?: number
+          created_at?: string
+        }
+        Relationships: []
+      }
+      project_amenities: {
+        Row: {
+          id: string
+          project_id: string
+          name: string
+          sort_order: number
+          categoria: string
+          icon: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          project_id: string
+          name: string
+          sort_order?: number
+          categoria?: string
+          icon?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          project_id?: string
+          name?: string
+          sort_order?: number
+          categoria?: string
+          icon?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
+      project_amenity_images: {
+        Row: {
+          id: string
+          amenity_id: string
+          storage_path: string
+          sort_order: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          amenity_id: string
+          storage_path: string
+          sort_order?: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          amenity_id?: string
+          storage_path?: string
+          sort_order?: number
+          created_at?: string
+        }
+        Relationships: []
       }
       projects: {
         Row: {
