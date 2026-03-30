@@ -1,6 +1,6 @@
 // src/pages/FlipPrintPage.tsx — página HTML imprimible para un cálculo de flip
 import { useParams } from 'react-router'
-import { Loader2, Printer, TrendingUp } from 'lucide-react'
+import { Loader2, Printer, Building2 } from 'lucide-react'
 import { useFlipById } from '@/hooks/useFlips'
 import { useConsultoraConfig } from '@/hooks/useConsultora'
 import { calcFlip } from '@/simulator/engine'
@@ -49,6 +49,7 @@ export function FlipPrintPage() {
 
   const r = calcFlip(flip)
   const date = new Date(flip.created_at).toLocaleDateString('es-PY', { day: '2-digit', month: 'long', year: 'numeric' })
+  const logoUrl = consultora?.logo_url ?? null
 
   return (
     <>
@@ -78,10 +79,14 @@ export function FlipPrintPage() {
 
           {/* Header */}
           <div className="bg-gray-900 px-6 py-5 flex items-center justify-between gap-4">
-            <div className="flex items-center gap-2">
-              <TrendingUp className="w-5 h-5 text-emerald-400" />
-              <span className="text-white font-bold text-lg">{consultora?.nombre ?? 'Consultora'}</span>
-            </div>
+            {logoUrl ? (
+              <img src={logoUrl} alt={consultora?.nombre} className="h-10 object-contain" />
+            ) : (
+              <div className="flex items-center gap-2">
+                <Building2 className="w-5 h-5 text-white/70" />
+                <span className="text-white font-bold text-lg">{consultora?.nombre ?? 'Consultora'}</span>
+              </div>
+            )}
             <div className="text-right">
               <p className="text-white/50 text-[11px] uppercase tracking-widest">Análisis Flip</p>
               <p className="text-white/80 text-xs mt-0.5">{date}</p>
