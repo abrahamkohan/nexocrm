@@ -35,24 +35,24 @@ export function LoginPage() {
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: '#f8f7f4',
+      backgroundColor: '#14223A',
       fontFamily: 'ui-sans-serif, system-ui, sans-serif',
     }}>
       <div style={{
         width: '100%',
         maxWidth: 380,
+        margin: '0 24px',
         padding: '40px 36px',
         backgroundColor: '#fff',
         borderRadius: 16,
-        boxShadow: '0 2px 20px rgba(0,0,0,0.08)',
-        border: '1px solid #e4e7eb',
+        boxShadow: '0 8px 40px rgba(0,0,0,0.3)',
       }}>
         {/* Header */}
         <div style={{ textAlign: 'center', marginBottom: 32 }}>
           <img
-            src="/logo 2.svg"
+            src="https://kohancampos.com.py/logo-hero.svg"
             alt="Kohan & Campos"
-            style={{ height: 28, margin: '0 auto 20px', display: 'block' }}
+            style={{ height: 56, margin: '0 auto 24px', display: 'block' }}
           />
           <p style={{ fontSize: 14, color: '#828b9c', margin: 0 }}>
             Iniciar sesión
