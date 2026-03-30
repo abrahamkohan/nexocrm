@@ -1,6 +1,6 @@
 // src/pages/ProjectDetailPage.tsx
 import { useNavigate, useParams } from 'react-router'
-import { ArrowLeft, Pencil, MapPin, Building2, Calendar, DollarSign, FileText, Map, Video, ExternalLink } from 'lucide-react'
+import { ArrowLeft, Pencil, MapPin, Building2, Calendar, DollarSign, FileText, Map, Video } from 'lucide-react'
 import { useProject } from '@/hooks/useProjects'
 
 const STATUS_LABEL: Record<string, string> = {
