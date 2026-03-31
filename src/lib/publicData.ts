@@ -4,6 +4,7 @@ import { supabase } from './supabase'
 import type { Database } from '@/types/database'
 
 type ProjectRow      = Database['public']['Tables']['projects']['Row']
+export type { ProjectRow }
 type TypologyRow     = Database['public']['Tables']['typologies']['Row']
 type ConsultoraRow   = Database['public']['Tables']['consultora_config']['Row']
 type PropertyRow     = Database['public']['Tables']['properties']['Row']
@@ -38,6 +39,17 @@ export async function getPublicPropertyPhotos(propertyId: string): Promise<Prope
     .order('sort_order')
   if (error) return []
   return data as unknown as PropertyPhotoRow[]
+}
+
+export async function getPublicProject(id: string): Promise<ProjectRow | null> {
+  const { data, error } = await supabase
+    .from('projects')
+    .select('*')
+    .eq('id', id)
+    .eq('publicado_en_web', true)
+    .single()
+  if (error) return null
+  return data as unknown as ProjectRow
 }
 
 export async function getPublicProjects(): Promise<ProjectRow[]> {

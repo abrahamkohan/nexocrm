@@ -7,7 +7,11 @@ import { useConsultoraConfig } from '@/hooks/useConsultora'
 import { getPhotoUrl, formatPrice, timeAgo } from '@/lib/properties'
 import { PropertyLightbox, PropertyPhotoMosaic } from '@/components/properties/PropertyGallery'
 
-const APP_URL = ((import.meta.env.VITE_APP_URL as string) || window.location.origin).replace(/\/$/, '')
+const APP_URL = (
+  import.meta.env.DEV
+    ? window.location.origin
+    : ((import.meta.env.VITE_APP_URL as string) || window.location.origin)
+).replace(/\/$/, '')
 
 const TIPO_LABEL: Record<string, string> = {
   departamento: 'Departamento',
