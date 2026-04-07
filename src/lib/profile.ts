@@ -1,0 +1,37 @@
+// src/lib/profile.ts
+import { supabase } from './supabase'
+import type { Database } from '@/types/database'
+
+type ProfileUpdate = Database['public']['Tables']['profiles']['Update']
+
+export async function getProfile(userId: string): Promise<{ id: string; full_name: string | null } | null> {
+  // Check mock mode inside function (after mount)
+  if (typeof window !== 'undefined' && localStorage.getItem('USE_MOCK_AUTH') === 'true') {
+    return { id: userId, full_name: 'Demo User' }
+  }
+  
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('id, full_name')
+    .eq('id', userId as unknown as never)
+    .single()
+  if (error) {
+    console.error('[getProfile] error:', error)
+    return null
+  }
+  return data as unknown as { id: string; full_name: string | null } | null
+}
+
+export async function updateProfile(userId: string, updates: ProfileUpdate & { whatsapp?: string | null }): Promise<{ id: string; full_name: string | null }> {
+  const { data, error } = await supabase
+    .from('profiles')
+    .update(updates as unknown as never)
+    .eq('id', userId as unknown as never)
+    .select('id, full_name')
+    .single()
+  if (error) {
+    console.error('[updateProfile] error:', error)
+    throw error
+  }
+  return data as unknown as { id: string; full_name: string | null }
+}

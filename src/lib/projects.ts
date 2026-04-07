@@ -1,0 +1,52 @@
+// src/lib/projects.ts
+import { supabase } from './supabase'
+import type { Database } from '@/types/database'
+
+type ProjectRow = Database['public']['Tables']['projects']['Row']
+type ProjectInsert = Database['public']['Tables']['projects']['Insert']
+type ProjectUpdate = Database['public']['Tables']['projects']['Update']
+
+export async function getProjects(): Promise<ProjectRow[]> {
+  const { data, error } = await supabase
+    .from('projects')
+    .select('*')
+    .order('created_at', { ascending: false })
+  if (error) throw error
+  return data as unknown as ProjectRow[]
+}
+
+export async function getProject(id: string): Promise<ProjectRow> {
+  const { data, error } = await supabase
+    .from('projects')
+    .select('*')
+    .eq('id', id as any)
+    .single()
+  if (error) throw error
+  return data as unknown as ProjectRow
+}
+
+export async function createProject(input: ProjectInsert): Promise<ProjectRow> {
+  const { data, error } = await supabase
+    .from('projects')
+    .insert(input as any)
+    .select()
+    .single()
+  if (error) throw error
+  return data as unknown as ProjectRow
+}
+
+export async function updateProject(id: string, input: ProjectUpdate): Promise<void> {
+  const { error } = await supabase
+    .from('projects')
+    .update(input as any)
+    .eq('id', id as any)
+  if (error) throw error
+}
+
+export async function deleteProject(id: string): Promise<void> {
+  const { error } = await supabase
+    .from('projects')
+    .delete()
+    .eq('id', id as any)
+  if (error) throw error
+}
