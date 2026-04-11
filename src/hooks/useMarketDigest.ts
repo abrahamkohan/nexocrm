@@ -4,11 +4,13 @@ import { useBrand } from '@/context/BrandContext'
 
 export interface MarketDigest {
   id: string
+  created_at: string
   fecha: string
   summary: string | null
   titulares: { titulo: string; url: string; fuente: string }[]
   senal_inversor: string | null
   status: string
+  quality: string
 }
 
 export function useMarketDigest() {
@@ -35,22 +37,10 @@ export function useMarketDigest() {
 
   const mutation = useMutation({
     mutationFn: async () => {
-      // Obtener sesión actual
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!session) {
-        throw new Error('No hay sesión activa')
-      }
-
-      // Usar fetch directamente para mayor control
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/market-digest`,
+      const { data, error } = await supabase.functions.invoke(
+        'market-digest',
         {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
+          body: {
             consultant_id: consultantId,
             queries: [
               'mercado inmobiliario Paraguay 2026',
@@ -58,16 +48,10 @@ export function useMarketDigest() {
               'precios propiedades Asunción Paraguay',
             ],
             pais: 'Paraguay',
-          }),
+          },
         }
       )
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}))
-        throw new Error(errorData.error || `Error ${response.status}: ${response.statusText}`)
-      }
-
-      const data = await response.json()
+      if (error) throw error
       if (!data.success) throw new Error(data.error)
       return data.data
     },
@@ -78,5 +62,21 @@ export function useMarketDigest() {
     },
   })
 
-  return { query, mutation }
+  const publishMutation = useMutation({
+    mutationFn: async (digestId: string) => {
+      // @ts-ignore - Supabase type issue
+      const { error } = await supabase
+        .from('market_digests')
+        .update({ status: 'published' })
+        .eq('id', digestId)
+      if (error) throw error
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ['market-digest', consultantId, today],
+      })
+    },
+  })
+
+  return { query, mutation, publishMutation }
 }

@@ -13,39 +13,7 @@ serve(async (req) => {
   }
 
   try {
-    // ── Verificar autenticación ───────────────────────────────
-    const authHeader = req.headers.get('Authorization')
-    if (!authHeader) {
-      return new Response(
-        JSON.stringify({ success: false, error: 'Authorization header requerido' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
-    // Crear cliente con el JWT del usuario (para verificar auth)
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_ANON_KEY')!,
-      {
-        global: {
-          headers: {
-            Authorization: authHeader,
-          },
-        },
-      }
-    )
-
-    // Verificar que el usuario está autenticado
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser()
-    if (authError || !user) {
-      return new Response(
-        JSON.stringify({ success: false, error: 'No autorizado' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
-    const { consultant_id, queries, pais = 'Paraguay' } =
-      await req.json()
+    const { consultant_id, queries, pais = 'Paraguay' } = await req.json()
 
     if (!consultant_id) {
       return new Response(
@@ -61,7 +29,7 @@ serve(async (req) => {
     )
 
     // ── 1. Tavily — buscar noticias ──────────────────────────
-    const tavilyRes = await fetch('https://api.tavily.com/search',{
+    const tavilyRes = await fetch('https://api.tavily.com/search', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -82,20 +50,27 @@ serve(async (req) => {
 
     // ── 2. Groq — analizar y devolver JSON ───────────────────
     const prompt = `Sos un analista inmobiliario experto en ${pais}.
-Analizá estas noticias y respondé ÚNICAMENTE con JSON válido,
-sin texto adicional, con esta estructura exacta:
+
+Analizá las siguientes noticias REALES y generá un informe claro, concreto y accionable.
+
+REGLAS OBLIGATORIAS:
+- NO usar frases genéricas como "está experimentando cambios", "es importante considerar", "diversificación", "oportunidades en diferentes sectores"
+- Incluir datos concretos si existen (zonas, precios, tendencias)
+- Máximo 3 oraciones en el resumen
+- La señal para el inversor debe ser específica y accionable
+- NO inventar información que no esté en las noticias
+- Incluir SOLO titulares con URL real que empiece con http
+
+Respondé ÚNICAMENTE con JSON válido, sin texto adicional:
 {
-  "summary": "Resumen ejecutivo en 2-3 oraciones concretas",
+  "summary": "Resumen concreto y específico (máx 3 oraciones)",
   "titulares": [
-    {
-      "titulo": "Titular de la noticia",
-      "url": "https://...",
-      "fuente": "Nombre del medio"
-    }
+    { "titulo": "...", "url": "https://...", "fuente": "..." }
   ],
-  "senal_inversor": "Un consejo práctico concreto para inversores"
+  "senal_inversor": "Acción clara y específica para inversor"
 }
-Noticias disponibles: ${JSON.stringify(noticias)}`
+
+Noticias: ${JSON.stringify(noticias)}`
 
     const groqRes = await fetch(
       'https://api.groq.com/openai/v1/chat/completions',
@@ -121,6 +96,26 @@ Noticias disponibles: ${JSON.stringify(noticias)}`
     const groqData = await groqRes.json()
     const parsed = JSON.parse(groqData.choices[0].message.content)
 
+    // ── 2B. Validar links ─────────────────────────────────────
+    const validTitulares = (parsed.titulares ?? []).filter(
+      (t: { titulo: string; url: string; fuente: string }) =>
+        t.url && t.url.startsWith('http')
+    )
+
+    // ── 2C. Detectar calidad ──────────────────────────────────
+    const WEAK_PATTERNS = [
+      /está experimentando/i,
+      /es importante considerar/i,
+      /diversificación/i,
+      /en diferentes sectores/i,
+      /oportunidades en diferentes/i,
+      /el mercado inmobiliario en general/i,
+    ]
+
+    const quality = WEAK_PATTERNS.some(r => r.test(parsed.summary))
+      ? 'low'
+      : 'ok'
+
     // ── 3. Guardar en DB (upsert por tenant + fecha) ─────────
     const today = new Date().toISOString().split('T')[0]
 
@@ -131,10 +126,11 @@ Noticias disponibles: ${JSON.stringify(noticias)}`
           consultant_id,
           fecha: today,
           summary: parsed.summary,
-          titulares: parsed.titulares ?? [],
+          titulares: validTitulares,
           senal_inversor: parsed.senal_inversor,
           queries,
-          status: 'published',
+          status: 'draft',
+          quality,
         },
         { onConflict: 'consultant_id,fecha' }
       )
