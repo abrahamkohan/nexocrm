@@ -64,8 +64,7 @@ export function useMarketDigest() {
 
   const publishMutation = useMutation({
     mutationFn: async (digestId: string) => {
-      // @ts-ignore - Supabase type issue
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('market_digests')
         .update({ status: 'published' })
         .eq('id', digestId)
