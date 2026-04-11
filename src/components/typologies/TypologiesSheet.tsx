@@ -57,30 +57,35 @@ export function TypologiesSheet({
     newImageFiles: File[],
     keptImages: string[]
   ) {
-    // 1. Upload floor plan (if new file selected)
-    let floorPlanPath: string | null | undefined = undefined
-    if (floorPlanFile) {
-      floorPlanPath = await uploadFloorPlan(projectId, floorPlanFile)
+    try {
+      // 1. Upload floor plan (if new file selected)
+      let floorPlanPath: string | null | undefined = undefined
+      if (floorPlanFile) {
+        floorPlanPath = await uploadFloorPlan(projectId, floorPlanFile)
+      }
+
+      // 2. Upload new gallery images
+      const typologyId = editing?.id ?? crypto.randomUUID()
+      const uploadedImages = await Promise.all(
+        newImageFiles.map(file => uploadTypologyImage(projectId, typologyId, file))
+      )
+      const images = [...keptImages, ...uploadedImages]
+
+      if (editing) {
+        const input = typologyFormToInsert(projectId, values, floorPlanPath, images, editing.floor_plan ?? editing.floor_plan_path)
+        await updateTypology.mutateAsync({ id: editing.id, input })
+      } else {
+        const input = typologyFormToInsert(projectId, values, floorPlanPath ?? null, images)
+        await createTypology.mutateAsync({ ...input, id: typologyId } as typeof input)
+      }
+
+      toast.success(editing ? 'Guardado' : 'Tipología creada')
+      setShowForm(false)
+      setEditing(null)
+    } catch (error) {
+      console.error('Typology save error:', error)
+      toast.error('Error al guardar: ' + (error as Error).message)
     }
-
-    // 2. Upload new gallery images
-    const typologyId = editing?.id ?? crypto.randomUUID()
-    const uploadedImages = await Promise.all(
-      newImageFiles.map(file => uploadTypologyImage(projectId, typologyId, file))
-    )
-    const images = [...keptImages, ...uploadedImages]
-
-    if (editing) {
-      const input = typologyFormToInsert(projectId, values, floorPlanPath, images, editing.floor_plan ?? editing.floor_plan_path)
-      await updateTypology.mutateAsync({ id: editing.id, input })
-    } else {
-      const input = typologyFormToInsert(projectId, values, floorPlanPath ?? null, images)
-      await createTypology.mutateAsync({ ...input, id: typologyId } as typeof input)
-    }
-
-    toast.success(editing ? 'Guardado' : 'Tipología creada')
-    setShowForm(false)
-    setEditing(null)
   }
 
   const isMutating = createTypology.isPending || updateTypology.isPending

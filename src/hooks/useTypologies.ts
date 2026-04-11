@@ -21,6 +21,9 @@ export function useCreateTypology(projectId: string) {
   return useMutation({
     mutationFn: (input: TypologyInsert) => createTypology(input),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['typologies', projectId] }),
+    onError: (error) => {
+      console.error('Error creating typology:', error)
+    },
   })
 }
 
@@ -30,6 +33,9 @@ export function useUpdateTypology(projectId: string) {
     mutationFn: ({ id, input }: { id: string; input: TypologyUpdate }) =>
       updateTypology(id, input),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['typologies', projectId] }),
+    onError: (error) => {
+      console.error('Error updating typology:', error)
+    },
   })
 }
 
@@ -38,5 +44,8 @@ export function useDeleteTypology(projectId: string) {
   return useMutation({
     mutationFn: (id: string) => deleteTypology(id),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['typologies', projectId] }),
+    onError: (error) => {
+      console.error('Error deleting typology:', error)
+    },
   })
 }
