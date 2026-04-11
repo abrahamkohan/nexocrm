@@ -4,7 +4,7 @@ import { NavLink } from 'react-router'
 import {
   Home, Building2, Users, Calculator, FileText, Settings,
   LogOut, X, Receipt, MapPin, ClipboardList,
-  NotebookPen, HandCoins, TrendingUp, Megaphone, Loader2,
+  NotebookPen, HandCoins, TrendingUp, Loader2,
 } from 'lucide-react'
 import { useBrand } from '@/context/BrandContext'
 import { useAuth } from '@/context/AuthContext'
@@ -31,7 +31,6 @@ const MODULO_PERMISO: Record<string, string> = {
   '/flip':         'flip',
   '/presupuestos': 'presupuestos',
   '/informes':     'reportes',
-  '/marketing':    'marketing',
   '/recursos':     'configuracion',
   '/configuracion':'configuracion',
 }
@@ -76,7 +75,6 @@ const NAV_GRUPOS: {
   {
     label: 'Sistema',
     items: [
-      { to: '/marketing',    label: 'Marketing',    icon: Megaphone },
       { to: '/recursos',     label: 'Recursos',     icon: Receipt },
       { to: '/configuracion', label: 'Configuración', icon: Settings },
     ],
@@ -174,7 +172,6 @@ export function Sidebar({ onClose }: SidebarProps) {
   const puedeVerFlip        = usePermiso('flip')
   const puedeVerPresupuestos = usePermiso('presupuestos')
   const puedeVerReportes    = usePermiso('reportes')
-  const puedeVerMarketing   = usePermiso('marketing')
 
   const permisoMap: Record<string, boolean> = {
     '/clientes':     puedeVerCRM,
@@ -187,7 +184,6 @@ export function Sidebar({ onClose }: SidebarProps) {
     '/flip':         puedeVerFlip,
     '/presupuestos': puedeVerPresupuestos,
     '/informes':     puedeVerReportes,
-    '/marketing':    puedeVerMarketing,
     '/recursos':     isAdmin === true,
     '/configuracion':isAdmin === true,
   }

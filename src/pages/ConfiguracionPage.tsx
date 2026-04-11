@@ -36,6 +36,7 @@ interface FormState {
   logo_url:          string
   logo_light_url:    string
   pwa_icon_url:      string
+  og_image_url:      string
   color_primary:     string
   color_secondary:   string
   color_accent:      string
@@ -48,7 +49,7 @@ interface FormState {
 }
 
 const EMPTY: FormState = {
-  nombre: '', slogan: '', logo_url: '', logo_light_url: '', pwa_icon_url: '',
+  nombre: '', slogan: '', logo_url: '', logo_light_url: '', pwa_icon_url: '', og_image_url: '',
   color_primary: '#C9A34E', color_secondary: '#1E3A5F', color_accent: '#C9A34E',
   telefono: '', email: '', whatsapp: '', instagram: '', sitio_web: '',
   simulador_publico: false,
@@ -86,6 +87,7 @@ export function ConfiguracionPage() {
       logo_url:          config.logo_url          ?? '',
       logo_light_url:    config.logo_light_url    ?? '',
       pwa_icon_url:      config.pwa_icon_url      ?? '',
+      og_image_url:      (config as Record<string, unknown>).og_image_url as string ?? '',
       color_primary:     config.color_primary     ?? '#C9A34E',
       color_secondary:   config.color_secondary   ?? '#1E3A5F',
       color_accent:      config.color_accent      ?? '#C9A34E',
@@ -175,13 +177,14 @@ export function ConfiguracionPage() {
         </div>
       )}
 
-      {/* 1. Mi Inmobiliaria */}
+      {/* 1. Identidad del negocio */}
       <SeccionIdentidad
         nombre={form.nombre}
         slogan={form.slogan}
         logo_url={form.logo_url}
         logo_light_url={form.logo_light_url}
         pwa_icon_url={form.pwa_icon_url}
+        og_image_url={form.og_image_url}
         onChange={set}
       />
 
