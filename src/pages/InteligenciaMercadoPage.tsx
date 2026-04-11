@@ -1,10 +1,19 @@
-import { Loader2, RefreshCw, TrendingUp, Newspaper, Lightbulb, AlertTriangle } from 'lucide-react'
+import { Loader2, RefreshCw, TrendingUp, Newspaper, Lightbulb, AlertTriangle, History } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { useMarketDigest } from '@/hooks/useMarketDigest'
 
 export function InteligenciaMercadoPage() {
-  const { query, mutation, publishMutation } = useMarketDigest()
+  const { 
+    query, 
+    mutation, 
+    publishMutation, 
+    history, 
+    historyQuery,
+    selectedDate, 
+    isToday, 
+    selectDate 
+  } = useMarketDigest()
   const digest = query.data
 
   async function handleActualizar() {
@@ -16,6 +25,41 @@ export function InteligenciaMercadoPage() {
     }
   }
 
+  // Formatear fecha para mostrar
+  function formatDate(fecha: string) {
+    const date = new Date(fecha + 'T12:00:00')
+    const today = new Date().toISOString().split('T')[0]
+    
+    if (fecha === today) return 'Hoy'
+    
+    return date.toLocaleDateString('es-PY', {
+      weekday: 'short',
+      day: 'numeric',
+      month: 'short',
+    })
+  }
+
+  // Obtener badge según estado
+  function getBadges(item: typeof history[0]) {
+    const badges = []
+    
+    if (item.fecha === new Date().toISOString().split('T')[0]) {
+      badges.push({ label: 'HOY', className: 'bg-blue-100 text-blue-700' })
+    }
+    
+    if (item.status === 'draft') {
+      badges.push({ label: 'BORRADOR', className: 'bg-gray-100 text-gray-600' })
+    } else if (item.status === 'published') {
+      badges.push({ label: 'PUBLICADO', className: 'bg-green-100 text-green-700' })
+    }
+    
+    if (item.quality === 'low') {
+      badges.push({ label: 'CALIDAD BAJA', className: 'bg-amber-100 text-amber-700' })
+    }
+    
+    return badges
+  }
+
   return (
     <div className="p-4 sm:p-6 max-w-3xl flex flex-col gap-6">
 
@@ -24,23 +68,29 @@ export function InteligenciaMercadoPage() {
         <div>
           <h1 className="text-2xl font-semibold">Inteligencia de Mercado</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Análisis diario del mercado inmobiliario generado con IA.
+            {isToday 
+              ? 'Análisis diario del mercado inmobiliario generado con IA.'
+              : `Viendo análisis del ${new Date(selectedDate + 'T12:00:00').toLocaleDateString('es-PY', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}`
+            }
           </p>
         </div>
-        <Button
-          onClick={handleActualizar}
-          disabled={mutation.isPending}
-          className="flex-shrink-0"
-        >
-          {mutation.isPending ? (
-            <><Loader2 className="w-4 h-4 animate-spin mr-2" />Analizando...</>
-          ) : (
-            <><RefreshCw className="w-4 h-4 mr-2" />Actualizar</>
-          )}
-        </Button>
+        {/* Botón Actualizar solo si es hoy */}
+        {isToday && (
+          <Button
+            onClick={handleActualizar}
+            disabled={mutation.isPending}
+            className="flex-shrink-0"
+          >
+            {mutation.isPending ? (
+              <><Loader2 className="w-4 h-4 animate-spin mr-2" />Analizando...</>
+            ) : (
+              <><RefreshCw className="w-4 h-4 mr-2" />Actualizar</>
+            )}
+          </Button>
+        )}
       </div>
 
-      {/* Loading inicial */}
+      {/* Loading */}
       {query.isLoading && (
         <div className="flex items-center justify-center py-20">
           <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
@@ -52,27 +102,42 @@ export function InteligenciaMercadoPage() {
         <div className="flex flex-col items-center gap-4 py-20 text-center">
           <TrendingUp className="w-10 h-10 text-gray-200" />
           <p className="text-sm text-muted-foreground">
-            No hay análisis para hoy todavía.
+            {isToday 
+              ? 'No hay análisis para hoy todavía.'
+              : 'No hay análisis para esta fecha.'
+            }
           </p>
-          <Button onClick={handleActualizar} disabled={mutation.isPending}>
-            {mutation.isPending
-              ? 'Generando análisis...'
-              : 'Generar primer análisis'}
-          </Button>
+          {isToday && (
+            <Button onClick={handleActualizar} disabled={mutation.isPending}>
+              {mutation.isPending
+                ? 'Generando análisis...'
+                : 'Generar primer análisis'}
+            </Button>
+          )}
         </div>
       )}
 
-      {/* Contenido */}
+      {/* Contenido del digest */}
       {digest && (
         <div className="flex flex-col gap-4">
 
-          {/* 4A. Badge de calidad baja */}
+          {/* Badge de calidad baja */}
           {digest.quality === 'low' && (
             <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 flex items-start gap-3">
               <AlertTriangle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
               <p className="text-sm text-amber-800">
                 El análisis generado puede ser demasiado genérico.
                 Considerá regenerarlo más tarde o revisarlo antes de publicar.
+              </p>
+            </div>
+          )}
+
+          {/* Indicador de solo lectura si no es hoy */}
+          {!isToday && (
+            <div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 flex items-center gap-3">
+              <History className="w-4 h-4 text-blue-600 flex-shrink-0" />
+              <p className="text-sm text-blue-800">
+                Estás viendo un análisis histórico. Solo lectura.
               </p>
             </div>
           )}
@@ -92,7 +157,7 @@ export function InteligenciaMercadoPage() {
             </div>
           )}
 
-          {/* Titulares - 4D. Validar links */}
+          {/* Titulares */}
           {digest.titulares?.length > 0 && (
             <div className="rounded-lg border bg-card p-5 flex flex-col gap-3">
               <div className="flex items-center gap-2">
@@ -142,8 +207,8 @@ export function InteligenciaMercadoPage() {
             </div>
           )}
 
-          {/* 4C. Botón Publicar (solo si draft) */}
-          {digest.status === 'draft' && (
+          {/* Botón Publicar (solo si draft y es hoy) */}
+          {digest.status === 'draft' && isToday && (
             <div className="rounded-lg border bg-card p-4 flex items-center justify-between gap-4">
               <div>
                 <p className="text-sm font-medium text-gray-800">
@@ -174,7 +239,7 @@ export function InteligenciaMercadoPage() {
             </div>
           )}
 
-          {/* 4B. Timestamp visible */}
+          {/* Timestamp */}
           <p className="text-xs text-muted-foreground text-right">
             Generado el{' '}
             {new Date(digest.created_at).toLocaleDateString('es-PY', {
@@ -187,6 +252,70 @@ export function InteligenciaMercadoPage() {
           </p>
         </div>
       )}
+
+      {/* ─────────────────────────────────────────────── */}
+      {/* HISTÓRICO */}
+      {/* ─────────────────────────────────────────────── */}
+      <div className="border-t pt-6 mt-2">
+        <div className="flex items-center gap-2 mb-4">
+          <History className="w-4 h-4 text-muted-foreground" />
+          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+            Histórico
+          </h2>
+        </div>
+
+        {/* Loading del histórico */}
+        {historyQuery.isLoading && (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+          </div>
+        )}
+
+        {/* Lista de fechas */}
+        {!historyQuery.isLoading && history.length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            {history.map((item) => {
+              const isSelected = item.fecha === selectedDate
+              const badges = getBadges(item)
+              
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => selectDate(item.fecha)}
+                  className={`flex flex-col items-start gap-1 px-3 py-2 rounded-lg border transition-all text-left ${
+                    isSelected
+                      ? 'border-primary bg-primary/5 ring-1 ring-primary'
+                      : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                  }`}
+                >
+                  <span className={`text-sm font-medium ${
+                    isSelected ? 'text-primary' : 'text-gray-700'
+                  }`}>
+                    {formatDate(item.fecha)}
+                  </span>
+                  <div className="flex flex-wrap gap-1">
+                    {badges.map((badge, idx) => (
+                      <span
+                        key={idx}
+                        className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${badge.className}`}
+                      >
+                        {badge.label}
+                      </span>
+                    ))}
+                  </div>
+                </button>
+              )
+            })}
+          </div>
+        )}
+
+        {/* Estado vacío del histórico */}
+        {!historyQuery.isLoading && history.length === 0 && (
+          <p className="text-sm text-muted-foreground py-4">
+            No hay análisis anteriores.
+          </p>
+        )}
+      </div>
     </div>
   )
 }

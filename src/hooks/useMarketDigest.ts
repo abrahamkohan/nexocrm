@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useBrand } from '@/context/BrandContext'
 
@@ -13,20 +14,32 @@ export interface MarketDigest {
   quality: string
 }
 
+export interface DigestHistoryItem {
+  id: string
+  fecha: string
+  status: string
+  quality: string
+  summary: string | null
+}
+
 export function useMarketDigest() {
   const { consultant } = useBrand()
   const queryClient = useQueryClient()
   const consultantId = consultant.uuid
   const today = new Date().toISOString().split('T')[0]
+  
+  // Estado para fecha seleccionada (default: hoy)
+  const [selectedDate, setSelectedDate] = useState<string>(today)
 
+  // Query para el digest activo (fecha seleccionada)
   const query = useQuery({
-    queryKey: ['market-digest', consultantId, today],
+    queryKey: ['market-digest', consultantId, selectedDate],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('market_digests')
         .select('*')
         .eq('consultant_id', consultantId)
-        .eq('fecha', today)
+        .eq('fecha', selectedDate)
         .maybeSingle()
 
       if (error) throw error
@@ -35,6 +48,24 @@ export function useMarketDigest() {
     enabled: !!consultantId,
   })
 
+  // Query para histórico (últimos 7 días)
+  const historyQuery = useQuery({
+    queryKey: ['market-digest-history', consultantId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('market_digests')
+        .select('id, fecha, status, quality, summary')
+        .eq('consultant_id', consultantId)
+        .order('fecha', { ascending: false })
+        .limit(7)
+
+      if (error) throw error
+      return data as DigestHistoryItem[]
+    },
+    enabled: !!consultantId,
+  })
+
+  // Mutation para generar nuevo digest
   const mutation = useMutation({
     mutationFn: async () => {
       const { data, error } = await supabase.functions.invoke(
@@ -56,12 +87,17 @@ export function useMarketDigest() {
       return data.data
     },
     onSuccess: () => {
+      // Invalidar tanto el digest actual como el histórico
       queryClient.invalidateQueries({
         queryKey: ['market-digest', consultantId, today],
+      })
+      queryClient.invalidateQueries({
+        queryKey: ['market-digest-history', consultantId],
       })
     },
   })
 
+  // Mutation para publicar
   const publishMutation = useMutation({
     mutationFn: async (digestId: string) => {
       const { error } = await (supabase as any)
@@ -72,10 +108,39 @@ export function useMarketDigest() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: ['market-digest', consultantId, today],
+        queryKey: ['market-digest', consultantId, selectedDate],
+      })
+      queryClient.invalidateQueries({
+        queryKey: ['market-digest-history', consultantId],
       })
     },
   })
 
-  return { query, mutation, publishMutation }
+  // Función para seleccionar fecha
+  const selectDate = (date: string) => {
+    setSelectedDate(date)
+  }
+
+  // Verificar si es hoy
+  const isToday = selectedDate === today
+
+  return {
+    // Digest actual
+    query,
+    digest: query.data,
+    isLoading: query.isLoading,
+    
+    // Histórico
+    historyQuery,
+    history: historyQuery.data || [],
+    
+    // Fecha seleccionada
+    selectedDate,
+    isToday,
+    selectDate,
+    
+    // Mutations
+    mutation,
+    publishMutation,
+  }
 }
