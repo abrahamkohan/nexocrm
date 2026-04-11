@@ -2,6 +2,7 @@ import { Loader2, RefreshCw, TrendingUp, Newspaper, Lightbulb, AlertTriangle, Hi
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { useMarketDigest } from '@/hooks/useMarketDigest'
+import { QueryAssistant } from '@/components/marketing/QueryAssistant'
 
 export function InteligenciaMercadoPage() {
   const { 
@@ -12,7 +13,13 @@ export function InteligenciaMercadoPage() {
     historyQuery,
     selectedDate, 
     isToday, 
-    selectDate 
+    selectDate,
+    customQueries,
+    suggestedQueries,
+    saveQueries,
+    suggestMutation,
+    acceptSuggestedQueries,
+    clearSuggestions,
   } = useMarketDigest()
   const digest = query.data
 
@@ -68,7 +75,7 @@ export function InteligenciaMercadoPage() {
         <div>
           <h1 className="text-2xl font-semibold">Inteligencia de Mercado</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            {isToday 
+            {isToday
               ? 'Análisis diario del mercado inmobiliario generado con IA.'
               : `Viendo análisis del ${new Date(selectedDate + 'T12:00:00').toLocaleDateString('es-PY', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}`
             }
@@ -89,6 +96,19 @@ export function InteligenciaMercadoPage() {
           </Button>
         )}
       </div>
+
+      {/* Asistente de búsqueda - solo en modo hoy */}
+      {isToday && (
+        <QueryAssistant
+          onSuggest={suggestMutation.mutateAsync}
+          onAccept={acceptSuggestedQueries}
+          suggestedQueries={suggestedQueries}
+          onClear={clearSuggestions}
+          isLoading={suggestMutation.isPending}
+          currentQueries={customQueries}
+          onUpdateQueries={saveQueries}
+        />
+      )}
 
       {/* Loading */}
       {query.isLoading && (

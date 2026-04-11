@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useBrand } from '@/context/BrandContext'
 
@@ -22,6 +22,13 @@ export interface DigestHistoryItem {
   summary: string | null
 }
 
+// Queries por defecto
+const DEFAULT_QUERIES = [
+  'mercado inmobiliario Paraguay 2026',
+  'real estate Paraguay inversión',
+  'precios propiedades Asunción Paraguay',
+]
+
 export function useMarketDigest() {
   const { consultant } = useBrand()
   const queryClient = useQueryClient()
@@ -30,6 +37,35 @@ export function useMarketDigest() {
   
   // Estado para fecha seleccionada (default: hoy)
   const [selectedDate, setSelectedDate] = useState<string>(today)
+  
+  // Estado para queries personalizadas
+  const [customQueries, setCustomQueries] = useState<string[]>(DEFAULT_QUERIES)
+  const [suggestedQueries, setSuggestedQueries] = useState<string[]>([])
+
+  // Cargar queries guardadas de localStorage
+  useEffect(() => {
+    if (consultantId) {
+      const saved = localStorage.getItem(`market-queries-${consultantId}`)
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved)
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setCustomQueries(parsed)
+          }
+        } catch {
+          // Ignorar error de parseo
+        }
+      }
+    }
+  }, [consultantId])
+
+  // Guardar queries en localStorage
+  const saveQueries = (queries: string[]) => {
+    setCustomQueries(queries)
+    if (consultantId) {
+      localStorage.setItem(`market-queries-${consultantId}`, JSON.stringify(queries))
+    }
+  }
 
   // Query para el digest activo (fecha seleccionada)
   const query = useQuery({
@@ -73,11 +109,7 @@ export function useMarketDigest() {
         {
           body: {
             consultant_id: consultantId,
-            queries: [
-              'mercado inmobiliario Paraguay 2026',
-              'real estate Paraguay inversión',
-              'precios propiedades Asunción Paraguay',
-            ],
+            queries: customQueries,
             pais: 'Paraguay',
           },
         }
@@ -116,9 +148,39 @@ export function useMarketDigest() {
     },
   })
 
+  // Mutation para sugerir queries con IA
+  const suggestMutation = useMutation({
+    mutationFn: async (idea: string) => {
+      const { data, error } = await supabase.functions.invoke(
+        'suggest-queries',
+        {
+          body: {
+            idea,
+            pais: 'Paraguay',
+          },
+        }
+      )
+      if (error) throw error
+      if (!data.success) throw new Error(data.error)
+      setSuggestedQueries(data.queries)
+      return data.queries as string[]
+    },
+  })
+
   // Función para seleccionar fecha
   const selectDate = (date: string) => {
     setSelectedDate(date)
+  }
+
+  // Función para aceptar queries sugeridas
+  const acceptSuggestedQueries = (queries: string[]) => {
+    saveQueries(queries)
+    setSuggestedQueries([])
+  }
+
+  // Función para rechazar sugerencias
+  const clearSuggestions = () => {
+    setSuggestedQueries([])
   }
 
   // Verificar si es hoy
@@ -139,8 +201,16 @@ export function useMarketDigest() {
     isToday,
     selectDate,
     
+    // Queries
+    customQueries,
+    suggestedQueries,
+    saveQueries,
+    
     // Mutations
     mutation,
     publishMutation,
+    suggestMutation,
+    acceptSuggestedQueries,
+    clearSuggestions,
   }
 }
