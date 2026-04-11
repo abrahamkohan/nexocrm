@@ -115,12 +115,12 @@ export function SeccionEquipo() {
     <div className="rounded-lg border bg-card p-5 flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">👥 Mi Equipo</p>
+          <p className="text-base font-semibold text-foreground">👥 Mi Equipo</p>
           <p className="text-xs text-gray-400 mt-1">Gestiona permisos por usuario</p>
         </div>
         <button
           onClick={() => setShowInvite(v => !v)}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-900 text-white text-xs font-semibold hover:bg-gray-800 transition-colors"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-semibold hover:opacity-90 transition-opacity"
         >
           <Plus className="w-3.5 h-3.5" />
           Invitar
@@ -148,7 +148,7 @@ export function SeccionEquipo() {
             <button
               onClick={handleInvite}
               disabled={inviteUser.isPending}
-              className="px-4 py-2 bg-gray-900 text-white text-sm rounded-lg hover:bg-gray-800 disabled:opacity-40"
+              className="px-4 py-2 bg-primary text-primary-foreground text-sm rounded-lg hover:opacity-90 disabled:opacity-40 transition-opacity"
             >
               {inviteUser.isPending ? 'Enviando...' : 'Invitar'}
             </button>
@@ -156,7 +156,7 @@ export function SeccionEquipo() {
         </div>
       )}
 
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-2 max-h-[300px] overflow-y-auto">
         {team.map(member => (
           <div
             key={member.id}

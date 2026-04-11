@@ -61,7 +61,7 @@ function Chip({ active, onClick, children }: { active: boolean; onClick: () => v
       onClick={onClick}
       className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors whitespace-nowrap ${
         active
-          ? 'bg-gray-900 text-white border-gray-900'
+          ? 'bg-[var(--brand-primary)] text-white border-[var(--brand-primary)]'
           : 'bg-white text-gray-600 border-gray-200 hover:border-gray-400 hover:text-gray-900'
       }`}
     >

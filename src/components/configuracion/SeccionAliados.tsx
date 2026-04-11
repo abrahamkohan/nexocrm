@@ -115,7 +115,7 @@ export function SeccionAliados() {
     <div className="rounded-lg border bg-card p-5 flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">🤝 Aliados Comerciales</p>
+          <p className="text-base font-semibold text-foreground">🤝 Aliados Comerciales</p>
           <p className="text-xs text-gray-400 mt-1">
             Aliados externos que reciben porcentaje de comisión en ventas
           </p>
@@ -123,7 +123,7 @@ export function SeccionAliados() {
         {!showAdd && (
           <button
             onClick={() => setShowAdd(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-900 text-white text-xs font-semibold hover:bg-gray-800 transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-semibold hover:opacity-90 transition-opacity"
           >
             <Plus className="w-3.5 h-3.5" />
             Agregar
@@ -195,7 +195,7 @@ export function SeccionAliados() {
             <button
               onClick={() => editingId ? handleUpdate(editingId) : handleAdd()}
               disabled={createAlly.isPending || updateAlly.isPending}
-              className="flex items-center gap-1.5 h-9 px-4 rounded-lg bg-gray-900 text-white text-sm font-semibold disabled:opacity-40"
+              className="flex items-center gap-1.5 h-9 px-4 rounded-lg bg-primary text-primary-foreground text-sm font-semibold disabled:opacity-40"
             >
               <Check className="w-4 h-4" />
               {editingId ? 'Guardar' : 'Agregar'}

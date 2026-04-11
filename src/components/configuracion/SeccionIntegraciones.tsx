@@ -68,7 +68,7 @@ export function SeccionIntegraciones({ simulador_publico, onSimuladorChange }: P
 
   return (
     <div className="rounded-lg border bg-card p-5 flex flex-col gap-5">
-      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">🔗 Integraciones</p>
+      <p className="text-base font-semibold text-foreground">🔗 Integraciones</p>
 
       {/* Google Calendar */}
       <div className="flex flex-col gap-3">
@@ -110,7 +110,7 @@ export function SeccionIntegraciones({ simulador_publico, onSimuladorChange }: P
             <button
               onClick={handleConnectGoogle}
               disabled={gcalLoading}
-              className="self-start flex items-center gap-2 px-4 py-2 rounded-xl bg-gray-900 text-white text-sm font-semibold disabled:opacity-50 hover:bg-gray-800 transition-colors"
+              className="self-start flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-semibold disabled:opacity-50 hover:opacity-90 transition-opacity"
             >
               {gcalLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Calendar className="w-4 h-4" />}
               Conectar Google Calendar
