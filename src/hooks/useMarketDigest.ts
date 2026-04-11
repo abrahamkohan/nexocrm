@@ -151,16 +151,34 @@ export function useMarketDigest() {
   // Mutation para sugerir queries con IA
   const suggestMutation = useMutation({
     mutationFn: async (idea: string) => {
-      const { data, error } = await supabase.functions.invoke(
-        'suggest-queries',
+      // Obtener sesión actual
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) {
+        throw new Error('No hay sesión activa')
+      }
+
+      // Usar fetch directamente
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/suggest-queries`,
         {
-          body: {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
             idea,
             pais: 'Paraguay',
-          },
+          }),
         }
       )
-      if (error) throw error
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.error || `Error ${response.status}`)
+      }
+
+      const data = await response.json()
       if (!data.success) throw new Error(data.error)
       setSuggestedQueries(data.queries)
       return data.queries as string[]
