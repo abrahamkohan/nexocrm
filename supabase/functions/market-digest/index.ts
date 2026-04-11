@@ -16,14 +16,42 @@ serve(async (req) => {
     // ── Verificar autenticación ───────────────────────────────
     const authHeader = req.headers.get('Authorization')
     if (!authHeader) {
-      throw new Error('Authorization header requerido')
+      return new Response(
+        JSON.stringify({ success: false, error: 'Authorization header requerido' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // Crear cliente con el JWT del usuario (para verificar auth)
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_ANON_KEY')!,
+      {
+        global: {
+          headers: {
+            Authorization: authHeader,
+          },
+        },
+      }
+    )
+
+    // Verificar que el usuario está autenticado
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser()
+    if (authError || !user) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'No autorizado' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
     }
 
     const { consultant_id, queries, pais = 'Paraguay' } =
       await req.json()
 
     if (!consultant_id) {
-      throw new Error('consultant_id requerido')
+      return new Response(
+        JSON.stringify({ success: false, error: 'consultant_id requerido' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
     }
 
     // ── Supabase con service role (escribe sin RLS) ──────────

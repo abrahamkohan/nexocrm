@@ -35,10 +35,22 @@ export function useMarketDigest() {
 
   const mutation = useMutation({
     mutationFn: async () => {
-      const { data, error } = await supabase.functions.invoke(
-        'market-digest',
+      // Obtener sesión actual
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) {
+        throw new Error('No hay sesión activa')
+      }
+
+      // Usar fetch directamente para mayor control
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/market-digest`,
         {
-          body: {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
             consultant_id: consultantId,
             queries: [
               'mercado inmobiliario Paraguay 2026',
@@ -46,14 +58,16 @@ export function useMarketDigest() {
               'precios propiedades Asunción Paraguay',
             ],
             pais: 'Paraguay',
-          },
-          // Importante: enviar el token de autenticación
-          headers: {
-            Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
-          },
+          }),
         }
       )
-      if (error) throw error
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.error || `Error ${response.status}: ${response.statusText}`)
+      }
+
+      const data = await response.json()
       if (!data.success) throw new Error(data.error)
       return data.data
     },
