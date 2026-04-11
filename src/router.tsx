@@ -40,6 +40,7 @@ import { PropiedadesCatalogoPage } from '@/pages/PropiedadesCatalogoPage'
 import { ProyectosCatalogoPage } from '@/pages/ProyectosCatalogoPage'
 import { PropiedadFichaPage } from '@/pages/PropiedadFichaPage'
 import { ProyectoFichaPage } from '@/pages/ProyectoFichaPage'
+import { InteligenciaMercadoPage } from '@/pages/InteligenciaMercadoPage'
 import { RequireAuth } from '@/components/auth/RequireAuth'
 import { RequireRole } from '@/components/auth/RequireRole'
 import { RequirePermiso } from '@/components/auth/RequirePermiso'
@@ -82,6 +83,7 @@ export const router = createBrowserRouter([
       { path: 'comisiones/:id/editar', element: <RequireRole role="admin"><VentaFormPage /></RequireRole> },
       { path: 'configuracion',       element: <RequireRole role="admin"><ConfiguracionPage /></RequireRole> },
       { path: 'admin/onboarding',    element: <RequireRole role="admin"><AdminOnboardingPage /></RequireRole> },
+      { path: 'inteligencia', element: <RequireRole role="admin"><InteligenciaMercadoPage /></RequireRole> },
     ],
   },
   // Rutas públicas (sin auth)

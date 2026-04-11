@@ -4,7 +4,7 @@ import { NavLink } from 'react-router'
 import {
   Home, Building2, Users, Calculator, FileText, Settings,
   LogOut, X, Receipt, MapPin, ClipboardList,
-  NotebookPen, HandCoins, TrendingUp, Loader2,
+  NotebookPen, HandCoins, TrendingUp, Loader2, Brain,
 } from 'lucide-react'
 import { useBrand } from '@/context/BrandContext'
 import { useAuth } from '@/context/AuthContext'
@@ -33,6 +33,7 @@ const MODULO_PERMISO: Record<string, string> = {
   '/informes':     'reportes',
   '/recursos':     'configuracion',
   '/configuracion':'configuracion',
+  '/inteligencia': 'configuracion',
 }
 
 // ── Estructura de menú ────────────────────────────────────────────────────────
@@ -75,6 +76,7 @@ const NAV_GRUPOS: {
   {
     label: 'Sistema',
     items: [
+      { to: '/inteligencia', label: 'Inteligencia IA', icon: Brain },
       { to: '/recursos',     label: 'Recursos',     icon: Receipt },
       { to: '/configuracion', label: 'Configuración', icon: Settings },
     ],
@@ -184,6 +186,7 @@ export function Sidebar({ onClose }: SidebarProps) {
     '/flip':         puedeVerFlip,
     '/presupuestos': puedeVerPresupuestos,
     '/informes':     puedeVerReportes,
+    '/inteligencia': isAdmin === true,
     '/recursos':     isAdmin === true,
     '/configuracion':isAdmin === true,
   }
