@@ -21,6 +21,14 @@ interface BrandContextValue {
 
 const BrandCtx = createContext<BrandContextValue | null>(null)
 
+function isLight(hex: string): boolean {
+  const h = hex.replace('#', '')
+  const r = parseInt(h.substring(0, 2), 16)
+  const g = parseInt(h.substring(2, 4), 16)
+  const b = parseInt(h.substring(4, 6), 16)
+  return (r * 299 + g * 587 + b * 114) / 1000 > 128
+}
+
 export function BrandProvider({ children }: { children: React.ReactNode }) {
   const { hostname, subdomain } = useHost()
   const { session } = useAuth()
@@ -93,9 +101,11 @@ export function BrandProvider({ children }: { children: React.ReactNode }) {
     root.style.setProperty('--brand-secondary', consultant.color_secondary)
     root.style.setProperty('--brand-accent', consultant.color_accent)
     root.style.setProperty('--brand-nombre', consultant.nombre)
-    // Conectar colores de marca a variables del sistema
+    // Conectar sidebar al color secundario con texto contrastante automático
     root.style.setProperty('--sidebar', consultant.color_secondary)
+    root.style.setProperty('--sidebar-foreground', isLight(consultant.color_secondary) ? '#111111' : '#ffffff')
     root.style.setProperty('--sidebar-accent', consultant.color_accent)
+    root.style.setProperty('--sidebar-accent-foreground', isLight(consultant.color_accent) ? '#111111' : '#ffffff')
     if (consultant.logo_url) {
       root.style.setProperty('--brand-logo', consultant.logo_url)
     }
