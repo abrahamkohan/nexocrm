@@ -90,14 +90,42 @@ export function TypologiesSheet({
 
   const isMutating = createTypology.isPending || updateTypology.isPending
 
+  // Debug function
+  const debugSave = async () => {
+    try {
+      const testInput = {
+        project_id: projectId,
+        name: 'Test Debug',
+        area_m2: 50,
+        category: 'unidad',
+        price_usd: 0,
+        price_pyg: 0,
+        units_available: 0,
+      }
+      console.log('Debug save input:', testInput)
+      await createTypology.mutateAsync(testInput as any)
+      console.log('Debug save success!')
+      toast.success('Debug: Tipología creada')
+    } catch (e) {
+      console.error('Debug save error:', e)
+      toast.error('Error: ' + (e as Error).message)
+    }
+  }
+
   return (
     <Modal open={open} onClose={() => onOpenChange(false)} title={`Tipologías — ${projectName}`}>
         <div className="flex flex-col gap-4">
           {!showForm && (
-            <Button variant="outline" size="sm" onClick={openCreate} className="w-full">
-              <Plus className="h-3.5 w-3.5 mr-1.5" />
-              Agregar tipología
-            </Button>
+            <>
+              <Button variant="outline" size="sm" onClick={openCreate} className="w-full">
+                <Plus className="h-3.5 w-3.5 mr-1.5" />
+                Agregar tipología
+              </Button>
+              {/* DEBUG: Test directly without form */}
+              <Button variant="destructive" size="sm" onClick={debugSave} className="w-full mt-2">
+                DEBUG: Test Save
+              </Button>
+            </>
           )}
 
           {showForm && (
