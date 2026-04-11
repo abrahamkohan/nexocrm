@@ -13,6 +13,12 @@ serve(async (req) => {
   }
 
   try {
+    // ── Verificar autenticación ───────────────────────────────
+    const authHeader = req.headers.get('Authorization')
+    if (!authHeader) {
+      throw new Error('Authorization header requerido')
+    }
+
     const { consultant_id, queries, pais = 'Paraguay' } =
       await req.json()
 

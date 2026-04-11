@@ -47,6 +47,10 @@ export function useMarketDigest() {
             ],
             pais: 'Paraguay',
           },
+          // Importante: enviar el token de autenticación
+          headers: {
+            Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+          },
         }
       )
       if (error) throw error
