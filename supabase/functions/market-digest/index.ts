@@ -13,7 +13,7 @@ serve(async (req) => {
   }
 
   try {
-    const { consultant_id, queries, pais = 'Paraguay' } = await req.json()
+    const { consultant_id, queries, pais = 'Paraguay', fecha_override } = await req.json()
 
     if (!consultant_id) {
       return new Response(
@@ -21,6 +21,9 @@ serve(async (req) => {
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
+
+    // ── Fecha: usar override para testing o today para producción ─
+    const fecha = fecha_override || new Date().toISOString().split('T')[0]
 
     // ── Supabase con service role (escribe sin RLS) ──────────
     const supabase = createClient(
@@ -117,14 +120,12 @@ Noticias: ${JSON.stringify(noticias)}`
       : 'ok'
 
     // ── 3. Guardar en DB (upsert por tenant + fecha) ─────────
-    const today = new Date().toISOString().split('T')[0]
-
     const { error: dbError } = await supabase
       .from('market_digests')
       .upsert(
         {
           consultant_id,
-          fecha: today,
+          fecha,
           summary: parsed.summary,
           titulares: validTitulares,
           senal_inversor: parsed.senal_inversor,
