@@ -93,6 +93,9 @@ export function BrandProvider({ children }: { children: React.ReactNode }) {
     root.style.setProperty('--brand-secondary', consultant.color_secondary)
     root.style.setProperty('--brand-accent', consultant.color_accent)
     root.style.setProperty('--brand-nombre', consultant.nombre)
+    // Conectar colores de marca a variables del sistema
+    root.style.setProperty('--sidebar', consultant.color_secondary)
+    root.style.setProperty('--sidebar-accent', consultant.color_accent)
     if (consultant.logo_url) {
       root.style.setProperty('--brand-logo', consultant.logo_url)
     }
