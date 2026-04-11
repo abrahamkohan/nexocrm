@@ -151,52 +151,31 @@ export function useMarketDigest() {
   // Mutation para sugerir queries con IA
   const suggestMutation = useMutation({
     mutationFn: async (idea: string) => {
-      try {
-        // Intentar llamar a la Edge Function sin autenticación (no-verify-jwt)
-        const response = await fetch(
-          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/suggest-queries`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              idea,
-              pais: 'Paraguay',
-            }),
-          }
-        )
-
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}`)
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/suggest-queries`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            idea,
+            pais: 'Paraguay',
+          }),
         }
+      )
 
-        const data = await response.json()
-        if (!data.success) throw new Error(data.error)
-        setSuggestedQueries(data.queries)
-        return data.queries as string[]
-      } catch (err) {
-        // Fallback: generar queries localmente basadas en la idea
-        const fallbackQueries = generateLocalQueries(idea)
-        setSuggestedQueries(fallbackQueries)
-        return fallbackQueries
+      if (!response.ok) {
+        throw new Error(`Error del servidor (${response.status})`)
       }
+
+      const data = await response.json()
+      if (!data.success) throw new Error(data.error || 'Error al generar sugerencias')
+
+      setSuggestedQueries(data.queries)
+      return data.queries as string[]
     },
   })
-
-  // Función local para generar queries cuando la API falla
-  function generateLocalQueries(idea: string): string[] {
-    const keywords = idea.toLowerCase().split(' ').filter(w => w.length > 3)
-    const baseQuery = keywords.slice(0, 3).join(' ')
-    
-    return [
-      `${baseQuery} Paraguay 2026`,
-      `${baseQuery} mercado inmobiliario`,
-      `${baseQuery} inversión`,
-      `${baseQuery} tendencias 2026`,
-      `${baseQuery} precios`,
-    ].slice(0, 5)
-  }
 
   // Función para seleccionar fecha
   const selectDate = (date: string) => {
