@@ -17,12 +17,17 @@ export async function getTypologies(projectId: string): Promise<TypologyRow[]> {
 }
 
 export async function createTypology(input: TypologyInsert): Promise<TypologyRow> {
+  console.log('typologies.ts createTypology START', input)
   const { data, error } = await supabase
     .from('typologies')
     .insert(input as any)
     .select()
     .single()
-  if (error) throw error
+  console.log('typologies.ts createTypology response:', { data, error })
+  if (error) {
+    console.error('typologies.ts error:', error)
+    throw error
+  }
   return data as unknown as TypologyRow
 }
 

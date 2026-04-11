@@ -95,20 +95,21 @@ export function TypologiesSheet({
     try {
       const testInput = {
         project_id: projectId,
-        name: 'Test Debug',
+        name: 'Test Debug ' + new Date().toLocaleTimeString(),
         area_m2: 50,
         category: 'unidad',
         price_usd: 0,
         price_pyg: 0,
         units_available: 0,
       }
-      console.log('Debug save input:', testInput)
-      await createTypology.mutateAsync(testInput as any)
-      console.log('Debug save success!')
-      toast.success('Debug: Tipología creada')
+      console.log('Debug save START:', testInput)
+      
+      const result = await createTypology.mutateAsync(testInput as any)
+      console.log('Debug save result:', result)
+      toast.success('Debug: Tipología creada!')
     } catch (e) {
-      console.error('Debug save error:', e)
-      toast.error('Error: ' + (e as Error).message)
+      console.error('Debug save error FULL:', JSON.stringify(e, null, 2))
+      toast.error('Error: ' + JSON.stringify(e, null, 2))
     }
   }
 
