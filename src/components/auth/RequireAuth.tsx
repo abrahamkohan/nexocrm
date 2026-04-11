@@ -6,7 +6,7 @@ import { LoginPage } from '@/pages/LoginPage'
 import { CompleteProfilePage } from '@/pages/CompleteProfilePage'
 
 export function RequireAuth({ children }: { children: React.ReactNode }) {
-  const { session, loading, isMockMode } = useAuth()
+  const { session, loading } = useAuth()
   const [needsProfile, setNeedsProfile] = useState(false)
   const [checking, setChecking] = useState(true)
 
