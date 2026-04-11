@@ -5,11 +5,6 @@ import type { Database } from '@/types/database'
 type ProfileUpdate = Database['public']['Tables']['profiles']['Update']
 
 export async function getProfile(userId: string): Promise<{ id: string; full_name: string | null } | null> {
-  // Check mock mode inside function (after mount)
-  if (typeof window !== 'undefined' && localStorage.getItem('USE_MOCK_AUTH') === 'true') {
-    return { id: userId, full_name: 'Demo User' }
-  }
-  
   const { data, error } = await supabase
     .from('profiles')
     .select('id, full_name')
