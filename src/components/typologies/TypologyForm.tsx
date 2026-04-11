@@ -151,7 +151,7 @@ export function TypologyForm({ defaultValues, onSubmit, onCancel, isSubmitting }
     resolver: zodResolver(typologySchema),
     defaultValues: {
       name:      defaultValues?.name      ?? '',
-      area_m2:   defaultValues?.area_m2   ?? undefined,
+      area_m2:   defaultValues?.area_m2 != null ? parseFloat(String(defaultValues.area_m2)) : undefined,
       bedrooms:  unitTypeToBedrooms(defaultValues?.unit_type ?? null),
       bathrooms: defaultValues?.bathrooms ?? null,
     },
@@ -172,14 +172,23 @@ export function TypologyForm({ defaultValues, onSubmit, onCancel, isSubmitting }
     }
   }
 
-  const handleSubmit = form.handleSubmit(async (values) => {
+  async function doSubmit() {
+    const valid = await form.trigger()
+    if (!valid) {
+      const idMap: Record<string, string> = { area_m2: 'ty-area', name: 'ty-name' }
+      const firstKey = Object.keys(form.formState.errors)[0]
+      document.getElementById(idMap[firstKey] ?? `ty-${firstKey}`)
+        ?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      return
+    }
+    const values = form.getValues()
     await onSubmit({ ...values, features }, floorPlanFile, newImageFiles, keptImages)
-  })
+  }
 
   const totalImages = keptImages.length + newImageFiles.length
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4">
 
       {/* ── Dormitorios ── */}
       <div className="grid gap-2">
@@ -225,7 +234,12 @@ export function TypologyForm({ defaultValues, onSubmit, onCancel, isSubmitting }
         <div className="grid gap-1.5">
           <Label htmlFor="ty-area" className="text-xs text-gray-500">m² *</Label>
           <Input id="ty-area" type="number" min={1} step={0.01}
-            {...form.register('area_m2', { setValueAs: (v) => Number(v) })}
+            {...form.register('area_m2', {
+              setValueAs: (v) => {
+                const n = parseFloat(v)
+                return isNaN(n) ? undefined : n
+              },
+            })}
           />
           {form.formState.errors.area_m2 && <p className="text-xs text-destructive">{form.formState.errors.area_m2.message}</p>}
         </div>
@@ -342,14 +356,14 @@ export function TypologyForm({ defaultValues, onSubmit, onCancel, isSubmitting }
 
       {/* ── Actions ── */}
       <div className="flex gap-2 pt-1">
-        <Button type="submit" disabled={isSubmitting} size="sm" className="flex-1">
+        <Button type="button" disabled={isSubmitting} size="sm" className="flex-1" onClick={doSubmit}>
           {isSubmitting ? 'Guardando...' : 'Guardar'}
         </Button>
         <Button type="button" variant="outline" size="sm" onClick={onCancel} disabled={isSubmitting}>
           Cancelar
         </Button>
       </div>
-    </form>
+    </div>
   )
 }
 
