@@ -24,9 +24,11 @@ export interface DigestHistoryItem {
 
 // Queries por defecto
 const DEFAULT_QUERIES = [
-  'mercado inmobiliario Paraguay 2026',
-  'real estate Paraguay inversión',
-  'precios propiedades Asunción Paraguay',
+  'Paraguay economic growth foreign investment 2026',
+  'Paraguay real estate market opportunities',
+  'Asunción infrastructure development projects',
+  'Paraguay tax benefits foreign investors',
+  'Paraguay stability ranking Latin America',
 ]
 
 export function useMarketDigest() {

@@ -21,12 +21,22 @@ serve(async (req) => {
       )
     }
 
-    const prompt = `Sos un experto en búsquedas de mercado inmobiliario en ${pais}.
+    const prompt = `Sos un experto en atraer inversión extranjera a ${pais}, especializado en el sector inmobiliario/real estate.
+
+Tu objetivo es generar búsquedas que encuentren noticias e información que POSITION a ${pais} como destino atractivo para inversores extranjeros en real estate.
 
 El usuario quiere analizar: "${idea}"
 
 Generá entre 3 y 5 queries de búsqueda optimizadas para Google.
-Las queries deben ser específicas, claras y enfocadas en mercado inmobiliario.
+
+ENFOQUE de las queries:
+- Macroeconomía: crecimiento del PBI, estabilidad económica, riesgo país
+- Infraestructura: proyectos en curso, mejoras de conectividad, obras públicas
+- Marco legal: beneficios fiscales, facilidad de inversión, seguridad jurídica
+- Mercado inmobiliario: tendencias de precios, nuevos desarrollos, zonas de oportunidad
+- Comparativas regionales: cómo se compara ${pais} con otros países de LatAm para invertir
+
+Las queries deben estar en INGLÉS cuando el tema apunte a inversores extranjeros, y en español cuando sea contenido local relevante.
 
 REGLAS:
 - Devolver SOLO un array JSON de strings
@@ -34,10 +44,10 @@ REGLAS:
 - NO usar markdown
 - Máximo 5 queries
 - Mínimo 3 queries
-- Cada query debe ser útil para encontrar noticias relevantes
+- Cada query debe ayudar a encontrar noticias que VENDAN ${pais} como destino de inversión
 
 Ejemplo de formato de respuesta:
-["mercado inmobiliario Luque 2026", "precios departamentos Asunción tendencias", "inversión inmobiliaria Paraguay CIT"]
+["Paraguay economic growth 2026", "Asunción real estate investment opportunities", "Paraguay foreign investor tax benefits", "Paraguay infrastructure projects 2026"]
 
 Respondé SOLO con el array JSON.`
 
